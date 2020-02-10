@@ -47,10 +47,10 @@ class SequentialAnalysis:
         if self.mark_inconclusiveness:
             self._plot_inconclusiveness()
 
-        #  sns.lineplot(data=self.results[dep_var]['t_tests'][k]['sequential_BF'].dropna(),
+        #  sns.lineplot(data=self.results[dependent]['t_tests'][k]['sequential_BF'].dropna(),
         #             x='N', y='BF', label=False, ax=ax, alpha=0.5, linewidth=4)
 
-        #  sns.scatterplot(data=self.results[dep_var]['t_tests'][k]['sequential_BF'].dropna(),
+        #  sns.scatterplot(data=self.results[dependent]['t_tests'][k]['sequential_BF'].dropna(),
         #                x='N', y='BF', label=False, ax=ax, color='black', marker='>', alpha=1,
         #                edgecolors=['black'], linewidths=8)
 

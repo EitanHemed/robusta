@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="0886dafb-815d-496f-b5f2-e05a30704807" name="Default Changelist" comment="" />
+    <list default="true" id="0886dafb-815d-496f-b5f2-e05a30704807" name="Default Changelist" comment="- Currently BayesANOVA is not working, need to integrate the formula formation into the BaseParamteric class.">
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/Eitan_Hemed.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/examples.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bayesian.py" beforeDir="false" afterPath="$PROJECT_DIR$/bayesian.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/parametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/parametric.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plotting.py" beforeDir="false" afterPath="$PROJECT_DIR$/plotting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyrio.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyrio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -14,7 +26,11 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1W77QbHJ8QSqHZS9E0t8zAx3gC3" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
@@ -22,7 +38,8 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="settings.editor.selected.configurable" value="preferences.customizations" />
   </component>
   <component name="RunManager">
     <configuration name="__init__" type="PythonConfigurationType" factoryName="Python" temporary="true">
@@ -77,11 +94,27 @@
     </task>
     <servers />
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="- Currently BayesANOVA is not working, need to integrate the formula formation into the BaseParamteric class." />
+    <option name="LAST_COMMIT_MESSAGE" value="- Currently BayesANOVA is not working, need to integrate the formula formation into the BaseParamteric class." />
+  </component>
   <component name="WindowStateProjectService">
+    <state x="760" y="86" key="#com.intellij.ide.ui.customization.CustomizableActionsPanel.FindAvailableActionsDialog" timestamp="1581335390073">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="760" y="86" key="#com.intellij.ide.ui.customization.CustomizableActionsPanel.FindAvailableActionsDialog/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581335390073" />
     <state x="676" y="86" key="#com.intellij.ide.util.MemberChooser" timestamp="1579765565745">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="676" y="86" key="#com.intellij.ide.util.MemberChooser/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1579765565745" />
+    <state x="356" y="0" key="CommitChangelistDialog2" timestamp="1581336086459">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="356" y="0" key="CommitChangelistDialog2/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581336086459" />
+    <state x="352" y="5" key="FileChooserDialogImpl" timestamp="1580492376911">
+      <screen x="0" y="0" width="1344" height="800" />
+    </state>
+    <state x="352" y="5" key="FileChooserDialogImpl/0.0.1344.800@0.0.1344.800" timestamp="1580492376911" />
     <state width="1885" height="255" key="GridCell.Tab.0.bottom" timestamp="1579730044516">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -102,29 +135,37 @@
     </state>
     <state width="1885" height="255" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1579730044516" />
     <state width="1885" height="255" key="GridCell.Tab.0.right/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1579719088245" />
-    <state x="220" y="0" key="SettingsEditor" timestamp="1579815125812">
+    <state x="514" y="76" key="RollbackChangesDialog" timestamp="1581335130732">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="514" y="76" key="RollbackChangesDialog/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581335130732" />
+    <state x="220" y="0" key="SettingsEditor" timestamp="1581335431676">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="220" y="-1080" key="SettingsEditor/0.0.1280.680/0.-1080.1920.1040@0.-1080.1920.1040" timestamp="1578490553693" />
     <state x="220" y="0" key="SettingsEditor/0.0.1920.1040@0.0.1920.1040" timestamp="1579815125812" />
-    <state x="505" y="242" key="com.intellij.ide.util.TipDialog" timestamp="1580303850513">
+    <state x="220" y="0" key="SettingsEditor/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581335431676" />
+    <state x="505" y="242" key="com.intellij.ide.util.TipDialog" timestamp="1581335091432">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="404" y="192" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1580167983543" />
-    <state x="505" y="242" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1580303850513" />
-    <state x="505" y="242" key="com.intellij.ide.util.TipDialog/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1579765363511" />
-    <state x="591" y="0" width="1115" height="1040" key="find.popup" timestamp="1580305081246">
+    <state x="404" y="192" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1580492267798" />
+    <state x="505" y="242" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1581326776909" />
+    <state x="505" y="242" key="com.intellij.ide.util.TipDialog/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581335091432" />
+    <state x="591" y="0" width="1115" height="1040" key="find.popup" timestamp="1581010134813">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="591" y="0" width="1115" height="1040" key="find.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1580305081246" />
+    <state x="591" y="0" width="1115" height="1040" key="find.popup/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581010134813" />
     <state x="390" y="0" key="refactoring.ChangeSignatureDialog" timestamp="1579817880373">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="390" y="0" key="refactoring.ChangeSignatureDialog/0.0.1536.824@0.0.1536.824" timestamp="1579817880373" />
-    <state x="453" y="-2" width="1009" height="1470" key="search.everywhere.popup" timestamp="1579886275303">
+    <state x="453" y="0" width="1010" height="1036" key="search.everywhere.popup" timestamp="1581335420606">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="453" y="-1082" width="1009" height="1470" key="search.everywhere.popup/0.0.1280.680/0.-1080.1920.1040@0.-1080.1920.1040" timestamp="1578490530998" />
-    <state x="453" y="-2" width="1009" height="1470" key="search.everywhere.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1579886275303" />
+    <state x="362" y="-2" width="808" height="1165" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1580492285116" />
+    <state x="453" y="0" width="1009" height="1036" key="search.everywhere.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1581016203876" />
+    <state x="453" y="0" width="1010" height="1036" key="search.everywhere.popup/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581335420606" />
   </component>
 </project>
