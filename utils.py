@@ -1,21 +1,24 @@
+import re
 import robusta as rst  # So we can get the PyR singleton
 import pandas as pd
 import numpy as np
 from rpy2 import robjects
 import itertools
+from collections.abc import Iterable
 
 
 def to_list(values):
     """Return a list of string from a list which may have lists, strings or None objects"""
-    return [i for i in list(itertools.chain.from_iterable(
-        itertools.repeat(x, 1) if isinstance(x, str) else x for x in values)
-    ) if i != '']
+    return np.hstack([values])
 
 
 def tidy(df, result_type) -> pd.DataFrame:
     if result_type == 'Anova':
         df = convert_df(_tidy_anova(df))
         # Format Degrees of freedom into separate columns
+
+        return df
+
         df['df_1'], df['df_2'] = np.concatenate(df['df'].str.split(',').values).reshape((len(df), 2)).T
         # and remove the previous columns
         df.drop(columns=['df'], inplace=True)
@@ -32,7 +35,7 @@ def tidy(df, result_type) -> pd.DataFrame:
 
 
 def _tidy_anova(df):
-    return rst.pyr.rpackages.afex.nice(df, es='pes')
+    return rst.pyr.rpackages.broom.tidy_anova(df)
 
 
 def _tidy_ttest(df):
@@ -67,11 +70,38 @@ def convert_df(df):
         print("Input can only be R/Python DataFrame object")
 
 
-def build_anova_formula(
-                dependent,
-                subject,
-                between=None,
-                within=None,
-            ):
-    ind_vars = "*".join(to_list([between, within]))
-    return f'{dependent} ~ {ind_vars}'
+def build_lm4_style_formula(
+        dependent,
+        subject,
+        between=None,
+        within=None,
+):
+    between = "*".join(to_list(between))
+    within = "|".join(to_list(within))
+    if within:
+        within = f'({within}|{subject})'
+    else:
+        within = f'(1|{subject})'
+    frml = f'{dependent} ~ {between} + {within}'
+    return frml, rst.pyr.rpackages.stats.formula(frml)
+
+
+def parse_variables_from_lm4_style_formula(frml):
+    # TODO - support much more flexible parsing of the between/within/interactions, as currently we can't
+    #   seperate excluded interactions etc. This is good for ANOVA, but is very limiting for actual linear mixed models.
+    #   The current implementation assumes the following form: 'y ~ b1*b2 + (w1|w2|id)'
+    #   Generally, everything here could benefit from a regex implementation.
+
+    dependent, frml = frml.split('~')  # to remove the dependent variable from the formula
+    dependent = dependent[:-1]  # trim the trailing whitespace
+    frml = frml[1:]  # Trim the leading whitespace
+    between, frml = frml.split('+')
+    between = between[:-1].split('*')  # Drop the trailing whitespace and split to separate between subject variables
+    *within, subject = re.findall(r'\((.*?)\)', frml)[0].split('|')
+    if within == ['1']:
+        within = []
+
+    return dependent, between, within, subject
+
+# r2 = aov_ez(dv='len', within=c('v', 't'), id='id', between=c('dose', 'supp'), data=df3)
+# r = aov_4(len ~ dose*supp + (v|t|id), data=df3)

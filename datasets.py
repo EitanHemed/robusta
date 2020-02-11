@@ -15,6 +15,5 @@ def load(dataset_name: str):
     return rst.utils.convert_df(df).join(pd.DataFrame(np.array(df.rownames), columns=['row_names']))
     #  return rst.utils.convert_df()
 
-
 def get_available_datasets():
     raise NotImplementedError

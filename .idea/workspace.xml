@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="0886dafb-815d-496f-b5f2-e05a30704807" name="Default Changelist" comment="- Currently BayesANOVA is not working, need to integrate the formula formation into the BaseParamteric class.">
-      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/Eitan_Hemed.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/examples.py" afterDir="false" />
+    <list default="true" id="0886dafb-815d-496f-b5f2-e05a30704807" name="Default Changelist" comment="- Built but not operational: BayesANOVA - need to integrate the formula formation into the BaseParamteric class.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bayesian.py" beforeDir="false" afterPath="$PROJECT_DIR$/bayesian.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/parametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/parametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plotting.py" beforeDir="false" afterPath="$PROJECT_DIR$/plotting.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pyrio.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyrio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
@@ -39,7 +35,7 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="settings.editor.selected.configurable" value="preferences.customizations" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
   <component name="RunManager">
     <configuration name="__init__" type="PythonConfigurationType" factoryName="Python" temporary="true">
@@ -92,11 +88,20 @@
       <option name="presentableId" value="Default" />
       <updated>1578488764043</updated>
     </task>
+    <task id="LOCAL-00001" summary="- Built but not operational: BayesANOVA - need to integrate the formula formation into the BaseParamteric class.">
+      <created>1581336156993</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1581336156993</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="- Currently BayesANOVA is not working, need to integrate the formula formation into the BaseParamteric class." />
-    <option name="LAST_COMMIT_MESSAGE" value="- Currently BayesANOVA is not working, need to integrate the formula formation into the BaseParamteric class." />
+    <MESSAGE value="- Built but not operational: BayesANOVA - need to integrate the formula formation into the BaseParamteric class." />
+    <option name="LAST_COMMIT_MESSAGE" value="- Built but not operational: BayesANOVA - need to integrate the formula formation into the BaseParamteric class." />
   </component>
   <component name="WindowStateProjectService">
     <state x="760" y="86" key="#com.intellij.ide.ui.customization.CustomizableActionsPanel.FindAvailableActionsDialog" timestamp="1581335390073">
@@ -107,14 +112,15 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="676" y="86" key="#com.intellij.ide.util.MemberChooser/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1579765565745" />
-    <state x="356" y="0" key="CommitChangelistDialog2" timestamp="1581336086459">
+    <state x="356" y="0" key="CommitChangelistDialog2" timestamp="1581431971394">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="356" y="0" key="CommitChangelistDialog2/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581336086459" />
-    <state x="352" y="5" key="FileChooserDialogImpl" timestamp="1580492376911">
-      <screen x="0" y="0" width="1344" height="800" />
+    <state x="356" y="0" key="CommitChangelistDialog2/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581431971394" />
+    <state x="503" y="7" key="FileChooserDialogImpl" timestamp="1581339036780">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="352" y="5" key="FileChooserDialogImpl/0.0.1344.800@0.0.1344.800" timestamp="1580492376911" />
+    <state x="503" y="7" key="FileChooserDialogImpl/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581339036780" />
     <state width="1885" height="255" key="GridCell.Tab.0.bottom" timestamp="1579730044516">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -139,23 +145,27 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="514" y="76" key="RollbackChangesDialog/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581335130732" />
-    <state x="220" y="0" key="SettingsEditor" timestamp="1581335431676">
+    <state x="220" y="0" key="SettingsEditor" timestamp="1581341639512">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="220" y="-1080" key="SettingsEditor/0.0.1280.680/0.-1080.1920.1040@0.-1080.1920.1040" timestamp="1578490553693" />
     <state x="220" y="0" key="SettingsEditor/0.0.1920.1040@0.0.1920.1040" timestamp="1579815125812" />
-    <state x="220" y="0" key="SettingsEditor/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581335431676" />
+    <state x="220" y="0" key="SettingsEditor/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581341639512" />
+    <state x="351" y="108" key="Vcs.Push.Dialog.v2" timestamp="1581336163628">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="351" y="108" key="Vcs.Push.Dialog.v2/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581336163628" />
     <state x="505" y="242" key="com.intellij.ide.util.TipDialog" timestamp="1581335091432">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="404" y="192" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1580492267798" />
     <state x="505" y="242" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1581326776909" />
     <state x="505" y="242" key="com.intellij.ide.util.TipDialog/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581335091432" />
-    <state x="591" y="0" width="1115" height="1040" key="find.popup" timestamp="1581010134813">
+    <state x="591" y="0" width="1115" height="1040" key="find.popup" timestamp="1581423474593">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="591" y="0" width="1115" height="1040" key="find.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1580305081246" />
-    <state x="591" y="0" width="1115" height="1040" key="find.popup/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581010134813" />
+    <state x="591" y="0" width="1115" height="1040" key="find.popup/1920.472.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1581423474593" />
     <state x="390" y="0" key="refactoring.ChangeSignatureDialog" timestamp="1579817880373">
       <screen x="0" y="0" width="1536" height="824" />
     </state>

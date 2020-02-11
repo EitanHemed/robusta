@@ -21,7 +21,7 @@ pandas2ri.activate()
 
 r_libraries_to_include = ['backports', 'tidyr',
                           'datasets', 'broom', 'afex',
-                          'base', 'BayesFactor', 'stats', 'effsize', 'psych']
+                          'base', 'BayesFactor', 'stats', 'effsize', 'psych', 'Matrix']
 
 class PyRIO:
     instances_count = 0  # This is a static counter

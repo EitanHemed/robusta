@@ -28,13 +28,13 @@ class BaseParametric:
 
     def __init__(
             self,
-            subject='',
+            subject=None,
             dependent=None,
             between='',
             within='',
             data=None,
-            formula='',
             agg_func='mean',
+            formula=None,
             **kwargs
     ):
         self.agg_func = agg_func
@@ -47,6 +47,7 @@ class BaseParametric:
         # Verify independent variables integrity
         self.between = self._set_independent_vars(between)
         self.within = self._set_independent_vars(within)
+        self.formula, self._r_formula = self._get_formula(formula)
         self.data = self._select_data()
         if self._perform_aggregation:
             self.data = self._aggregate_data()
@@ -62,11 +63,11 @@ class BaseParametric:
 
     def _set_independent_vars(self, ind_vars: object) -> list:
         """Make sure that the you have a list of independent variables"""
-        if type(ind_vars) is list:
+        if isinstance(ind_vars, list):
             return ind_vars
         elif ind_vars is None:
             return []
-        elif type(ind_vars) is str:
+        elif isinstance(ind_vars, str):
             if ind_vars == '':
                 return []
             else:
@@ -93,6 +94,9 @@ class BaseParametric:
     def _finalize_results(self):
         return rst.utils.tidy(self._r_results, type(self).__name__)
 
+    def _get_formula(self, formula):
+        return None, None
+
 
 class Anova(BaseParametric):
 
@@ -102,27 +106,42 @@ class Anova(BaseParametric):
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
 
+    def _get_formula(self, formula):
+        if formula is None:
+            if self.subject is None:
+                raise RuntimeError('Specify either lm4-style formula or '
+                                   'dependent and subject variables and either/or within and between variables')
+            return rst.utils.build_lm4_style_formula(
+                dependent=self.dependent, subject=self.subject,
+                between=self.between, within=self.within)
+
+        else:
+            self.dependent, self.between, self.within, self.subject = (
+                rst.utils.parse_variables_from_lm4_style_formula(formula)
+            )
+            return formula, rst.pyr.rpackages.stats.formula(formula)
+
     def _infer_anova_type(self):
         if not self.between:
-            self.between = rst.pyr.rinterface.NULL
+            self.between = []  # rst.pyr.rinterface.NULL
             return 'Within'
         if not self.within:
-            self.within = rst.pyr.rinterface.NULL
+            self.within = []  # rst.pyr.rinterface.NULL
             return 'Between'
         else:
             return 'Mixed'
 
     def _run_analysis(self):
-        try:
-            return rst.pyr.rpackages.afex.aov_ez(self.subject, self.dependent, rst.utils.convert_df(self.data),
-                                                 between=self.between, within=self.within)
+        try:  # self.formula
+            return rst.pyr.rpackages.stats.anova(
+                rst.pyr.rpackages.afex.aov_4(formula=self._r_formula, data=rst.utils.convert_df(self.data)))
+            # self.subject, self.dependent, rst.utils.convert_df(self.data),
+            # between=self.between, within=self.within))
         # TODO: Add reliance on aov_ez aggregation functionality.
         # TODO: Add this functionality - sig_symbols= rst.pyr.vectors.StrVector(["", "", "", ""]))
         except rst.pyr.rinterface.RRuntimeError as e:
-            if "Following ids are in more than one between subjects condition":
-                raise RuntimeError('For Between-Subject or Mixed designs, each subject ID must be unique')
-            else:
-                raise e
+            raise e
+
 
 class TTest(BaseParametric):
     """
@@ -176,6 +195,7 @@ class PairwiseComparison:
     def __init__(self, data, correction_method):
         self.data = data
         self.correction_method = correction_method
+
 
 class MixedModel:
     pass
