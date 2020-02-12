@@ -3,13 +3,15 @@ import robusta as rst  # So we can get the PyR singleton
 import pandas as pd
 import numpy as np
 from rpy2 import robjects
-import itertools
-from collections.abc import Iterable
+from itertools import chain
+from collections import Iterable
 
 
+# TODO - change this to return a list of strings instead of a generator
 def to_list(values):
     """Return a list of string from a list which may have lists, strings or None objects"""
-    return np.hstack([values])
+    return list(chain.from_iterable(item if isinstance(item, (list, tuple)) and
+                                            not isinstance(item, str) else [item] for item in values))
 
 
 def tidy(df, result_type) -> pd.DataFrame:
@@ -90,18 +92,19 @@ def parse_variables_from_lm4_style_formula(frml):
     # TODO - support much more flexible parsing of the between/within/interactions, as currently we can't
     #   seperate excluded interactions etc. This is good for ANOVA, but is very limiting for actual linear mixed models.
     #   The current implementation assumes the following form: 'y ~ b1*b2 + (w1|w2|id)'
+    #   This also works - `res = rst.Anova(data=rst.datasets.load('sleep'), formula='extra ~ +(group|ID)')`
+    #   The following will fail miserably - 'y~b1*b2+(w1|id)'
     #   Generally, everything here could benefit from a regex implementation.
+    #   Also, we want variable names to not include spaces, but only underscores.
 
     dependent, frml = frml.split('~')  # to remove the dependent variable from the formula
     dependent = dependent[:-1]  # trim the trailing whitespace
     frml = frml[1:]  # Trim the leading whitespace
     between, frml = frml.split('+')
-    between = between[:-1].split('*')  # Drop the trailing whitespace and split to separate between subject variables
+    between = list(filter(between[:-1].split('*'),
+                          ''))  # Drop the trailing whitespace and split to separate between subject variables
     *within, subject = re.findall(r'\((.*?)\)', frml)[0].split('|')
     if within == ['1']:
         within = []
 
     return dependent, between, within, subject
-
-# r2 = aov_ez(dv='len', within=c('v', 't'), id='id', between=c('dose', 'supp'), data=df3)
-# r = aov_4(len ~ dose*supp + (v|t|id), data=df3)

@@ -16,29 +16,55 @@ class BaseParametric:
     ----------
     subject
     """
-    subject: str
-    dependent: str
-    between = str
-    within = str
     data: typing.Type[DataFrame]
-    agg_func: str
+    subject: typing.Union[str, None]
+    between = typing.Union[str, list, None]
+    within = typing.Union[str, list, None]
+    dependent: typing.Union[str, None]
+    formula: typing.Union[str, None]
+    agg_func: typing.Union[str, typing.Callable]
     _perform_aggregation: bool
     _perform_aggregation: bool
     max_levels = None
 
     def __init__(
             self,
-            subject=None,
+            data,
             dependent=None,
-            between='',
-            within='',
-            data=None,
-            agg_func='mean',
+            between=None,
+            within=None,
+            subject=None,
             formula=None,
+            agg_func='mean',
             **kwargs
     ):
         self.agg_func = agg_func
         self.data = data
+        # Parse variables from formula or build formula from entered variables
+        if formula is None:
+            # Variables setting routine
+            self._set_variables(dependent, between, within, subject)
+            # Build model formula from entered variables
+            self.formula, self._r_formula = self._get_formula_from_vars(formula)
+        elif subject is None:
+            # Parse models from entered formula
+            self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(formula)
+            print(self.formula)
+            dependent, between, within, subject = self._get_vars_from_formula()
+            print(dependent, between, within, subject)
+            # Variables setting routine
+            self._set_variables(dependent, between, within, subject)
+        else:
+            raise RuntimeError("")
+        self.data = self._select_data()
+        if self._perform_aggregation:
+            self.data = self._aggregate_data()
+        self.data.dropna(inplace=True)
+
+    def _select_data(self):
+        return self.data[self.between + self.within + [self.subject, self.dependent]].copy()
+
+    def _set_variables(self, dependent, between, within, subject):
         # Verify identity variable integrity
         self.subject, self._perform_aggregation = self._set_subject(subject)
         # Verify dependent variable integrity
@@ -47,14 +73,6 @@ class BaseParametric:
         # Verify independent variables integrity
         self.between = self._set_independent_vars(between)
         self.within = self._set_independent_vars(within)
-        self.formula, self._r_formula = self._get_formula(formula)
-        self.data = self._select_data()
-        if self._perform_aggregation:
-            self.data = self._aggregate_data()
-        self.data.dropna(inplace=True)
-
-    def _select_data(self):
-        return self.data[self.between + self.within + [self.subject, self.dependent]].copy()
 
     def _set_subject(self, subject):
         if subject not in self.data.columns:
@@ -94,8 +112,11 @@ class BaseParametric:
     def _finalize_results(self):
         return rst.utils.tidy(self._r_results, type(self).__name__)
 
-    def _get_formula(self, formula):
+    def _get_formula_from_vars(self, formula):
         return None, None
+
+    def _get_vars_from_formula(self):
+        return None, [], [], None
 
 
 class Anova(BaseParametric):
@@ -106,20 +127,18 @@ class Anova(BaseParametric):
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
 
+    def _get_formula_from_vars(self, formula):
+        return rst.utils.build_lm4_style_formula(
+            dependent=self.dependent, between=self.between, within=self.within, subject=self.subject)
+
+    def _get_vars_from_formula(self):
+        return rst.utils.parse_variables_from_lm4_style_formula(self.formula)
+
     def _get_formula(self, formula):
         if formula is None:
             if self.subject is None:
                 raise RuntimeError('Specify either lm4-style formula or '
                                    'dependent and subject variables and either/or within and between variables')
-            return rst.utils.build_lm4_style_formula(
-                dependent=self.dependent, subject=self.subject,
-                between=self.between, within=self.within)
-
-        else:
-            self.dependent, self.between, self.within, self.subject = (
-                rst.utils.parse_variables_from_lm4_style_formula(formula)
-            )
-            return formula, rst.pyr.rpackages.stats.formula(formula)
 
     def _infer_anova_type(self):
         if not self.between:
