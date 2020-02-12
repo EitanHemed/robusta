@@ -2,16 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0886dafb-815d-496f-b5f2-e05a30704807" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/pylint.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assumptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/assumptions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bayesian.py" beforeDir="false" afterPath="$PROJECT_DIR$/bayesian.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parametric.py" beforeDir="false" afterPath="$PROJECT_DIR$/parametric.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyrio.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyrio.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assumptions.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/bayesian.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/effectsize.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/nonparametric.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/parametric.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plotting.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyrio.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/textual_reports.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
