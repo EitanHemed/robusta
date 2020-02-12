@@ -18,7 +18,3 @@ from . import datasets
 from . import examples
 from .parametric import Anova, TTest, PairwiseComparison
 from .bayesian import BayesTTest, BayesAnova
-
-
-
-

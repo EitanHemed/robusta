@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 import robusta as rst
 
@@ -32,27 +33,19 @@ class BayesTTest(rst.TTest):
 
 
 class BayesAnova(rst.Anova):
-    # TODO - if formula - ignore subject, between, within, etc. 
+    # TODO - Formula specification will be using the lme4 syntax and variables will be parsed from it
 
     def __init__(
             self,
-            data,
-            dependent='',
-            between='',
-            within='',
-            subject='',
-            formula=None,
-            which_models="withmain", # TODO Find out all the possible options
+            which_models="withmain",  # TODO Find out all the possible options
             iterations=10000,
-            r_scale_fixed="medium", # TODO Find out all the possible options
+            r_scale_fixed="medium",  # TODO Find out all the possible options
             r_scale_random="nuisance",
             r_scale_effects=rst.pyr.rinterface.NULL,
             multi_core=False,
             method="auto",
             no_sample=False,
             **kwargs):
-        self.formula = formula
-        self.subject = subject
         self.which_models = which_models
         self.iterations = iterations
         self.r_scale_fixed = r_scale_fixed
@@ -62,21 +55,32 @@ class BayesAnova(rst.Anova):
         self.method = method
         self.no_sample = no_sample
         # This is a scaffold. It will be removed when we would have formula compatibility for all tests.
-        super().__init__(special_inits=self._finalize_inits, **kwargs)
+        super().__init__(**kwargs)
 
-    def _finalize_inits(self):
-        if self.formula is not None:
-            self.formula = rst.utils.build_anova_formula(
-                dependent=self.dependent,
-                between=self.between,
-                within=self.within,
-                subejct=self.subject
-            )
+    def _get_formula_from_vars(self):
+        frml, _ = rst.utils.build_lm4_style_formula(
+            dependent=self.dependent,
+            between=self._between,
+            within=self._within,
+            subject=self.subject
+        )
+        frml = rst.utils.bayes_style_formula(frml)
+        return frml, rst.pyr.rpackages.stats.formula(frml)
+
+    def _get_vars_from_formula(self):
+        dependent, between, within, subject = rst.utils.parse_variables_from_lm4_style_formula(self.formula)
+        # And now we can update the formula, as BayesFactor packages requires
+        self._update_formula()
+        return dependent, between, within, subject
+
+    def _update_formula(self):
+        self.formula = rst.utils.bayes_style_formula(self.formula)
+        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
 
     def _run_analysis(self):
         return rst.pyr.rpackages.bayesfactor.anovaBF(
-            self.formula,
-            self.data,
+            self._r_formula,
+            rst.utils.convert_df(self.data),
             whichRandom=self.subject,
             whichModels=self.which_models,
             iterations=self.iterations,
@@ -87,3 +91,10 @@ class BayesAnova(rst.Anova):
             method=self.method,
             noSample=self.no_sample
         )
+
+    def _finalize_results(self):
+            self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(self._r_results)
+            return rst.utils.tidy(
+                rst.utils.convert_df(self._r_results).join(
+                    pd.DataFrame(np.array(self._r_results.rownames), columns=['model'])
+                ), type(self).__name__)

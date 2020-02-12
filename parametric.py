@@ -1,10 +1,7 @@
-import robusta as rst
-from dataclasses import dataclass
 import typing
-import numpy as np
 import pandas as pd
-from pandas import DataFrame
-import itertools
+from dataclasses import dataclass
+import robusta as rst
 
 
 @dataclass
@@ -16,7 +13,7 @@ class BaseParametric:
     ----------
     subject
     """
-    data: typing.Type[DataFrame]
+    data: typing.Type[pd.DataFrame]
     subject: typing.Union[str, None]
     between = typing.Union[str, list, None]
     within = typing.Union[str, list, None]
@@ -29,7 +26,7 @@ class BaseParametric:
 
     def __init__(
             self,
-            data,
+            data=None,
             dependent=None,
             between=None,
             within=None,
@@ -40,39 +37,44 @@ class BaseParametric:
     ):
         self.agg_func = agg_func
         self.data = data
-        # Parse variables from formula or build formula from entered variables
-        if formula is None:
-            # Variables setting routine
-            self._set_variables(dependent, between, within, subject)
-            # Build model formula from entered variables
-            self.formula, self._r_formula = self._get_formula_from_vars(formula)
-        elif subject is None:
-            # Parse models from entered formula
-            self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(formula)
-            print(self.formula)
-            dependent, between, within, subject = self._get_vars_from_formula()
-            print(dependent, between, within, subject)
-            # Variables setting routine
-            self._set_variables(dependent, between, within, subject)
-        else:
-            raise RuntimeError("")
+        self._get_variables_and_formula(formula, dependent, between, within, subject)
         self.data = self._select_data()
         if self._perform_aggregation:
             self.data = self._aggregate_data()
         self.data.dropna(inplace=True)
 
-    def _select_data(self):
-        return self.data[self.between + self.within + [self.subject, self.dependent]].copy()
+    def _get_variables_and_formula(self, formula, dependent, between, within, subject):
+        # Parse variables from formula or build formula from entered variables
+        if formula is None:
+            # Variables setting routine
+            self._set_variables(dependent, between, within, subject)
+            # Build model formula from entered variables
+            self.formula, self._r_formula = self._get_formula_from_vars()
+        elif subject is None:
+            # Parse models from entered formula
+            self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(formula)
+            dependent, between, within, subject = self._get_vars_from_formula()
+            # Variables setting routine
+            self._set_variables(dependent, between, within, subject)
+        else:
+            raise RuntimeError("")
 
     def _set_variables(self, dependent, between, within, subject):
         # Verify identity variable integrity
         self.subject, self._perform_aggregation = self._set_subject(subject)
         # Verify dependent variable integrity
         self.dependent = self._set_dependent_var(dependent)
-        rst.utils.verify_float(self.data[self.dependent].values)  # To test whether DV can be coerced to float
+        # To test whether DV can be coerced to float
+        rst.utils.verify_float(self.data[self.dependent].values)
         # Verify independent variables integrity
-        self.between = self._set_independent_vars(between)
-        self.within = self._set_independent_vars(within)
+        self._between = self._set_independent_vars(between)
+        self._within = self._set_independent_vars(within)
+
+    def _get_formula_from_vars(self):
+        return None, None
+
+    def _get_vars_from_formula(self):
+        return None, [], [], None
 
     def _set_subject(self, subject):
         if subject not in self.data.columns:
@@ -83,18 +85,16 @@ class BaseParametric:
         """Make sure that the you have a list of independent variables"""
         if isinstance(ind_vars, list):
             return ind_vars
-        elif ind_vars is None:
+        if ind_vars is None:
             return []
-        elif isinstance(ind_vars, str):
+        if isinstance(ind_vars, str):
             if ind_vars == '':
                 return []
-            else:
-                return [ind_vars]
-        else:
-            raise TypeError
+            return [ind_vars]
+        raise TypeError
 
     def _verify_independent_vars(self):
-        _ind_vars = self.between + self.within
+        _ind_vars = self._between + self._within
         for i in _ind_vars:
             rst.utils.verify_levels(self.data[i].values, self.max_levels)
 
@@ -102,79 +102,37 @@ class BaseParametric:
         if dependent not in self.data.columns:
             print("Dependent variable not found in data")
             raise KeyError
-        else:
-            return dependent
+        return dependent
+
+    def _select_data(self):
+        data = self.data[
+            self._between + self._within + [self.subject, self.dependent]].copy()
+        # Make sure we are handing R a DataFrame with factor variables, as some packages do not coerce factor type.
+        data[self._between + self._within] = data[self._between + self._within].astype('category')
+        return data
 
     def _aggregate_data(self):
         return self.data.groupby(
-            rst.utils.to_list([self.subject, self.between, self.within])).agg(self.agg_func).reset_index()
+            rst.utils.to_list(
+                [self.subject, self._between, self._within])).agg(
+            self.agg_func).reset_index()
 
     def _finalize_results(self):
         return rst.utils.tidy(self._r_results, type(self).__name__)
 
-    def _get_formula_from_vars(self, formula):
-        return None, None
 
-    def _get_vars_from_formula(self):
-        return None, [], [], None
-
-
-class Anova(BaseParametric):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.anova_type = self._infer_anova_type()
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
-
-    def _get_formula_from_vars(self, formula):
-        return rst.utils.build_lm4_style_formula(
-            dependent=self.dependent, between=self.between, within=self.within, subject=self.subject)
-
-    def _get_vars_from_formula(self):
-        return rst.utils.parse_variables_from_lm4_style_formula(self.formula)
-
-    def _get_formula(self, formula):
-        if formula is None:
-            if self.subject is None:
-                raise RuntimeError('Specify either lm4-style formula or '
-                                   'dependent and subject variables and either/or within and between variables')
-
-    def _infer_anova_type(self):
-        if not self.between:
-            self.between = []  # rst.pyr.rinterface.NULL
-            return 'Within'
-        if not self.within:
-            self.within = []  # rst.pyr.rinterface.NULL
-            return 'Between'
-        else:
-            return 'Mixed'
-
-    def _run_analysis(self):
-        try:  # self.formula
-            return rst.pyr.rpackages.stats.anova(
-                rst.pyr.rpackages.afex.aov_4(formula=self._r_formula, data=rst.utils.convert_df(self.data)))
-            # self.subject, self.dependent, rst.utils.convert_df(self.data),
-            # between=self.between, within=self.within))
-        # TODO: Add reliance on aov_ez aggregation functionality.
-        # TODO: Add this functionality - sig_symbols= rst.pyr.vectors.StrVector(["", "", "", ""]))
-        except rst.pyr.rinterface.RRuntimeError as e:
-            raise e
-
-
+"""
 class TTest(BaseParametric):
-    """
-    A general T-test class.
-    """
+    
+    #A general T-test class.
+    
 
-    # x: np.ndarray = np.empty(0)
-    # y: np.ndarray = np.empty(0)
     # TODO: Add possibility to insert X and Y
     def __init__(
             self,
             tail: str = "two.sided",
             paired: bool = False,
-            special_inits=None,
+            run_special_inits=None,
             **kwargs
     ):
         self.max_levels = 2
@@ -183,32 +141,91 @@ class TTest(BaseParametric):
         super().__init__(**kwargs)
         self._get_independent_var()
         self._build_ttest_data()
-        if special_inits is not None:
-            special_inits()
+        if run_special_inits is not None:
+            self.special_inits()
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
 
+    def _get_formula_from_vars(self, formula):
+        return self.utils.
+
+    def _get_vars_from_formula(self):
+        return None, [], [], None
+
     def _get_independent_var(self):
-        if not self.between:
-            self.independent = self.within
-            self.type = 'Paired-Samples'
+        if not self._between:
+            self.independent = self._within
+            self.test_type = 'Paired-Samples'
             self.paired = True
-        elif not self.within:
-            self.independent = self.between
-            self.type = 'Independent-Samples'
+        elif not self._within:
+            self.independent = self._between
+            self.test_type = 'Independent-Samples'
             self.paired = False
         else:
             raise RuntimeError('Must specify either Between or Within parameter, but not both')
 
     def _build_ttest_data(self):
-        self.x, self.y = self.data.groupby(self.independent)[self.dependent].apply(lambda s: s.values)
+        self.x, self.y = self.data.groupby(
+            getattr(self, 'independent'))[getattr(self, 'dependent')].apply(
+            lambda s: s.values)
 
     def _run_analysis(self):
+        if self.type == 'OneSample':
+            return rst.pyr.rpackages.stats.t_test(x, mu=self.mu)
         return rst.pyr.rpackages.stats.t_test(
             x=self.x,
             y=self.y,
             paired=self.paired, alternative=self.tail)
+"""
 
+class Anova(BaseParametric):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.test_type = self._infer_test_type()
+        self._r_results = self._run_analysis()
+        self.results = self._finalize_results()
+
+    def _get_formula_from_vars(self):
+        return rst.utils.build_lm4_style_formula(
+            dependent=self.dependent,
+            between=self._between,
+            within=self._within,
+            subject=self.subject
+        )
+
+    def _get_vars_from_formula(self):
+        return rst.utils.parse_variables_from_lm4_style_formula(self.formula)
+
+    def _infer_test_type(self):
+        # Mainly for the user, not really doing anything in terms of code
+        if not self._between:
+            self._between = []
+            return 'Within'
+        if not self._within:
+            self._within = []
+            return 'Between'
+        return 'Mixed'
+
+    def _run_analysis(self):
+        return rst.pyr.rpackages.stats.anova(
+            rst.pyr.rpackages.afex.aov_4(
+                formula=self._r_formula,
+                data=rst.utils.convert_df(self.data)))
+        # TODO: Add reliance on aov_ez aggregation functionality.
+        # TODO: Add this functionality - sig_symbols= rst.pyr.vectors.StrVector(["", "", "", ""]))
+
+class TTest(Anova):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _get_formula_from_vars(self, formula):
+        return rst.utils.build_ttest_style_formula(
+            dependent=self.dependent,
+            between=self._between,
+            within=self._within,
+            subject=self.subject
+        )
 
 class PairwiseComparison:
     def __init__(self, data, correction_method):

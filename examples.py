@@ -1,6 +1,4 @@
 import robusta as rst
-import inspect
-
 
 def list_examples():
     pass
@@ -17,7 +15,7 @@ def anova_between():
 
 def ttest_independent():
     """Output of an independent samples t-test, using the ToothGrowth"""
-    tooth = rst.datasets.load('ToothGrowth')
+    mtcars = rst.datasets.load('ToothGrowth')
     anova = rst.Anova(data=mtcars, between=['gear', 'vs'],
                       subject='model', dependent='qsec')
     return anova

@@ -16,20 +16,9 @@ def to_list(values):
 
 def tidy(df, result_type) -> pd.DataFrame:
     if result_type == 'Anova':
-        df = convert_df(_tidy_anova(df))
-        # Format Degrees of freedom into separate columns
-
-        return df
-
-        df['df_1'], df['df_2'] = np.concatenate(df['df'].str.split(',').values).reshape((len(df), 2)).T
-        # and remove the previous columns
-        df.drop(columns=['df'], inplace=True)
-        # Remove significane strings from the F-value column (e.g, ***)
-        df['F'] = df['F'].apply(lambda s: np.round(float(s.split(' ')[0]), 2)).values
-        df.rename(columns={'p.value': 'p_value'}, inplace=True)
-        df[df.columns.difference(['Effect'])] = df[df.columns.difference(['Effect'])].apply(pd.to_numeric).values
-        return df
-
+        return convert_df(_tidy_anova(df))
+    if result_type == 'BayesAnova':
+        return df[['model', 'bf', 'error']]
     if result_type == 'TTest':
         return convert_df(_tidy_ttest(df))
     if result_type == 'BayesTTest':
@@ -65,11 +54,41 @@ def convert_df(df):
     @type df: An R or Python DataFrame.
     """
     if type(df) == pd.core.frame.DataFrame:
-        return robjects.pandas2ri.py2ri(df)
+        _cat_cols = df.dtypes.reset_index()
+        _cat_cols = _cat_cols.loc[_cat_cols[0] == 'category', 'index'].values.tolist()
+        _df = robjects.pandas2ri.py2ri(df)
+        for cn in filter(lambda s: s in _cat_cols, _df.names):
+            _df[_df.names.index(cn)] = rst.pyr.rpackages.base.factor(_df[_df.names.index(cn)])
+        return _df
     elif type(df) == robjects.vectors.DataFrame:
         return pd.DataFrame(robjects.pandas2ri.ri2py(df))
     else:
-        print("Input can only be R/Python DataFrame object")
+        raise RuntimeError("Input can only be R/Python DataFrame object")
+
+
+def bayes_style_formula(frml):
+    dependent, between, within, _ = parse_variables_from_lm4_style_formula(frml)
+    independent = "*".join(to_list([between, within]))
+    return f'{dependent} ~ {independent}'
+
+def build_general_formula(
+        dependent,
+        independent
+):
+    independent = "*".join(to_list(independent))
+    return f'{dependent} ~ {independent}'
+
+
+def parse_variables_from_general_formula(frml):
+    dependent, frml = frml.split('~')  # to remove the dependent variable from the formula
+    dependent = dependent[:-1]  # trim the trailing whitespace
+    frml = frml[1:]  # Trim the leading whitespace
+    independent, frml = frml.split('+')
+    independent = list(filter(independent[:-1].split('*'),
+                              ''))  # Drop the trailing whitespace and split to separate between subject variables
+    subject = re.findall(r'\((.*?)\)', frml)[0].split('|')[1]  # We expect something along the lines of (1|ID)
+
+    return dependent, independent, subject
 
 
 def build_lm4_style_formula(
@@ -96,15 +115,12 @@ def parse_variables_from_lm4_style_formula(frml):
     #   The following will fail miserably - 'y~b1*b2+(w1|id)'
     #   Generally, everything here could benefit from a regex implementation.
     #   Also, we want variable names to not include spaces, but only underscores.
-
     dependent, frml = frml.split('~')  # to remove the dependent variable from the formula
     dependent = dependent[:-1]  # trim the trailing whitespace
     frml = frml[1:]  # Trim the leading whitespace
     between, frml = frml.split('+')
-    between = list(filter(between[:-1].split('*'),
-                          ''))  # Drop the trailing whitespace and split to separate between subject variables
+    between = between[:-1].split('*')  # Drop the trailing whitespace and split to separate between subject variables
     *within, subject = re.findall(r'\((.*?)\)', frml)[0].split('|')
     if within == ['1']:
         within = []
-
     return dependent, between, within, subject

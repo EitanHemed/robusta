@@ -18,7 +18,8 @@ pandas2ri.activate()
 #warn_if_outdated('robusta', __version__)
 
 # TODO - add functionality to list R envirnoment and select based on others.
-
+# TODO - add error handling of importing a missing library?
+# TODO - limit 'doMC' to non-windows OS
 r_libraries_to_include = ['backports', 'tidyr',
                           'datasets', 'broom', 'afex',
                           'base', 'BayesFactor', 'stats', 'effsize', 'psych', 'Matrix']
