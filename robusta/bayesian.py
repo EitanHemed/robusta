@@ -1,38 +1,81 @@
 import pandas as pd
 import numpy as np
 import robusta as rst
+from pandas_flavor import register_dataframe_accessor
 
+class _BayesTwoSampleTTest(rst.IndependentSamplesTTest):
 
-class BayesTTest(rst.TTest):
     def __init__(
             self,
-            null_interval: int = (-np.inf, np.inf),
+            null_interval = (-np.inf, np.inf),
             prior_r_scale: str = 'medium',
             sample_from_posterior: bool = False,
             iterations: int = 10000,
             mu: float = 0.0,
             **kwargs
     ):
-
         self.null_interval = np.array(null_interval)
         self.prior_r_scale = prior_r_scale
         self.sample_from_posterior = sample_from_posterior
         self.iterations = iterations
         self.mu = mu
+        kwargs['paired'] = False
         super().__init__(**kwargs)
 
     def _run_analysis(self):
-        try:
-            return rst.pyr.rpackages.base.data_frame(rst.pyr.rpackages.bayesfactor.ttestBF(
-                x=self.x, y=self.y, paired=self.paired, nullInterval=self.null_interval,
-                iterations=self.iterations, posterior=self.sample_from_posterior,
-                rscalse=self.prior_r_scale, mu=self.mu))
-        except rst.pyr.rinterface.RRuntimeError as e:
-            if "data are essentially constant" in e:
-                return np.nan
+        return rst.pyr.rpackages.base.data_frame(
+            rst.pyr.rpackages.bayesfactor.ttestBF(
+                x=self.x,
+                y=self.y,
+                paired=self.paired,
+                nullInterval=self.null_interval,
+                iterations=self.iterations,
+                posterior=self.sample_from_posterior,
+                rscalse=self.prior_r_scale
+            ))
+
+class IndBayesTTest(_BayesTwoSampleTTest):
+
+    def __init__(self, **kwargs):
+        kwargs['paired'] = False
+        super().__init__(**kwargs)
 
 
-class BayesAnova(rst.Anova):
+class DepBayesTTest(_BayesTwoSampleTTest):
+
+    def __init__(self, **kwargs):
+        kwargs['paired'] = True
+        super().__init__(**kwargs)
+
+
+class OneSampleBayesTTest(rst.OneSampleTTest):
+    def __init__(
+            self,
+            null_interval = (-np.inf, np.inf),
+            prior_r_scale: str = 'medium',
+            sample_from_posterior: bool = False,
+            iterations: int = 10000,
+            mu: float = 0.0,
+            **kwargs):
+        self.null_interval = np.array(null_interval)
+        self.prior_r_scale = prior_r_scale
+        self.sample_from_posterior = sample_from_posterior
+        self.iterations = iterations
+        kwargs['mu'] = mu
+        super().__init__(**kwargs)
+
+    def _run_analysis(self):
+        return rst.pyr.rpackages.base.data_frame(
+            rst.pyr.rpackages.bayesfactor.ttestBF(
+                x=self.x,
+                nullInterval=self.null_interval,
+                iterations=self.iterations,
+                posterior=self.sample_from_posterior,
+                rscalse=self.prior_r_scale,
+                mu=self.mu
+            ))
+
+class _BayesAnova(rst.ttest_and_anova._Anova):
     # TODO - Formula specification will be using the lme4 syntax and variables will be parsed from it
 
     def __init__(
@@ -98,3 +141,31 @@ class BayesAnova(rst.Anova):
                 rst.utils.convert_df(self._r_results).join(
                     pd.DataFrame(np.array(self._r_results.rownames), columns=['model'])
                 ), type(self).__name__)
+
+@register_dataframe_accessor("anova_bayes_ws")
+class AnovaBayesWS(_BayesAnova):
+    def __init__(self, **kwargs):
+        if 'between' in kwargs:
+            raise ValueError(
+                "A Within-Subject Anova was selected. Either remove `between` or"
+                " use BetweenSubjectsAnova / MixedAnova")
+        super().__init__(**kwargs)
+
+@register_dataframe_accessor("anova_bayes_bs")
+class AnovaBayesBS(_BayesAnova):
+    def __init__(self, **kwargs):
+        if 'within' in kwargs:
+            raise ValueError(
+                "A Within-Subject Anova was selected. Either remove `between` or"
+                " use BetweenSubjectsAnova / MixedAnova")
+        super().__init__(**kwargs)
+
+@register_dataframe_accessor("anova_bayes_mixed")
+class AnovaBayesMixed(_BayesAnova):
+    def __init__(self, **kwargs):
+        if not ('between' in kwargs and 'within' in kwargs):
+            raise ValueError(
+                "A Mixed Anova was selected. Specify both `between`"
+                "and `within`")
+        super().__init__(**kwargs)
+

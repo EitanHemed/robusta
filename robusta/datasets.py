@@ -5,9 +5,10 @@ import robusta as rst
 
 def load(dataset_name: str):
     """
-    Load an R-dataset and retrieve it as a pandas dataframe. Row-names (similar to pandas
-    object index) are included on purpose as they may be an important identifier of the
-    sample (e.g., car model in the mtcars dataset).
+    Load an R-dataset and retrieve it as a pandas dataframe. Row-names
+    (similar to pandas
+    object index) are included on purpose as they may be an important identifier
+    of the sample (e.g., car model in the mtcars dataset).
     @type dataset_name: str
     @rtype pd.core.frame.DataFrame
     """

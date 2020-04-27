@@ -16,5 +16,7 @@ pyr = PyRIO()
 from . import utils
 from . import datasets
 from . import examples
-from .parametric import Anova, TTest, PairwiseComparison
-from .bayesian import BayesTTest, BayesAnova
+from .ttest_and_anova import *
+
+# TODO - Regroup Anovas and t-tests
+#

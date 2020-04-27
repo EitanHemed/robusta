@@ -1,5 +1,6 @@
 import robusta as rst
 
+
 def list_examples():
     pass
 
@@ -8,14 +9,19 @@ def anova_between():
     """Output of a between-subject anova, using the mtcars dataset"""
     mtcars = rst.datasets.load('mtcars')
     mtcars['model'] = range(len(mtcars))
-    anova = rst.Anova(data=mtcars, between=['gear', 'vs'],
-                      subject='model', dependent='qsec')
-    return anova
+    anova_freq = rst.AnovaBS(data=mtcars,
+        between=['gear', 'vs'], subject='model', dependent='qsec')
+    anova_bayes = rst.AnovaBayesBS(data=mtcars,
+                             between=['gear', 'vs'], subject='model',
+                             dependent='qsec')
+    return anova_freq, anova_bayes
 
 
 def ttest_independent():
     """Output of an independent samples t-test, using the ToothGrowth"""
-    mtcars = rst.datasets.load('ToothGrowth')
-    anova = rst.Anova(data=mtcars, between=['gear', 'vs'],
-                      subject='model', dependent='qsec')
-    return anova
+    data = rst.datasets.load('ToothGrowth')
+    ttest_freq = rst._TTest(
+        data=data, between='supp', subject='row_names', dependent='len')
+    ttest_bayes = rst._BayesTTest(
+        data=data, between='supp', subject='row_names', dependent='len')
+    return ttest_freq, ttest_bayes

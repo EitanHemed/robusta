@@ -5,7 +5,7 @@ import numpy as np
 from rpy2 import robjects
 from itertools import chain
 from collections import Iterable
-
+import pandas_flavor as pf
 
 # TODO - change this to return a list of strings instead of a generator
 def to_list(values):
@@ -15,14 +15,14 @@ def to_list(values):
 
 
 def tidy(df, result_type) -> pd.DataFrame:
-    if result_type == 'Anova':
-        return convert_df(_tidy_anova(df))
     if result_type == 'BayesAnova':
         return df[['model', 'bf', 'error']]
-    if result_type == 'TTest':
-        return convert_df(_tidy_ttest(df))
-    if result_type == 'BayesTTest':
+    if 'Anova' in result_type:
+        return convert_df(_tidy_anova(df))
+    if 'BayesTTest' in result_type:
         return convert_df(df)[['bf', 'error']]
+    if 'TTest' in result_type:
+        return convert_df(_tidy_ttest(df))
 
 
 def _tidy_anova(df):
