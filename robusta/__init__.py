@@ -17,6 +17,3 @@ from . import utils
 from . import datasets
 from . import examples
 from .ttest_and_anova import *
-
-# TODO - Regroup Anovas and t-tests
-#

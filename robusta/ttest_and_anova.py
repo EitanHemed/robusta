@@ -17,9 +17,6 @@ class _BaseParametric:
     """
     A basic class to handle pre-requisites of T-Tests and ANOVAs.
 
-    Parameters
-    ----------
-    subject
     """
     data: typing.Type[pd.DataFrame]
     subject: typing.Union[str, None]
@@ -136,12 +133,18 @@ class _BaseParametric:
                 [self.subject] + self.independent)).agg(
             self.agg_func).reset_index()
 
+    def _run_analysis(self):
+        pass
+
     def _finalize_results(self):
         return rst.utils.tidy(self._r_results, type(self).__name__)
 
 
-class _T2Samples(_BaseParametric):
 
+class _T2Samples(_BaseParametric):
+    """
+    A base class used to run a two sample t-test.
+    """
     def __init__(self,
                  **kwargs):
         kwargs['max_levels'] = 2
@@ -169,7 +172,37 @@ class _T2Samples(_BaseParametric):
 
 @register_dataframe_accessor("t_2_ind_samples")
 class T2IndSamples(_T2Samples):
+    """
+    Run a frequentist independent-samples t-test.
 
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFIY FORM HERE).
+
+    Implemented R function - stats::t.test
+    (https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test)
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns
+        (usually not in a 'long file' format).
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data.
+        The column could be either numeric or object, but can contain up to two
+        unique values.
+    dependent : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        TODO fill this out
+    tail: str, optional
+        Direction of the tested hypothesis. Optional values are 'two.sided'
+        (H1: x != y), 'less' (H1: x < y) and 'greater' (H1: x > y).
+        Default value is 'two.sided'.
+        TODO allow translation of x != y, x > y, x < y
+    """
     def __init__(self,
                  independent=None,
                  tail='two.sided',
@@ -182,6 +215,32 @@ class T2IndSamples(_T2Samples):
 
 @register_dataframe_accessor("t_2_dep_samples")
 class T2DepSamples(_T2Samples):
+    """
+    Run a frequentist dependent-samples t-test.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFIY FORM HERE).
+
+    Implemented R function - stats::t.test
+    (https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test)
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns
+        (usually not in a 'long file' format).
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data.
+        The column could be either numeric or object, but can contain up to two
+        unique values.
+    dependent : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        TODO fill this out
+    """
 
     def __init__(self,
                  independent=None,
@@ -222,7 +281,7 @@ class _BayesT2Samples(_T2Samples):
 
     def __init__(
             self,
-            null_interval = (-np.inf, np.inf),
+            null_interval=(-np.inf, np.inf),
             prior_r_scale: str = 'medium',
             sample_from_posterior: bool = False,
             iterations: int = 10000,
