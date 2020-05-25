@@ -2,15 +2,16 @@ import typing
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass
-import robusta as rst
 from pandas_flavor import register_dataframe_accessor
+import robusta as rst
 
 __all__ = [
     "AnovaBS", "AnovaWS", "AnovaMixed",
     "BayesAnovaBS", "BayesAnovaWS", "BayesAnovaMixed",
     "T1Sample", "T2DepSamples", "T2IndSamples",
     "BayesT1Sample", "BayesT2DepSamples", "BayesT2IndSamples"
-    ]
+]
+
 
 @dataclass
 class _BaseParametric:
@@ -103,12 +104,12 @@ class _BaseParametric:
             if ind_vars == '':
                 return []
             return [ind_vars]
-        if isinstance(self, OneSampleTTest):
+        if isinstance(self, T1Sample):
             return []
         raise TypeError
 
     def _verify_independent_vars(self):
-        #_ind_vars = self._between + self._within
+        # _ind_vars = self._between + self._within
         for i in self.independent:
             rst.utils.verify_levels(self.data[i].values, self.max_levels)
 
@@ -140,11 +141,11 @@ class _BaseParametric:
         return rst.utils.tidy(self._r_results, type(self).__name__)
 
 
-
 class _T2Samples(_BaseParametric):
     """
     A base class used to run a two sample t-test.
     """
+
     def __init__(self,
                  **kwargs):
         kwargs['max_levels'] = 2
@@ -170,114 +171,10 @@ class _T2Samples(_BaseParametric):
             paired=self.paired, alternative=self.tail)
 
 
-@register_dataframe_accessor("t_2_ind_samples")
-class T2IndSamples(_T2Samples):
-    """
-    Run a frequentist independent-samples t-test.
-
-    To run a model either specify the dependent, independent and subject
-    variables, or enter a formula (SPECIFIY FORM HERE).
-
-    Implemented R function - stats::t.test
-    (https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test)
-
-    Parameters
-    ----------
-    data :  pd.DataFrame
-        Containing the subject, dependent and independent variables as columns
-        (usually not in a 'long file' format).
-    dependent : str, optional
-        The name of the column identifying the dependent variable in the data.
-        The column data type should be numeric.
-    independent : str, optional
-        The name of the column identifying the independent variable in the data.
-        The column could be either numeric or object, but can contain up to two
-        unique values.
-    dependent : str, optional
-        The name of the column identifying the subject variable in the data.
-    formula : str, optional
-        TODO fill this out
-    tail: str, optional
-        Direction of the tested hypothesis. Optional values are 'two.sided'
-        (H1: x != y), 'less' (H1: x < y) and 'greater' (H1: x > y).
-        Default value is 'two.sided'.
-        TODO allow translation of x != y, x > y, x < y
-    """
-    def __init__(self,
-                 independent=None,
-                 tail='two.sided',
-                 **kwargs):
-        kwargs['between'] = independent
-        kwargs['paired'] = False
-        kwargs['tail'] = tail
-        super().__init__(**kwargs)
-
-
-@register_dataframe_accessor("t_2_dep_samples")
-class T2DepSamples(_T2Samples):
-    """
-    Run a frequentist dependent-samples t-test.
-
-    To run a model either specify the dependent, independent and subject
-    variables, or enter a formula (SPECIFIY FORM HERE).
-
-    Implemented R function - stats::t.test
-    (https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test)
-
-    Parameters
-    ----------
-    data :  pd.DataFrame
-        Containing the subject, dependent and independent variables as columns
-        (usually not in a 'long file' format).
-    dependent : str, optional
-        The name of the column identifying the dependent variable in the data.
-        The column data type should be numeric.
-    independent : str, optional
-        The name of the column identifying the independent variable in the data.
-        The column could be either numeric or object, but can contain up to two
-        unique values.
-    dependent : str, optional
-        The name of the column identifying the subject variable in the data.
-    formula : str, optional
-        TODO fill this out
-    """
-
-    def __init__(self,
-                 independent=None,
-                 tail='two.sided',
-                 **kwargs):
-        kwargs['between'] = independent
-        kwargs['paired'] = True
-        kwargs['tail'] = tail
-        super().__init__(**kwargs)
-
-@register_dataframe_accessor("t_1_sample")
-class T1Sample(_T2Samples):
-    def __init__(self,
-                 paired=None,
-                 tail='two.sided',
-                 mu=0,
-                 **kwargs):
-        self.mu = mu
-        kwargs['paired'] = paired
-        kwargs['tail'] = tail
-        super().__init__(**kwargs)
-
-    def _select_data(self):
-        data = self.data[
-            rst.utils.to_list(
-                [self.dependent, self.independent, self.subject])]
-        self.x = data[getattr(self, 'dependent')].values
-        return data
-
-    def _run_analysis(self):
-        return rst.pyr.rpackages.stats.t_test(
-            x=self.x,
-            mu=self.mu,
-            alternative=self.tail
-        )
-
 class _BayesT2Samples(_T2Samples):
+    """
+    A base class used to run a two sample Bayesian t-test.
+    """
 
     def __init__(
             self,
@@ -285,7 +182,7 @@ class _BayesT2Samples(_T2Samples):
             prior_r_scale: str = 'medium',
             sample_from_posterior: bool = False,
             iterations: int = 10000,
-            mu: float = 0.0,
+            mu: float = 0,
             **kwargs
     ):
         self.null_interval = np.array(null_interval)
@@ -304,52 +201,16 @@ class _BayesT2Samples(_T2Samples):
                 nullInterval=self.null_interval,
                 iterations=self.iterations,
                 posterior=self.sample_from_posterior,
-                rscalse=self.prior_r_scale
-            ))
-
-@register_dataframe_accessor("bayes_t_2_ind_samples")
-class BayesT2IndSamples(_BayesT2Samples):
-
-    def __init__(self, **kwargs):
-        kwargs['paired'] = False
-        super().__init__(**kwargs)
-
-@register_dataframe_accessor("bayes_t_2_dep_samples")
-class BayesT2DepSamples(_BayesT2Samples):
-
-    def __init__(self, **kwargs):
-        kwargs['paired'] = True
-        super().__init__(**kwargs)
-
-@register_dataframe_accessor("bayes_t_1_sample")
-class BayesT1Sample(T1Sample):
-    def __init__(
-            self,
-            null_interval = (-np.inf, np.inf),
-            prior_r_scale: str = 'medium',
-            sample_from_posterior: bool = False,
-            iterations: int = 10000,
-            mu: float = 0.0,
-            **kwargs):
-        self.null_interval = np.array(null_interval)
-        self.prior_r_scale = prior_r_scale
-        self.sample_from_posterior = sample_from_posterior
-        self.iterations = iterations
-        kwargs['mu'] = mu
-        super().__init__(**kwargs)
-
-    def _run_analysis(self):
-        return rst.pyr.rpackages.base.data_frame(
-            rst.pyr.rpackages.bayesfactor.ttestBF(
-                x=self.x,
-                nullInterval=self.null_interval,
-                iterations=self.iterations,
-                posterior=self.sample_from_posterior,
                 rscalse=self.prior_r_scale,
+                simple=True,
                 mu=self.mu
             ))
 
+
 class _Anova(_BaseParametric):
+    """
+    Base class for running an ANOVA-type test.
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -387,45 +248,18 @@ class _Anova(_BaseParametric):
         # TODO: Add this functionality - sig_symbols= rst.pyr.vectors.StrVector(["", "", "", ""]))
 
 
-@register_dataframe_accessor("anova_ws")
-class AnovaWS(_Anova):
-    def __init__(self, **kwargs):
-        if 'between' in kwargs:
-            raise ValueError(
-                "A Within-Subject Anova was selected. Either remove `between` or"
-                " use BetweenSubjectsAnova / MixedAnova")
-        super().__init__(**kwargs)
-
-
-@register_dataframe_accessor("anova_bs")
-class AnovaBS(_Anova):
-    def __init__(self, **kwargs):
-        if 'within' in kwargs:
-            raise ValueError(
-                "A Within-Subject Anova was selected. Either remove `between`"
-                "or use BetweenSubjectsAnova / MixedAnova")
-        super().__init__(**kwargs)
-
-
-@register_dataframe_accessor("anova_mixed")
-class AnovaMixed(_Anova):
-    def __init__(self, **kwargs):
-        if not ('between' in kwargs and 'within' in kwargs):
-            raise ValueError(
-                "A Mixed Anova was selected. Specify both `between`"
-                "and `within`")
-        super().__init__(**kwargs)
-
-
 class _BayesAnova(_Anova):
-    # TODO - Formula specification will be using the lme4 syntax and variables will be parsed from it
+    # TODO - Formula specification will be using the lme4 syntax and variables
+    #  will be parsed from it
+    """A base class for running a Bayesian ANOVA."""
 
     def __init__(
             self,
             which_models="withmain",  # TODO Find out all the possible options
             iterations=10000,
-            r_scale_fixed="medium",  # TODO Find out all the possible options
-            r_scale_random="nuisance",
+            scale_prior_fixed="medium",
+            # TODO Find out all the possible options
+            scale_prior_random="nuisance",
             r_scale_effects=rst.pyr.rinterface.NULL,
             multi_core=False,
             method="auto",
@@ -433,8 +267,8 @@ class _BayesAnova(_Anova):
             **kwargs):
         self.which_models = which_models
         self.iterations = iterations
-        self.r_scale_fixed = r_scale_fixed
-        self.r_scale_random = r_scale_random
+        self.r_scale_fixed = scale_prior_fixed
+        self.r_scale_random = scale_prior_random
         self.r_scale_effects = r_scale_effects
         self.multi_core = multi_core
         self.method = method
@@ -453,7 +287,8 @@ class _BayesAnova(_Anova):
         return frml, rst.pyr.rpackages.stats.formula(frml)
 
     def _get_vars_from_formula(self):
-        dependent, between, within, subject = rst.utils.parse_variables_from_lm4_style_formula(self.formula)
+        dependent, between, within, subject = rst.utils.parse_variables_from_lm4_style_formula(
+            self.formula)
         # And now we can update the formula, as BayesFactor packages requires
         self._update_formula()
         return dependent, between, within, subject
@@ -474,15 +309,501 @@ class _BayesAnova(_Anova):
             rscaleEffects=self.r_scale_effects,
             multicore=self.multi_core,
             method=self.method,
-            noSample=self.no_sample
+            # noSample=self.no_sample
         )
 
     def _finalize_results(self):
-            self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(self._r_results)
-            return rst.utils.tidy(
-                rst.utils.convert_df(self._r_results).join(
-                    pd.DataFrame(np.array(self._r_results.rownames), columns=['model'])
-                ), type(self).__name__)
+        self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(
+            self._r_results)
+        return rst.utils.tidy(
+            rst.utils.convert_df(self._r_results).join(
+                pd.DataFrame(np.array(self._r_results.rownames),
+                             columns=['model'])
+            ), type(self).__name__)
+
+
+@register_dataframe_accessor("t_2_ind_samples")
+class T2IndSamples(_T2Samples):
+    """
+    Run a frequentist independent-samples t-test.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+    .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns
+        (usually not in a 'long file' format).
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data.
+        The column could be either numeric or object, but can contain up to two
+        unique values.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        TODO fill this out
+    tail: str, optional
+        Direction of the tested hypothesis. Optional values are 'two.sided'
+        (H1: x != y), 'less' (H1: x < y) and 'greater' (H1: x > y).
+        Default value is 'two.sided'.
+        TODO allow translation of x != y, x > y, x < y
+
+    TODO - Add Welch t-test support
+    """
+
+    def __init__(self,
+                 independent=None,
+                 tail='two.sided',
+                 **kwargs):
+        kwargs['between'] = independent
+        kwargs['paired'] = False
+        kwargs['tail'] = tail
+        super().__init__(**kwargs)
+
+
+@register_dataframe_accessor("t_2_dep_samples")
+class T2DepSamples(_T2Samples):
+    """
+    Run a frequentist dependent-samples t-test.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+
+    .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns
+        (usually not in a 'long file' format).
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data.
+        The column could be either numeric or object, but can contain up to two
+        unique values.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        TODO fill this out
+    tail: str, optional
+        Direction of the tested hypothesis. Optional values are 'two.sided'
+        (H1: x != y), 'less' (H1: x < y) and 'greater' (H1: x > y).
+        Default value is 'two.sided'.
+    """
+
+    def __init__(self,
+                 independent=None,
+                 tail='two.sided',
+                 **kwargs):
+        kwargs['within'] = independent
+        kwargs['paired'] = True
+        kwargs['tail'] = tail
+        # TODO - implement a test whether x and y contain pairs and there are
+        #   no missing observations. Issue a warning accordingly.
+        super().__init__(**kwargs)
+
+
+@register_dataframe_accessor("t_1_sample")
+class T1Sample(_T2Samples):
+    """
+    Run a frequentist one-sample t-test.
+
+    To run a model either specify the dependent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+    .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns
+        (usually not in a 'long file' format).
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        TODO fill this out based on whether we will depractate the formula
+            functionality or not.
+    mu :  float, optional
+        Population mean value to text x against. Default value is 0.
+    tail: str, optional
+        Direction of the tested hypothesis. Optional values are 'two.sided'
+        (H1: x != mu), 'less' (H1: x < mu) and 'greater' (H1: x > mu).
+        Default value is 'two.sided'.
+        TODO allow translation of x != y, x > y, x < y
+    """
+
+    def __init__(self,
+                 tail='two.sided',
+                 mu=0,
+                 **kwargs):
+        self.mu = mu
+        kwargs['paired'] = None
+        kwargs['tail'] = tail
+        super().__init__(**kwargs)
+
+    def _select_data(self):
+        data = self.data[
+            rst.utils.to_list(
+                [self.dependent, self.independent, self.subject])]
+        self.x = data[getattr(self, 'dependent')].values
+        return data
+
+    def _run_analysis(self):
+        return rst.pyr.rpackages.stats.t_test(
+            x=self.x,
+            mu=self.mu,
+            alternative=self.tail
+        )
+
+
+@register_dataframe_accessor("bayes_t_2_ind_samples")
+class BayesT2IndSamples(_BayesT2Samples):
+    """
+    Run a frequentist independent-samples t-test.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+    .. _Implemented R function BayesFactor::ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns
+        (usually not in a 'long file' format).
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data.
+        The column could be either numeric or object, but can contain up to two
+        unique values.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        TODO fill this out
+    null_interval: tuple, optional
+        Predicted interval for standardized effect size to test against the null
+        hypothesis. Optional values for a 'simple' directional test are
+        [-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES < 0) and
+        [0, np.inf] (H1: ES > 0). However, it is better to confine null_interval
+        specification to a narrower range (e.g., [0.2, 0.5], if you expect
+        a positive small standardized effect size), if you have a prior belief
+        regarding the expected effect size.
+        Default value is [-np.inf, np.inf].
+    return_both : bool, optional
+        If True returns Bayes factor for both H1 and H0, else, returns only for
+        H1. Used only on directional hypothesis. Default is False.
+        TODO - implement return of both bayes factors.
+    scale_prior : float, optional
+        Controls the scale of the prior distribution. Default value is 1.0 which
+        yields a standard Cauchy prior. It is also possible to pass 'medium',
+        'wide' or 'ultrawide' as input arguments instead of a float (matching
+        the values of :math:`\\frac{\\sqrt{2}}{2}, 1, \\sqrt{2}`,
+        respectively).
+        TODO - limit str input values.
+    sample_from_posterior : bool, optional
+        If True return samples from the posterior, if False returns Bayes
+        factor. Default is False.
+    iterations : int, optional
+        Number of samples used to estimate Bayes factor or posterior. Default
+        is 1000.
+        # mu (on dependent Bayesian t-test)
+    """
+
+    def __init__(self, **kwargs):
+        kwargs['paired'] = False
+        super().__init__(**kwargs)
+
+
+@register_dataframe_accessor("bayes_t_2_dep_samples")
+class BayesT2DepSamples(_BayesT2Samples):
+    """
+    Run a frequentist independent-samples t-test.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+    .. _Implemented R function BayesFactor::ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
+
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns
+        (usually not in a 'long file' format).
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data.
+        The column could be either numeric or object, but can contain up to two
+        unique values.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        TODO fill this out
+    null_interval: tuple, optional
+        Predicted interval for standardized effect size to test against the null
+        hypothesis. Optional values for a 'simple' directional test are
+        [-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES < 0) and
+        [0, np.inf] (H1: ES > 0). However, it is better to confine null_interval
+        specification to a more confined range (e.g., [0.2, 0.5], if you expect
+        a positive small standardized effect size), if you have a prior belief
+        regarding the expected effect size.
+        Default value is [-np.inf, np.inf].
+    return_both : bool, optional
+        If True returns Bayes factor for both H1 and H0, else, returns only for
+        H1. Used only on directional hypothesis. Default is False.
+        TODO - implement return of both bayes factors.
+    scale_prior : float, optional
+        Controls the scale of the prior distribution. Default value is 1.0 which
+        yields a standard Cauchy prior. It is also possible to pass 'medium',
+        'wide' or 'ultrawide' as input arguments instead of a float (matching
+        the values of :math:`\\frac{\\sqrt{2}}{2}, 1, \\sqrt{2}`, respectively.
+        TODO - limit str input values.
+    sample_from_posterior : bool, optional
+        If True return samples from the posterior, if False returns Bayes
+        factor. Default is False.
+    iterations : int, optional
+        Number of samples used to estimate Bayes factor or posterior. Default
+        is 1000.
+    mu : float, optional
+        The null (H0) predicted value for the mena of differences, a
+        un-standardized effect size (e.g., raw measure units).
+        Default value is 0.
+    """
+
+    def __init__(self, **kwargs):
+        kwargs['paired'] = True
+        super().__init__(**kwargs)
+
+
+@register_dataframe_accessor("bayes_t_1_sample")
+class BayesT1Sample(T1Sample):
+    """
+    Run a frequentist independent-samples t-test.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+    .. _Implemented R function BayesFactor::ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns
+        (usually not in a 'long file' format).
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data.
+        The column could be either numeric or object, but can contain up to two
+        unique values.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        TODO fill this out
+    null_interval: tuple, optional
+        Predicted interval for standardized effect size to test against the null
+        hypothesis. Optional values for a 'simple' directional test are
+        [-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES < 0) and
+        [0, np.inf] (H1: ES > 0). However, it is better to confine null_interval
+        specification to a more confined range (e.g., [0.2, 0.5], if you expect
+        a positive small standardized effect size), if you have a prior belief
+        regarding the expected effect size.
+        Default value is [-np.inf, np.inf].
+    return_both : bool, optional
+        If True returns Bayes factor for both H1 and H0, else, returns only for
+        H1. Used only on directional hypothesis. Default is False.
+        TODO - implement return of both bayes factors.
+    scale_prior : float, optional
+        Controls the scale of the prior distribution. Default value is 1.0 which
+        yields a standard Cauchy prior. It is also possible to pass 'medium',
+        'wide' or 'ultrawide' as input arguments instead of a float (matching
+        the values of :math:`\\frac{\\sqrt{2}}{2}, 1, \\sqrt{2}`, respectively).
+        TODO - limit str input values.
+    sample_from_posterior : bool, optional
+        If True return samples from the posterior, if False returns Bayes
+        factor. Default is False.
+    iterations : int, optional
+        Number of samples used to estimate Bayes factor or posterior. Default
+        is 1000.
+    mu : float, optional
+        The null (H0) predicted value for the mean difference compared with the
+        population's mean (mu), in un-standardized effect size (e.g., raw
+        measure units). Default value is 0.
+    """
+
+    def __init__(
+            self,
+            null_interval=(-np.inf, np.inf),
+            scale_prior: str = 'medium',
+            sample_from_posterior: bool = False,
+            iterations: int = 10000,
+            mu: float = 0.0,
+            **kwargs):
+        self.null_interval = np.array(null_interval)
+        self.scale_prior = scale_prior
+        self.sample_from_posterior = sample_from_posterior
+        self.iterations = iterations
+        kwargs['mu'] = mu
+        super().__init__(**kwargs)
+
+    def _run_analysis(self):
+        return rst.pyr.rpackages.base.data_frame(
+            rst.pyr.rpackages.bayesfactor.ttestBF(
+                x=self.x,
+                nullInterval=self.null_interval,
+                iterations=self.iterations,
+                posterior=self.sample_from_posterior,
+                rscalse=self.prior_r_scale,
+                mu=self.mu
+            ))
+
+
+@register_dataframe_accessor("anova_ws")
+class AnovaWS(_Anova):
+    """
+    Run a Within-Subject (repeated-measures) frequentist ANOVA.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+
+    .. _Implemented R function afex::aov_4: https://www.rdocumentation.org/packages/afex/versions/0.27-2/topics/aov_car
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variable(s) as
+        columns.
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    within : [str, list] optional
+        Either a string or a list with the name(s) of the independent variable
+        in the data. The column data type should be preferebly be string or
+        category.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        An lme4-like formula specifying the model, in the form of
+        dependent ~ (within | subject). See examples.
+        TODO - give a more verbose example
+    effect_size: str, optional
+        Optional values are 'ges', (:math:`generalized-{\\eta}^2`), 'pes'
+        (:math:`partial-{\\eta}^2`) or 'none'. Default value is 'pes'.
+    sphericity_correction: str, optional
+        Possible values are "GG" (Greenhouse-Geisser), "HF" (Hyunh-Feldt)
+        or "none".
+    """
+
+    def __init__(self, **kwargs):
+        if 'between' in kwargs:
+            raise ValueError(
+                "A Within-Subject Anova was selected. Either remove `between` or"
+                " use BetweenSubjectsAnova / MixedAnova")
+        super().__init__(**kwargs)
+
+
+@register_dataframe_accessor("anova_bs")
+class AnovaBS(_Anova):
+    """
+    Run a Between-Subject frequentist ANOVA.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+    .. _Implemented R function afex::aov_4: https://www.rdocumentation.org/packages/afex/versions/0.27-2/topics/aov_car
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variable(s) as
+        columns.
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    between : [str, list] optional
+        Either a string or a list with the name(s) of the independent variable
+        in the data. The column data type should be preferably be string or
+        category.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        An lme4-like formula specifying the model, in the form of
+        dependent ~ (within | subject). See examples.
+        TODO - give a more verbose example
+    effect_size: str, optional
+        Optional values are 'ges', (:math:`generalized-{\\eta}^2`) 'pes'
+        (:math:`partial-{\\eta}^2`) or 'none'. Default value is 'pes'.
+    """
+
+    def __init__(self, **kwargs):
+        if 'within' in kwargs:
+            raise ValueError(
+                "A Within-Subject Anova was selected. Either remove `between`"
+                "or use BetweenSubjectsAnova / MixedAnova")
+        super().__init__(**kwargs)
+
+
+@register_dataframe_accessor("anova_mixed")
+class AnovaMixed(_Anova):
+    """
+    Run a mixed (between + within) frequentist ANOVA.
+
+    To run a model either specify the dependent, independent and subject
+    variables, or enter a formula (SPECIFY FORM HERE).
+
+    .. _Implemented R function afex::aov_4: https://www.rdocumentation.org/packages/afex/versions/0.27-2/topics/aov_car
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variable(s) as
+        columns.
+    dependent : str, optional
+        The name of the column identifying the dependent variable in the data.
+        The column data type should be numeric.
+    between, within : [str, list] optional
+        For both `between` and `within` - Either a string or a list with the
+        name(s) of the independent variables in the data. The column data type
+         should be preferebly be string or category.
+    subject : str, optional
+        The name of the column identifying the subject variable in the data.
+    formula : str, optional
+        An lme4-like formula specifying the model, in the form of
+        dependent ~ (within | subject). See examples.
+        TODO - give a more verbose example
+    effect_size: str, optional
+        Optional values are 'ges', (:math:`generalized-{\\eta}^2`) 'pes'
+        (:math:`partial-{\\eta}^2`) or 'none'. Default value is 'pes'.
+    sphericity_correction: str, optional
+        Possible values are "GG" (Greenhouse-Geisser), "HF" (Hyunh-Feldt)
+        or "none".
+    """
+
+    def __init__(self, **kwargs):
+        if not ('between' in kwargs and 'within' in kwargs):
+            raise ValueError(
+                "A Mixed Anova was selected. Specify both `between`"
+                "and `within`")
+        super().__init__(**kwargs)
+
 
 @register_dataframe_accessor("bayes_anova_ws")
 class BayesAnovaWS(_BayesAnova):
@@ -493,6 +814,7 @@ class BayesAnovaWS(_BayesAnova):
                 " use BetweenSubjectsAnova / MixedAnova")
         super().__init__(**kwargs)
 
+
 @register_dataframe_accessor("bayes_anova_bs")
 class BayesAnovaBS(_BayesAnova):
     def __init__(self, **kwargs):
@@ -502,14 +824,91 @@ class BayesAnovaBS(_BayesAnova):
                 " use BetweenSubjectsAnova / MixedAnova")
         super().__init__(**kwargs)
 
+
 @register_dataframe_accessor("bayes_anova_mixed")
 class BayesAnovaMixed(_BayesAnova):
+    """
+        Run a mixed (between + within) Bayesian ANOVA.
+
+        To run a model either specify the dependent, independent and subject
+        variables, or enter a formula (SPECIFY FORM HERE).
+
+        .. _Implemented R function BayesFactor::anovaBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/anovaBF
+
+        Parameters
+        ----------
+        data :  pd.DataFrame
+            Containing the subject, dependent and independent variable(s) as
+            columns.
+        dependent : str, optional
+            The name of the column identifying the dependent variable in the data.
+            The column data type should be numeric.
+        between, within : [str, list] optional
+            For both `between` and `within` - Either a string or a list with the
+            name(s) of the independent variables in the data. The column data type
+             should be preferebly be string or category.
+        subject : str, optional
+            The name of the column identifying the subject variable in the data.
+        formula : str, optional
+            An lme4-like formula specifying the model, in the form of
+            dependent ~ (within | subject). See examples.
+            TODO - give a more verbose example
+        which_models : str, optional
+            Setting which_models to 'all' will test all models that can be
+            created by including or not including a main effect or interaction.
+            'top' will test all models that can be created by removing or
+            leaving in a main effect or interaction term from the full model.
+            'bottom' creates models by adding single factors or interactions to
+            the null model. 'withmain' will test all models, with the constraint
+            that if an interaction is included, the corresponding main effects
+            are also included. Default value is 'withmain'.
+        iterations : int, optional
+            Number of iterations used to estimate Bayes factor. Default value is
+             10000.
+        scale_prior_fixed : [float, str], optional
+            Controls the scale of the prior distribution for fixed factors.
+            Default value is 1.0  which yields a standard Cauchy prior.
+            It is also possible to pass 'medium', 'wide' or 'ultrawide' as input
+             arguments instead of a float (matching the values of
+            :math:`\\frac{\\sqrt{2}}{2}, 1, \\sqrt{2}`, respectively).
+
+        scale_prior_random : [float, str], optional
+            Similar to `scale_prior_fixed` but applies to random factors and can
+            except all values specified above and also 'nuisance' - variance
+            in the data that may stem from variables which are irrelevant to the
+            model, such as participants. Default value is 'nuisance'.
+            r_scale_effects=rst.pyr.rinterface.NULL,
+        mutli_core : bool, optional
+            Whether to use multiple cores for estimation. Not available on
+            Windows. Default value is False.
+        method : str, optional
+            The method used to estimate the Bayes factor depends on the method
+            argument. "simple" is most accurate for small to moderate sample
+            sizes, and uses the Monte Carlo sampling method described in Rouder
+            et al. (2012). "importance" uses an importance sampling algorithm
+            with an importance distribution that is multivariate normal on
+            log(g). "laplace" does not sample, but uses a Laplace approximation
+            to the integral. It is expected to be more accurate for large sample
+            sizes, where MC sampling is slow. If method="auto", then an initial
+            run with both samplers is done, and
+            the sampling method that yields the least-variable samples is
+            chosen. The number of initial test iterations is determined by
+            options(BFpretestIterations).
+         no_sample : bool, optional
+            Will prevent sampling when possible (i.e., rely on calculation of
+            BayesFactor). Default value is False. Currently `True` is not
+            implemented and may lead to an error.
+            TODO test how we would handle `no_sample = True`
+
+        """
+
     def __init__(self, **kwargs):
         if not ('between' in kwargs and 'within' in kwargs):
             raise ValueError(
                 "A Mixed Anova was selected. Specify both `between`"
                 "and `within`")
         super().__init__(**kwargs)
+
 
 class PairwiseComparison:
     def __init__(self, data, correction_method):

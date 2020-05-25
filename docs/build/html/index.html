@@ -1,0 +1,429 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to Robusta’s documentation! &#8212; robusta 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-robusta-s-documentation">
+<h1>Welcome to Robusta’s documentation!<a class="headerlink" href="#welcome-to-robusta-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="robusta-t-test-and-anova">
+<h1>robusta T-test and Anova<a class="headerlink" href="#robusta-t-test-and-anova" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-robusta.ttest_and_anova"></span><dl class="py class">
+<dt id="robusta.ttest_and_anova.AnovaBS">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">AnovaBS</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.AnovaBS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a Between-Subject frequentist ANOVA.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variable(s) as
+columns.</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>between</strong> (<em>[</em><em>str</em><em>, </em><em>list</em><em>] </em><em>optional</em>) – Either a string or a list with the name(s) of the independent variable
+in the data. The column data type should be preferably be string or
+category.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An lme4-like formula specifying the model, in the form of
+dependent ~ (within | subject). See examples.
+TODO - give a more verbose example</p></li>
+<li><p><strong>effect_size</strong> (<em>str</em><em>, </em><em>optional</em>) – Optional values are ‘ges’, (<span class="math notranslate nohighlight">\(generalized-{\eta}^2\)</span>) ‘pes’
+(<span class="math notranslate nohighlight">\(partial-{\eta}^2\)</span>) or ‘none’. Default value is ‘pes’.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.AnovaWS">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">AnovaWS</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.AnovaWS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a Within-Subject (repeated-measures) frequentist ANOVA.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variable(s) as
+columns.</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>within</strong> (<em>[</em><em>str</em><em>, </em><em>list</em><em>] </em><em>optional</em>) – Either a string or a list with the name(s) of the independent variable
+in the data. The column data type should be preferebly be string or
+category.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An lme4-like formula specifying the model, in the form of
+dependent ~ (within | subject). See examples.
+TODO - give a more verbose example</p></li>
+<li><p><strong>effect_size</strong> (<em>str</em><em>, </em><em>optional</em>) – Optional values are ‘ges’, (<span class="math notranslate nohighlight">\(generalized-{\eta}^2\)</span>), ‘pes’
+(<span class="math notranslate nohighlight">\(partial-{\eta}^2\)</span>) or ‘none’. Default value is ‘pes’.</p></li>
+<li><p><strong>sphericity_correction</strong> (<em>str</em><em>, </em><em>optional</em>) – Possible values are “GG” (Greenhouse-Geisser), “HF” (Hyunh-Feldt)
+or “none”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.AnovaMixed">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">AnovaMixed</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.AnovaMixed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a mixed (between + within) frequentist ANOVA.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variable(s) as
+columns.</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>within</strong> (<em>between</em><em>,</em>) – <p>For both <cite>between</cite> and <cite>within</cite> - Either a string or a list with the
+name(s) of the independent variables in the data. The column data type</p>
+<blockquote>
+<div><p>should be preferebly be string or category.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An lme4-like formula specifying the model, in the form of
+dependent ~ (within | subject). See examples.
+TODO - give a more verbose example</p></li>
+<li><p><strong>effect_size</strong> (<em>str</em><em>, </em><em>optional</em>) – Optional values are ‘ges’, (<span class="math notranslate nohighlight">\(generalized-{\eta}^2\)</span>) ‘pes’
+(<span class="math notranslate nohighlight">\(partial-{\eta}^2\)</span>) or ‘none’. Default value is ‘pes’.</p></li>
+<li><p><strong>sphericity_correction</strong> (<em>str</em><em>, </em><em>optional</em>) – Possible values are “GG” (Greenhouse-Geisser), “HF” (Hyunh-Feldt)
+or “none”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.BayesAnovaBS">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesAnovaBS</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesAnovaBS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.BayesAnovaWS">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesAnovaWS</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesAnovaWS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.BayesAnovaMixed">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesAnovaMixed</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesAnovaMixed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.T1Sample">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">T1Sample</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tail</span><span class="o">=</span><span class="default_value">'two.sided'</span></em>, <em class="sig-param"><span class="n">mu</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.T1Sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a frequentist one-sample t-test.</p>
+<p>To run a model either specify the dependent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
+(usually not in a ‘long file’ format).</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>TODO fill this out based on whether we will depractate the formula</dt><dd><p>functionality or not.</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – Population mean value to text x against. Default value is 0.</p></li>
+<li><p><strong>tail</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the tested hypothesis. Optional values are ‘two.sided’
+(H1: x != mu), ‘less’ (H1: x &lt; mu) and ‘greater’ (H1: x &gt; mu).
+Default value is ‘two.sided’.
+TODO allow translation of x != y, x &gt; y, x &lt; y</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.T2DepSamples">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">T2DepSamples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">independent</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tail</span><span class="o">=</span><span class="default_value">'two.sided'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.T2DepSamples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a frequentist dependent-samples t-test.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
+(usually not in a ‘long file’ format).</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data.
+The column could be either numeric or object, but can contain up to two
+unique values.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – TODO fill this out</p></li>
+<li><p><strong>tail</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the tested hypothesis. Optional values are ‘two.sided’
+(H1: x != y), ‘less’ (H1: x &lt; y) and ‘greater’ (H1: x &gt; y).
+Default value is ‘two.sided’.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.T2IndSamples">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">T2IndSamples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">independent</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tail</span><span class="o">=</span><span class="default_value">'two.sided'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.T2IndSamples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a frequentist independent-samples t-test.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
+(usually not in a ‘long file’ format).</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data.
+The column could be either numeric or object, but can contain up to two
+unique values.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – TODO fill this out</p></li>
+<li><p><strong>tail</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the tested hypothesis. Optional values are ‘two.sided’
+(H1: x != y), ‘less’ (H1: x &lt; y) and ‘greater’ (H1: x &gt; y).
+Default value is ‘two.sided’.
+TODO allow translation of x != y, x &gt; y, x &lt; y</p></li>
+<li><p><strong>- Add Welch t-test support</strong> (<em>TODO</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.BayesT1Sample">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesT1Sample</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">null_interval</span><span class="o">=</span><span class="default_value">- inf, inf</span></em>, <em class="sig-param"><span class="n">prior_r_scale</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'medium'</span></em>, <em class="sig-param"><span class="n">sample_from_posterior</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">mu</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesT1Sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a frequentist independent-samples t-test.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
+(usually not in a ‘long file’ format).</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data.
+The column could be either numeric or object, but can contain up to two
+unique values.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – TODO fill this out</p></li>
+<li><p><strong>null_interval</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Predicted interval for standardized effect size to test against the null
+hypothesis. Optional values for a ‘simple’ directional test are
+[-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES &lt; 0) and
+[0, np.inf] (H1: ES &gt; 0). However, it is better to confine null_interval
+specification to a more confined range (e.g., [0.2, 0.5], if you expect
+a positive small standardized effect size), if you have a prior belief
+regarding the expected effect size.
+Default value is [-np.inf, np.inf].</p></li>
+<li><p><strong>return_both</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True returns Bayes factor for both H1 and H0, else, returns only for
+H1. Used only on directional hypothesis. Default is False.
+TODO - implement return of both bayes factors.</p></li>
+<li><p><strong>prior_r_scale</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
+yields a standard Cauchy prior. It is also possible to pass ‘medium’,
+‘wide’ or ‘ultrawide’ as input arguments instead of a float (matching
+the values of <span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>, respectively).
+TODO - limit str input values.</p></li>
+<li><p><strong>sample_from_posterior</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True return samples from the posterior, if False returns Bayes
+factor. Default is False.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of samples used to estimate Bayes factor or posterior. Default
+is 1000.</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – The null (H0) predicted value for the mean difference compared with the
+population’s mean (mu), in un-standardized effect size (e.g., raw
+measure units). Default value is 0.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.BayesT2DepSamples">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesT2DepSamples</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesT2DepSamples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a frequentist independent-samples t-test.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
+(usually not in a ‘long file’ format).</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data.
+The column could be either numeric or object, but can contain up to two
+unique values.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – TODO fill this out</p></li>
+<li><p><strong>null_interval</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Predicted interval for standardized effect size to test against the null
+hypothesis. Optional values for a ‘simple’ directional test are
+[-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES &lt; 0) and
+[0, np.inf] (H1: ES &gt; 0). However, it is better to confine null_interval
+specification to a more confined range (e.g., [0.2, 0.5], if you expect
+a positive small standardized effect size), if you have a prior belief
+regarding the expected effect size.
+Default value is [-np.inf, np.inf].</p></li>
+<li><p><strong>return_both</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True returns Bayes factor for both H1 and H0, else, returns only for
+H1. Used only on directional hypothesis. Default is False.
+TODO - implement return of both bayes factors.</p></li>
+<li><p><strong>prior_r_scale</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
+yields a standard Cauchy prior. It is also possible to pass ‘medium’,
+‘wide’ or ‘ultrawide’ as input arguments instead of a float (matching
+the values of <span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>, respectively.
+TODO - limit str input values.</p></li>
+<li><p><strong>sample_from_posterior</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True return samples from the posterior, if False returns Bayes
+factor. Default is False.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of samples used to estimate Bayes factor or posterior. Default
+is 1000.</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – The null (H0) predicted value for the mena of differences, a
+un-standardized effect size (e.g., raw measure units).
+Default value is 0.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="robusta.ttest_and_anova.BayesT2IndSamples">
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesT2IndSamples</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesT2IndSamples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a frequentist independent-samples t-test.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
+(usually not in a ‘long file’ format).</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data.
+The column could be either numeric or object, but can contain up to two
+unique values.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – TODO fill this out</p></li>
+<li><p><strong>null_interval</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Predicted interval for standardized effect size to test against the null
+hypothesis. Optional values for a ‘simple’ directional test are
+[-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES &lt; 0) and
+[0, np.inf] (H1: ES &gt; 0). However, it is better to confine null_interval
+specification to a narrower range (e.g., [0.2, 0.5], if you expect
+a positive small standardized effect size), if you have a prior belief
+regarding the expected effect size.
+Default value is [-np.inf, np.inf].</p></li>
+<li><p><strong>return_both</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True returns Bayes factor for both H1 and H0, else, returns only for
+H1. Used only on directional hypothesis. Default is False.
+TODO - implement return of both bayes factors.</p></li>
+<li><p><strong>prior_r_scale</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
+yields a standard Cauchy prior. It is also possible to pass ‘medium’,
+‘wide’ or ‘ultrawide’ as input arguments instead of a float (matching
+the values of <span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>,
+respectively).
+TODO - limit str input values.</p></li>
+<li><p><strong>sample_from_posterior</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True return samples from the posterior, if False returns Bayes
+factor. Default is False.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of samples used to estimate Bayes factor or posterior. Default
+is 1000.
+# mu (on dependent Bayesian t-test)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">robusta</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Eitan Hemed.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.0.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
