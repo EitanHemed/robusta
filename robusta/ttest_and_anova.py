@@ -1,4 +1,24 @@
+"""
+ttest_and_anova contains many classes capable of running common t-test and
+analysis of variance. Each analysis is accompanied by a matching Bayesian
+analysis.
+
+- AnovaBS, BayesAnovaBS: Between-subject n-way analysis of variance
+- AnovaWS, BayesAnovaWS: Within-subject n-way analysis of variance
+- AnovaMixed, BayesAnovaMixed: Mixed (within and Between) n-way analysis of
+    variance.
+- T2IndSamples, BayesT2IndSamples: Independent samples t-test.
+- T2DepSamples, BayesT2DepSamples: Dependent samples (paired) t-test.
+- T1Sample, BayesT1Sample: One-Sample t-test.
+
+The class instances have the following useful methods:
+- get_df(): Returns a pandas dataframe with the results of the analysis.
+- get_text_report(): Returns a textual report of the analysis.
+- get_latex_report(): Returns a latex formatted report of the analysis.
+"""
+
 import typing
+import textwrap
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass
@@ -125,20 +145,29 @@ class _BaseParametric:
         # Make sure we are handing R a DataFrame with factor variables,
         # as some packages do not coerce factor type.
         data[self.independent] = data[
-            self.independent].astype('category').values
+            self.independent].astype('category')
         return data
 
     def _aggregate_data(self):
         return self.data.groupby(
             rst.utils.to_list(
                 [self.subject] + self.independent)).agg(
-            self.agg_func).reset_index()
+                    self.agg_func).reset_index()
 
     def _run_analysis(self):
         pass
 
     def _finalize_results(self):
         return rst.utils.tidy(self._r_results, type(self).__name__)
+
+    def get_df(self, **kwargs):
+        return self.results().copy()
+
+    def get_text_report(self):
+        pass
+
+    def get_latex_report(self, **kwargs):
+        pass
 
 
 class _T2Samples(_BaseParametric):
@@ -150,7 +179,7 @@ class _T2Samples(_BaseParametric):
                  **kwargs):
         kwargs['max_levels'] = 2
         self.paired = kwargs['paired']
-        self.tail = kwargs['tail']
+        self.tail = kwargs.get('tail', 'two.sided')
         super().__init__(**kwargs)
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
@@ -161,7 +190,7 @@ class _T2Samples(_BaseParametric):
                 [self.dependent, self.independent, self.subject])]
         self.x, self.y = data.groupby(
             getattr(self, 'independent'))[getattr(self, 'dependent')].apply(
-            lambda s: s.values)
+                lambda s: s.values)
         return data
 
     def _run_analysis(self):
@@ -170,6 +199,8 @@ class _T2Samples(_BaseParametric):
             y=self.y,
             paired=self.paired, alternative=self.tail)
 
+    def get_text_report(self):
+        t_clause = self.results['t']
 
 class _BayesT2Samples(_T2Samples):
     """
@@ -214,7 +245,6 @@ class _Anova(_BaseParametric):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # self.test_type = self._infer_test_type()
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
 
@@ -228,16 +258,6 @@ class _Anova(_BaseParametric):
 
     def _get_vars_from_formula(self):
         return rst.utils.parse_variables_from_lm4_style_formula(self.formula)
-
-    def _infer_test_type(self):
-        # Mainly for the user, not really doing anything in terms of code
-        if not self._between:
-            self._between = []
-            return 'Within'
-        if not self._within:
-            self._within = []
-            return 'Between'
-        return 'Mixed'
 
     def _run_analysis(self):
         return rst.pyr.rpackages.stats.anova(
@@ -255,15 +275,16 @@ class _BayesAnova(_Anova):
 
     def __init__(
             self,
-            which_models="withmain",  # TODO Find out all the possible options
+            which_models="withmain",
             iterations=10000,
             scale_prior_fixed="medium",
-            # TODO Find out all the possible options
             scale_prior_random="nuisance",
             r_scale_effects=rst.pyr.rinterface.NULL,
             multi_core=False,
             method="auto",
             no_sample=False,
+            include_subject=False,
+            # TODO - document `include_subject`
             **kwargs):
         self.which_models = which_models
         self.iterations = iterations
@@ -273,17 +294,24 @@ class _BayesAnova(_Anova):
         self.multi_core = multi_core
         self.method = method
         self.no_sample = no_sample
+        self.include_subject = include_subject
         # This is a scaffold. It will be removed when we would have formula compatibility for all tests.
         super().__init__(**kwargs)
 
     def _get_formula_from_vars(self):
-        frml, _ = rst.utils.build_lm4_style_formula(
-            dependent=self.dependent,
-            between=self._between,
-            within=self._within,
-            subject=self.subject
-        )
-        frml = rst.utils.bayes_style_formula(frml)
+        #frml, _ = rst.utils.build_lm4_style_formula(
+        #    dependent=self.dependent,
+        #    between=self._between,
+        #    within=self._within,
+        #    subject=self.subject
+        #)
+        frml = rst.utils.bayes_style_formula(self.dependent, self._between,
+                                             self._within,
+                                             subject={
+                                                 False: None,
+                                                 True: self.subject
+                                             }[self.include_subject])
+        print(frml)
         return frml, rst.pyr.rpackages.stats.formula(frml)
 
     def _get_vars_from_formula(self):
@@ -343,7 +371,7 @@ class T2IndSamples(_T2Samples):
     independent : str, optional
         The name of the column identifying the independent variable in the data.
         The column could be either numeric or object, but can contain up to two
-        unique values.
+        unique values. Alias for `between`.
     subject : str, optional
         The name of the column identifying the subject variable in the data.
     formula : str, optional
@@ -361,7 +389,15 @@ class T2IndSamples(_T2Samples):
                  independent=None,
                  tail='two.sided',
                  **kwargs):
-        kwargs['between'] = independent
+        if independent is None:
+            try:
+                independent = kwargs['between']
+            except KeyError as e:
+                print(f'Specify either `independent` or `between`: {e}')
+                raise(e)
+        else:
+            kwargs['between'] = independent
+
         kwargs['paired'] = False
         kwargs['tail'] = tail
         super().__init__(**kwargs)
@@ -389,7 +425,7 @@ class T2DepSamples(_T2Samples):
     independent : str, optional
         The name of the column identifying the independent variable in the data.
         The column could be either numeric or object, but can contain up to two
-        unique values.
+        unique values. Alias for `within`.
     subject : str, optional
         The name of the column identifying the subject variable in the data.
     formula : str, optional
@@ -404,9 +440,16 @@ class T2DepSamples(_T2Samples):
                  independent=None,
                  tail='two.sided',
                  **kwargs):
-        kwargs['within'] = independent
+        if independent is None:
+            try:
+                independent = kwargs['within']
+            except KeyError as e:
+                print(f'Specify either `independent` or `within`: {e}')
+                raise(e)
+        else:
+            kwargs['within'] = independent
+
         kwargs['paired'] = True
-        kwargs['tail'] = tail
         # TODO - implement a test whether x and y contain pairs and there are
         #   no missing observations. Issue a warning accordingly.
         super().__init__(**kwargs)
@@ -450,7 +493,6 @@ class T1Sample(_T2Samples):
                  **kwargs):
         self.mu = mu
         kwargs['paired'] = None
-        kwargs['tail'] = tail
         super().__init__(**kwargs)
 
     def _select_data(self):
@@ -523,7 +565,19 @@ class BayesT2IndSamples(_BayesT2Samples):
         # mu (on dependent Bayesian t-test)
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 independent=None,
+                 **kwargs):
+
+        if independent is None:
+            try:
+                independent = kwargs['between']
+            except KeyError as e:
+                print(f'Specify either `independent` or `between`: {e}')
+                raise(e)
+        else:
+            kwargs['between'] = independent
+
         kwargs['paired'] = False
         super().__init__(**kwargs)
 
@@ -586,7 +640,18 @@ class BayesT2DepSamples(_BayesT2Samples):
         Default value is 0.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, independent=None, **kwargs):
+
+        if independent is None:
+            try:
+                independent = kwargs['within']
+            except KeyError as e:
+                print(f'Specify either `independent` or `within`: {e}')
+                raise(e)
+        else:
+            kwargs['within'] = independent
+
+
         kwargs['paired'] = True
         super().__init__(**kwargs)
 
@@ -694,7 +759,7 @@ class AnovaWS(_Anova):
     dependent : str, optional
         The name of the column identifying the dependent variable in the data.
         The column data type should be numeric.
-    within : [str, list] optional
+    within : list[str] optional
         Either a string or a list with the name(s) of the independent variable
         in the data. The column data type should be preferebly be string or
         category.
@@ -738,7 +803,7 @@ class AnovaBS(_Anova):
     dependent : str, optional
         The name of the column identifying the dependent variable in the data.
         The column data type should be numeric.
-    between : [str, list] optional
+    between : list[str], optional
         Either a string or a list with the name(s) of the independent variable
         in the data. The column data type should be preferably be string or
         category.
@@ -779,7 +844,7 @@ class AnovaMixed(_Anova):
     dependent : str, optional
         The name of the column identifying the dependent variable in the data.
         The column data type should be numeric.
-    between, within : [str, list] optional
+    between, within : list[str], optional
         For both `between` and `within` - Either a string or a list with the
         name(s) of the independent variables in the data. The column data type
          should be preferebly be string or category.
@@ -843,7 +908,7 @@ class BayesAnovaMixed(_BayesAnova):
         dependent : str, optional
             The name of the column identifying the dependent variable in the data.
             The column data type should be numeric.
-        between, within : [str, list] optional
+        between, within : list[str], optional
             For both `between` and `within` - Either a string or a list with the
             name(s) of the independent variables in the data. The column data type
              should be preferebly be string or category.

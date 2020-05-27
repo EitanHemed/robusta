@@ -21,13 +21,16 @@ def to_list(values):
 
 
 def tidy(df, result_type) -> pd.DataFrame:
-    if result_type == 'BayesAnova':
+    # TODO - fix this to be more specific. Convert all of the checks to regex.
+    if result_type in ['BayesAnovaBS', 'BayesAnovaWS', 'BayesAnovaMixed']:
         return df[['model', 'bf', 'error']]
-    if 'Anova' in result_type:
+    if result_type in ['AnovaBS', 'AnovaWS', 'AnovaMixed']:
         return convert_df(_tidy_anova(df))
-    if 'BayesTTest' in result_type:
+    if result_type in ['BayesT2IndSamples', 'BayesT2DepSamples',
+                       'BayesT1Sample']:
         return convert_df(df)[['bf', 'error']]
-    if 'TTest' in result_type:
+    if result_type in ['T2IndSamples', 'T2DepSamples',
+                       'T1Sample']:
         return convert_df(_tidy_ttest(df))
 
 
@@ -74,10 +77,13 @@ def convert_df(df):
         raise RuntimeError("Input can only be R/Python DataFrame object")
 
 
-def bayes_style_formula(frml):
-    dependent, between, within, _ = parse_variables_from_lm4_style_formula(frml)
+def bayes_style_formula(dependent, between, within, subject=None):
     independent = "*".join(to_list([between, within]))
-    return f'{dependent} ~ {independent}'
+    if subject is None:
+        return f'{dependent} ~ {independent}'
+    else:
+        return f'{dependent} ~ {independent} + {subject}'
+
 
 
 def build_general_formula(dependent, independent):

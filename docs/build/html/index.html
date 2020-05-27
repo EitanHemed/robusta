@@ -139,7 +139,80 @@ or “none”.</p></li>
 <dl class="py class">
 <dt id="robusta.ttest_and_anova.BayesAnovaMixed">
 <em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesAnovaMixed</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesAnovaMixed" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Run a mixed (between + within) Bayesian ANOVA.</p>
+<p>To run a model either specify the dependent, independent and subject
+variables, or enter a formula (SPECIFY FORM HERE).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variable(s) as
+columns.</p></li>
+<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
+The column data type should be numeric.</p></li>
+<li><p><strong>within</strong> (<em>between</em><em>,</em>) – <p>For both <cite>between</cite> and <cite>within</cite> - Either a string or a list with the
+name(s) of the independent variables in the data. The column data type</p>
+<blockquote>
+<div><p>should be preferebly be string or category.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An lme4-like formula specifying the model, in the form of
+dependent ~ (within | subject). See examples.
+TODO - give a more verbose example</p></li>
+<li><p><strong>which_models</strong> (<em>str</em><em>, </em><em>optional</em>) – Setting which_models to ‘all’ will test all models that can be
+created by including or not including a main effect or interaction.
+‘top’ will test all models that can be created by removing or
+leaving in a main effect or interaction term from the full model.
+‘bottom’ creates models by adding single factors or interactions to
+the null model. ‘withmain’ will test all models, with the constraint
+that if an interaction is included, the corresponding main effects
+are also included. Default value is ‘withmain’.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>Number of iterations used to estimate Bayes factor. Default value is</dt><dd><ol class="arabic simple" start="10000">
+<li></li>
+</ol>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>scale_prior_fixed</strong> (<em>[</em><em>float</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – <p>Controls the scale of the prior distribution for fixed factors.
+Default value is 1.0  which yields a standard Cauchy prior.
+It is also possible to pass ‘medium’, ‘wide’ or ‘ultrawide’ as input</p>
+<blockquote>
+<div><p>arguments instead of a float (matching the values of</p>
+</div></blockquote>
+<p><span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>, respectively).</p>
+</p></li>
+<li><p><strong>scale_prior_random</strong> (<em>[</em><em>float</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Similar to <cite>scale_prior_fixed</cite> but applies to random factors and can
+except all values specified above and also ‘nuisance’ - variance
+in the data that may stem from variables which are irrelevant to the
+model, such as participants. Default value is ‘nuisance’.
+r_scale_effects=rst.pyr.rinterface.NULL,</p></li>
+<li><p><strong>mutli_core</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to use multiple cores for estimation. Not available on
+Windows. Default value is False.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>The method used to estimate the Bayes factor depends on the method</dt><dd><p>argument. “simple” is most accurate for small to moderate sample
+sizes, and uses the Monte Carlo sampling method described in Rouder
+et al. (2012). “importance” uses an importance sampling algorithm
+with an importance distribution that is multivariate normal on
+log(g). “laplace” does not sample, but uses a Laplace approximation
+to the integral. It is expected to be more accurate for large sample
+sizes, where MC sampling is slow. If method=”auto”, then an initial
+run with both samplers is done, and
+the sampling method that yields the least-variable samples is
+chosen. The number of initial test iterations is determined by
+options(BFpretestIterations).</p>
+</dd>
+<dt>no_sample<span class="classifier">bool, optional</span></dt><dd><p>Will prevent sampling when possible (i.e., rely on calculation of
+BayesFactor). Default value is False. Currently <cite>True</cite> is not
+implemented and may lead to an error.
+TODO test how we would handle <cite>no_sample = True</cite></p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py class">
 <dt id="robusta.ttest_and_anova.T1Sample">
@@ -226,7 +299,7 @@ TODO allow translation of x != y, x &gt; y, x &lt; y</p></li>
 
 <dl class="py class">
 <dt id="robusta.ttest_and_anova.BayesT1Sample">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesT1Sample</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">null_interval</span><span class="o">=</span><span class="default_value">- inf, inf</span></em>, <em class="sig-param"><span class="n">prior_r_scale</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'medium'</span></em>, <em class="sig-param"><span class="n">sample_from_posterior</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">mu</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesT1Sample" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">robusta.ttest_and_anova.</code><code class="sig-name descname">BayesT1Sample</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">null_interval</span><span class="o">=</span><span class="default_value">- inf, inf</span></em>, <em class="sig-param"><span class="n">scale_prior</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'medium'</span></em>, <em class="sig-param"><span class="n">sample_from_posterior</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">mu</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.ttest_and_anova.BayesT1Sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a frequentist independent-samples t-test.</p>
 <p>To run a model either specify the dependent, independent and subject
 variables, or enter a formula (SPECIFY FORM HERE).</p>
@@ -253,7 +326,7 @@ Default value is [-np.inf, np.inf].</p></li>
 <li><p><strong>return_both</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True returns Bayes factor for both H1 and H0, else, returns only for
 H1. Used only on directional hypothesis. Default is False.
 TODO - implement return of both bayes factors.</p></li>
-<li><p><strong>prior_r_scale</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
+<li><p><strong>scale_prior</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
 yields a standard Cauchy prior. It is also possible to pass ‘medium’,
 ‘wide’ or ‘ultrawide’ as input arguments instead of a float (matching
 the values of <span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>, respectively).
@@ -299,7 +372,7 @@ Default value is [-np.inf, np.inf].</p></li>
 <li><p><strong>return_both</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True returns Bayes factor for both H1 and H0, else, returns only for
 H1. Used only on directional hypothesis. Default is False.
 TODO - implement return of both bayes factors.</p></li>
-<li><p><strong>prior_r_scale</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
+<li><p><strong>scale_prior</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
 yields a standard Cauchy prior. It is also possible to pass ‘medium’,
 ‘wide’ or ‘ultrawide’ as input arguments instead of a float (matching
 the values of <span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>, respectively.
@@ -345,7 +418,7 @@ Default value is [-np.inf, np.inf].</p></li>
 <li><p><strong>return_both</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True returns Bayes factor for both H1 and H0, else, returns only for
 H1. Used only on directional hypothesis. Default is False.
 TODO - implement return of both bayes factors.</p></li>
-<li><p><strong>prior_r_scale</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
+<li><p><strong>scale_prior</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
 yields a standard Cauchy prior. It is also possible to pass ‘medium’,
 ‘wide’ or ‘ultrawide’ as input arguments instead of a float (matching
 the values of <span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>,
