@@ -22,15 +22,14 @@ def to_list(values):
 
 def tidy(df, result_type) -> pd.DataFrame:
     # TODO - fix this to be more specific. Convert all of the checks to regex.
-    if result_type in ['BayesAnovaBS', 'BayesAnovaWS', 'BayesAnovaMixed']:
+    if result_type == 'BayesAnova':
         return df[['model', 'bf', 'error']]
-    if result_type in ['AnovaBS', 'AnovaWS', 'AnovaMixed']:
+    if result_type == 'Anova':
         return convert_df(_tidy_anova(df))
-    if result_type in ['BayesT2IndSamples', 'BayesT2DepSamples',
+    if result_type in ['BayesT2Samples',
                        'BayesT1Sample']:
         return convert_df(df)[['bf', 'error']]
-    if result_type in ['T2IndSamples', 'T2DepSamples',
-                       'T1Sample']:
+    if result_type in ['T2Samples', 'T1Sample']:
         return convert_df(_tidy_ttest(df))
 
 
