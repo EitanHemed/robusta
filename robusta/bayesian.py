@@ -75,7 +75,7 @@ class OneSampleBayesTTest(rst.OneSampleTTest):
                 mu=self.mu
             ))
 
-class _BayesAnova(rst.ttest_and_anova._Anova):
+class _BayesAnova(rst.parametric_tests._Anova):
     # TODO - Formula specification will be using the lme4 syntax and variables will be parsed from it
 
     def __init__(

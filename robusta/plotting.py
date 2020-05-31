@@ -1,9 +1,20 @@
+"""
+TODO: Lots of stuff
+
+Many inferential plots.
+
+SequentialAnalyzer - A sequential plot.
+PairLevelPlotter - An inferential pairwise (Maybe for dosage, sessions, etc.).
+"""
+
 from matplotlib import patches
 import matplotlib.pyplot as plt
 import seaborn as sns
 from multiprocessing import Pool
 import pandas as pd
 import bayesian
+
+
 
 
 class SequentialAnalysis:

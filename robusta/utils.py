@@ -55,6 +55,7 @@ def verify_levels(a: object, max_levels: object = None) -> None:
     if max_levels is not None and cur_levels > max_levels:
         print('Number of levels should be not be more'
               'than {}, but it is currently {}'.format(max_levels, cur_levels))
+    # TODO - this should raise a runtime error ^
 
 
 def convert_df(df):

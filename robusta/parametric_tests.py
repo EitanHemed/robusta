@@ -153,10 +153,11 @@ class _BaseParametric:
         pass
 
     def _finalize_results(self):
-        return rst.utils.tidy(self._r_results, type(self).__name__)
+        pass
+        # return rst.utils.tidy(self._r_results, type(self).__name__)
 
     def get_df(self, **kwargs):
-        return self.results().copy()
+        return self.results.copy()
 
     def get_text_report(self):
         pass
@@ -165,6 +166,7 @@ class _BaseParametric:
         pass
 
 
+@register_dataframe_accessor("t2samples")
 class T2Samples(_BaseParametric):
     """
     Run a frequentist dependent or independent samples t-test.
@@ -199,15 +201,22 @@ class T2Samples(_BaseParametric):
         Direction of the tested hypothesis. Optional values are 'two.sided'
         (H1: x != y), 'less' (H1: x < y) and 'greater' (H1: x > y).
         Default value is 'two.sided'.
+    assume_equal_variance : bool, optional
+        Applicable only to independent samples t-test. Whether to assume that
+        the two samples have equal variance. If True runs regular two-sample,
+        if False runs Welch two-sample test. Default is True.
+
     """
 
     def __init__(self,
                  paired=True,
                  independent=None,
                  tail='two.sided',
+                 assume_equal_variance=True,
                  **kwargs):
         self.paired = paired
         self.tail = tail
+        self.assume_equal_variance = assume_equal_variance
         kwargs['max_levels'] = 2
 
         if independent is None:
@@ -237,14 +246,20 @@ class T2Samples(_BaseParametric):
 
     def _run_analysis(self):
         return rst.pyr.rpackages.stats.t_test(
-            x=self.x,
-            y=self.y,
-            paired=self.paired, alternative=self.tail)
+            **{'x': self.x, 'y': self.y, 'paired': self.paired,
+               'alternative': self.alternative, 'tail': self.tail,
+               'var.equal': self.assume_equal_variance})
+
+    def _finalize_results(self):
+        return rst.utils.convert_df(
+            rst.pyr.rpackages.broom.tidy_htest(self._r_results))
 
     def get_text_report(self):
+        params = self.results
         t_clause = self.results['t']
 
 
+@register_dataframe_accessor("bayes_t2samples")
 class BayesT2Samples(T2Samples):
     """
     Run a frequentist independent-samples t-test.
@@ -329,8 +344,11 @@ class BayesT2Samples(T2Samples):
                 mu=self.mu
             ))
 
+    def _finalize_results(self):
+        return rst.utils.convert_df(self._r_results)
 
-@register_dataframe_accessor("t_1_sample")
+
+@register_dataframe_accessor("t1sample")
 class T1Sample(T2Samples):
     """
     Run a frequentist one-sample t-test.
@@ -368,6 +386,7 @@ class T1Sample(T2Samples):
                  **kwargs):
         self.mu = mu
         kwargs['paired'] = True
+        self.max_levels = 1
         super().__init__(**kwargs)
 
     def _select_data(self):
@@ -385,7 +404,7 @@ class T1Sample(T2Samples):
         )
 
 
-@register_dataframe_accessor("bayes_t_1_sample")
+@register_dataframe_accessor("bayes_t1sample")
 class BayesT1Sample(T1Sample):
     """
     Run a frequentist independent-samples t-test.
@@ -445,13 +464,13 @@ class BayesT1Sample(T1Sample):
     def __init__(
             self,
             null_interval=(-np.inf, np.inf),
-            scale_prior: str = 'medium',
+            prior_r_scale: str = 'medium',
             sample_from_posterior: bool = False,
             iterations: int = 10000,
             mu: float = 0.0,
             **kwargs):
         self.null_interval = np.array(null_interval)
-        self.scale_prior = scale_prior
+        self.prior_r_scale = prior_r_scale
         self.sample_from_posterior = sample_from_posterior
         self.iterations = iterations
         kwargs['mu'] = mu
@@ -468,7 +487,10 @@ class BayesT1Sample(T1Sample):
                 mu=self.mu
             ))
 
+    def _finalize_results(self):
+        return rst.utils.convert_df(self._r_results)
 
+@register_dataframe_accessor("anova")
 class Anova(_BaseParametric):
     """
     Run a mixed (between + within) frequentist ANOVA.
@@ -499,12 +521,15 @@ class Anova(_BaseParametric):
     effect_size: str, optional
         Optional values are 'ges', (:math:`generalized-{\\eta}^2`) 'pes'
         (:math:`partial-{\\eta}^2`) or 'none'. Default value is 'pes'.
-    sphericity_correction: str, optional
-        Possible values are "GG" (Greenhouse-Geisser), "HF" (Hyunh-Feldt)
-        or "none".
+    correction: str, optional
+        Sphericity correction method. Possible values are "GG"
+        (Greenhouse-Geisser), "HF" (Hyunh-Feldt) or "none". Default is 'none'.
     """
 
     def __init__(self, **kwargs):
+        self.effect_size = kwargs.get('effect_size', 'pes')
+        self.sphericity_correction = kwargs.get('sphericity_correction', 'none')
+
         super().__init__(**kwargs)
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
@@ -514,7 +539,9 @@ class Anova(_BaseParametric):
             dependent=self.dependent,
             between=self._between,
             within=self._within,
-            subject=self.subject
+            subject=self.subject,
+            es=self.effect_size,
+            correction=self.sphericity_correction
         )
 
     def _get_vars_from_formula(self):
@@ -528,7 +555,12 @@ class Anova(_BaseParametric):
         # TODO: Add reliance on aov_ez aggregation functionality.
         # TODO: Add this functionality - sig_symbols= rst.pyr.vectors.StrVector(["", "", "", ""]))
 
+    def _finalize_results(self):
+        return rst.utils.convert_df(
+            rst.pyr.rpackages.broom.tidy_anova(self._r_results))
 
+
+@register_dataframe_accessor("bayes_anova")
 class BayesAnova(Anova):
     # TODO - Formula specification will be using the lme4 syntax and variables
     #  will be parsed from it
@@ -637,19 +669,12 @@ class BayesAnova(Anova):
         super().__init__(**kwargs)
 
     def _get_formula_from_vars(self):
-        # frml, _ = rst.utils.build_lm4_style_formula(
-        #    dependent=self.dependent,
-        #    between=self._between,
-        #    within=self._within,
-        #    subject=self.subject
-        # )
         frml = rst.utils.bayes_style_formula(self.dependent, self._between,
                                              self._within,
                                              subject={
                                                  False: None,
                                                  True: self.subject
                                              }[self.include_subject])
-        print(frml)
         return frml, rst.pyr.rpackages.stats.formula(frml)
 
     def _get_vars_from_formula(self):
@@ -681,16 +706,16 @@ class BayesAnova(Anova):
     def _finalize_results(self):
         self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(
             self._r_results)
-        return rst.utils.tidy(
-            rst.utils.convert_df(self._r_results).join(
-                pd.DataFrame(np.array(self._r_results.rownames),
-                             columns=['model'])
-            ), type(self).__name__)
+        return rst.utils.convert_df(self._r_results).join(
+            pd.DataFrame(np.array(self._r_results.rownames),
+                         columns=['model'])
+        )[['model', 'bf', 'error']]
 
 
 class PairwiseComparison:
     """To be implemented - runs all pairwise comparisons between two groups
     in a dataframe"""
+
     def __init__(self, data, correction_method):
         self.data = data
         self.correction_method = correction_method

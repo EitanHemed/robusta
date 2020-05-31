@@ -3,7 +3,12 @@
   <component name="ChangeListManager">
     <list default="true" id="0886dafb-815d-496f-b5f2-e05a30704807" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/robusta/ttest_and_anova.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/ttest_and_anova.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/assumptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/assumptions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/bayesian.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/bayesian.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/plotting.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/plotting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/ttest_and_anova.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/parametric_tests.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/robusta/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -15,6 +20,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
+        <option value="Python Unit Test" />
       </list>
     </option>
   </component>
