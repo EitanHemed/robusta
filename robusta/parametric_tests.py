@@ -490,6 +490,7 @@ class BayesT1Sample(T1Sample):
     def _finalize_results(self):
         return rst.utils.convert_df(self._r_results)
 
+
 @register_dataframe_accessor("anova")
 class Anova(_BaseParametric):
     """
@@ -539,9 +540,7 @@ class Anova(_BaseParametric):
             dependent=self.dependent,
             between=self._between,
             within=self._within,
-            subject=self.subject,
-            es=self.effect_size,
-            correction=self.sphericity_correction
+            subject=self.subject
         )
 
     def _get_vars_from_formula(self):
@@ -551,7 +550,9 @@ class Anova(_BaseParametric):
         return rst.pyr.rpackages.stats.anova(
             rst.pyr.rpackages.afex.aov_4(
                 formula=self._r_formula,
-                data=rst.utils.convert_df(self.data)))
+                data=rst.utils.convert_df(self.data)),
+            es=self.effect_size,
+            correction=self.sphericity_correction)
         # TODO: Add reliance on aov_ez aggregation functionality.
         # TODO: Add this functionality - sig_symbols= rst.pyr.vectors.StrVector(["", "", "", ""]))
 
@@ -662,10 +663,10 @@ class BayesAnova(Anova):
         self.no_sample = no_sample
         self.include_subject = include_subject
 
-        if not ('between' in kwargs and 'within' in kwargs):
-            raise ValueError(
-                "A Mixed Anova was selected. Specify both `between`"
-                "and `within`")
+        #if not ('between' in kwargs and 'within' in kwargs):
+        #    raise ValueError(
+        #        "A Mixed Anova was selected. Specify both `between`"
+        #        "and `within`")
         super().__init__(**kwargs)
 
     def _get_formula_from_vars(self):

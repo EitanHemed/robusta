@@ -3,7 +3,7 @@ import pandas as pd
 import robusta as rst
 
 
-def load(dataset_name: str):
+def load(dataset_name: str, package_name: str=None):
     """
     Load an R-dataset and retrieve it as a pandas dataframe. Row-names
     (similar to pandas
