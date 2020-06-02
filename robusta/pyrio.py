@@ -20,7 +20,7 @@ pandas2ri.activate()
 # TODO - add functionality to list R envirnoment and select based on others.
 # TODO - add error handling of importing a missing library?
 # TODO - limit 'doMC' to non-windows OS
-r_libraries_to_include = ['backports', 'tidyr',
+r_libraries_to_include = ['backports', 'tidyr', 'lme4'
                           'datasets', 'broom', 'afex',
                           'base', 'BayesFactor', 'stats', 'effsize', 'psych', 'Matrix']
 

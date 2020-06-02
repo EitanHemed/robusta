@@ -722,9 +722,6 @@ class PairwiseComparison:
         self.correction_method = correction_method
 
 
-class MixedModel:
-    pass
-    # TODO: This! ^
-    # Here is a working example using the mtcars dataset.
-    #  m1 = rst.pyr.rpackages.afex.mixed('qsec ~ mpg + (mpg|am)', data=data.reset_index(drop=False))
-    # rst.utils.convert_df(rst.pyr.rpackages.afex.nice(m1))
+
+
+
