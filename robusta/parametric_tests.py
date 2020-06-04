@@ -531,17 +531,17 @@ class Anova(_BaseParametric):
         (Greenhouse-Geisser), "HF" (Hyunh-Feldt) or "none". Default is 'none'.
     """
 
-    def __init__(self, margins=None, **kwargs):
+    def __init__(self, margins_term=None, **kwargs):
         self.effect_size = kwargs.get('effect_size', 'pes')
         self.sphericity_correction = kwargs.get('sphericity_correction', 'none')
-        self.margins = margins
+        self.margins_term = margins_term
 
         super().__init__(**kwargs)
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
 
-        if margins is not None:
-            self.margins = self.get_margins()
+        if self.margins_term is not None:
+            self.margins_df = self.get_margins()
 
     def _get_formula_from_vars(self):
         return rst.utils.build_lm4_style_formula(
@@ -569,13 +569,37 @@ class Anova(_BaseParametric):
                 rst.pyr.rpackages.stats.anova(self._r_results)))
 
     # Look at this - emmeans::as_data_frame_emm_list
-    def get_margins(self, ):
+    def get_margins(self, margins_term=None, by=None, ci=95):
         # TODO - Documentation
         # TODO - Issue the 'balanced-design' warning etc.
+        # TODO - allow for by option
+        # TODO - implement between and within CI calculation
+
+        if by is not None:
+            raise NotImplementedError
+        if margins_term is None:
+            if self.margins_term is None:
+                raise RuntimeError('No margins term defined')
+            else:
+                margins_term = self.margins_term
+        if margins_term not in self.get_df()['term'].values:
+            raise RuntimeError('Margins term not included in model')
+
+        _r_margins = rst.pyr.rpackages.emmeans.emmeans(
+            self._r_results,
+            specs=margins_term,
+            type='response',
+            level=ci)
         return rst.utils.convert_df(
-            rst.pyr.rpackages.emmeans.emmeans(self._r_results,
-                                              self.margins)
-        )
+            rst.pyr.rpackages.emmeans.as_data_frame_emmGrid(
+                _r_margins))
+
+    def get_pairwise(self, margins_term: str):
+        raise NotImplementedError
+        # TODO - implement pairwise from emmeans::pairwise
+        if not type(margins_term) == str:
+            raise RuntimeError('Specify one model term (not an interaction)'
+                               'as str')
 
 
 @register_dataframe_accessor("bayes_anova")
@@ -731,6 +755,7 @@ class BayesAnova(Anova):
 
     def get_margins(self):
         raise NotImplementedError('Not implemented currently.')
+
 
 class PairwiseComparison:
     """To be implemented - runs all pairwise comparisons between two groups
