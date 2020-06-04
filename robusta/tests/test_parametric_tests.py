@@ -12,7 +12,7 @@ import robusta as rst
 class TestT1Sample(unittest.TestCase):
 
     def test_t1sample_get_df(self):
-        sleep = rst.datasets.load('sleep')
+        sleep = rst.datasets.data('sleep')
         t = rst.T1Sample(data=sleep.loc[sleep['group'] == '1'],
                          dependent='extra', subject='ID', independent='group')
         res = t.get_df().to_dict('records')[0]
@@ -26,7 +26,7 @@ class TestT1Sample(unittest.TestCase):
 class TestBayesT1Sample(unittest.TestCase):
 
     def test_bayes1sample(self):
-        sleep = rst.datasets.load('sleep')
+        sleep = rst.datasets.data('sleep')
         data = sleep.loc[sleep['group'] == '1'].assign(
             diff_scores=sleep.groupby('ID')['extra'].apply(
                 lambda s: s.diff(-1).max()).values)
@@ -46,7 +46,7 @@ class TestBayesT1Sample(unittest.TestCase):
 class TestAnova(unittest.TestCase):
 
     def test_between_anova(self):
-        anova = rst.Anova(data=rst.datasets.load('ToothGrowth'),
+        anova = rst.Anova(data=rst.datasets.data('ToothGrowth'),
                           dependent='len', subject='row_names',
                           between=['supp', 'dose']).get_df().round(4)
 
@@ -65,6 +65,8 @@ class TestAnova(unittest.TestCase):
 
         pd.testing.assert_frame_equal(anova, r_res, check_exact=True)
 
+    def test_margins(self):
+        pass
 
 class TestBayesAnova(unittest.TestCase):
 
@@ -73,7 +75,7 @@ class TestBayesAnova(unittest.TestCase):
         #  large or small rounding errors can fail the test.
         #  also the fact that
 
-        anova = rst.BayesAnova(data=rst.datasets.load('ToothGrowth'),
+        anova = rst.BayesAnova(data=rst.datasets.data('ToothGrowth'),
                                dependent='len', subject='row_names',
                                between=['supp', 'dose'], iterations=100000
                                ).get_df()  # .round(4)

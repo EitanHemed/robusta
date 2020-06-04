@@ -14,11 +14,12 @@ The class instances have the following methods:
 """
 
 import typing
-import textwrap
-import pandas as pd
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
 from pandas_flavor import register_dataframe_accessor
+
 import robusta as rst
 
 __all__ = [
@@ -27,6 +28,9 @@ __all__ = [
     "BayesT1Sample", "BayesT2Samples"
 ]
 
+
+# TODO Use abstractmethod on all of the functions from _Baseparametric that
+#   are always overridden by child classes.
 
 @dataclass
 class _BaseParametric:
@@ -527,13 +531,17 @@ class Anova(_BaseParametric):
         (Greenhouse-Geisser), "HF" (Hyunh-Feldt) or "none". Default is 'none'.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, margins=None, **kwargs):
         self.effect_size = kwargs.get('effect_size', 'pes')
         self.sphericity_correction = kwargs.get('sphericity_correction', 'none')
+        self.margins = margins
 
         super().__init__(**kwargs)
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
+
+        if margins is not None:
+            self.margins = self.get_margins()
 
     def _get_formula_from_vars(self):
         return rst.utils.build_lm4_style_formula(
@@ -547,10 +555,9 @@ class Anova(_BaseParametric):
         return rst.utils.parse_variables_from_lm4_style_formula(self.formula)
 
     def _run_analysis(self):
-        return rst.pyr.rpackages.stats.anova(
-            rst.pyr.rpackages.afex.aov_4(
-                formula=self._r_formula,
-                data=rst.utils.convert_df(self.data)),
+        return rst.pyr.rpackages.afex.aov_4(
+            formula=self._r_formula,
+            data=rst.utils.convert_df(self.data),
             es=self.effect_size,
             correction=self.sphericity_correction)
         # TODO: Add reliance on aov_ez aggregation functionality.
@@ -558,7 +565,17 @@ class Anova(_BaseParametric):
 
     def _finalize_results(self):
         return rst.utils.convert_df(
-            rst.pyr.rpackages.broom.tidy_anova(self._r_results))
+            rst.pyr.rpackages.broom.tidy_anova(
+                rst.pyr.rpackages.stats.anova(self._r_results)))
+
+    # Look at this - emmeans::as_data_frame_emm_list
+    def get_margins(self, ):
+        # TODO - Documentation
+        # TODO - Issue the 'balanced-design' warning etc.
+        return rst.utils.convert_df(
+            rst.pyr.rpackages.emmeans.emmeans(self._r_results,
+                                              self.margins)
+        )
 
 
 @register_dataframe_accessor("bayes_anova")
@@ -663,7 +680,7 @@ class BayesAnova(Anova):
         self.no_sample = no_sample
         self.include_subject = include_subject
 
-        #if not ('between' in kwargs and 'within' in kwargs):
+        # if not ('between' in kwargs and 'within' in kwargs):
         #    raise ValueError(
         #        "A Mixed Anova was selected. Specify both `between`"
         #        "and `within`")
@@ -712,6 +729,8 @@ class BayesAnova(Anova):
                          columns=['model'])
         )[['model', 'bf', 'error']]
 
+    def get_margins(self):
+        raise NotImplementedError('Not implemented currently.')
 
 class PairwiseComparison:
     """To be implemented - runs all pairwise comparisons between two groups
@@ -720,8 +739,3 @@ class PairwiseComparison:
     def __init__(self, data, correction_method):
         self.data = data
         self.correction_method = correction_method
-
-
-
-
-

@@ -1,11 +1,11 @@
 import re
-import robusta as rst  # So we can get the PyR singleton
-import pandas as pd
-import numpy as np
-from rpy2 import robjects
 from itertools import chain
-from collections import Iterable
-import pandas_flavor as pf
+
+import numpy as np
+import pandas as pd
+from rpy2 import robjects
+
+import robusta as rst  # So we can get the PyR singleton
 
 
 # TODO - change this to return a list of strings instead of a generator

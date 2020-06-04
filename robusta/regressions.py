@@ -53,8 +53,15 @@ class LinearRegression(_BaseRegression):
 
 class MixedModel:
 
-    def __init__(self):
-        pass
+    def __init__(self,
+                 levels,
+                 **kwargs):
+        self.levels = levels
+        self.formula, self._r_formula = self.get_formula()
+
+        super().__init__(**kwargs)
+
+
     def _run_analysis(self):
         return rst.pyr.rpackages.lme4.lmer(
             **{
@@ -76,3 +83,5 @@ class MixedModel:
     # Here is a working example using the mtcars dataset.
     #  m1 = rst.pyr.rpackages.afex.mixed('qsec ~ mpg + (mpg|am)', data=data.reset_index(drop=False))
     # rst.utils.convert_df(rst.pyr.rpackages.afex.nice(m1))
+
+
