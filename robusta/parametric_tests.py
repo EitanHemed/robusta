@@ -582,9 +582,21 @@ class Anova(_BaseParametric):
                 raise RuntimeError('No margins term defined')
             else:
                 margins_term = self.margins_term
-        if margins_term not in self.get_df()['term'].values:
-            raise RuntimeError('Margins term not included in model')
 
+        # TODO Currently this does not support integer arguments if we would
+        #  get those. Also we need to make sure that we get a list or array
+        #  as RPy2 doesn't take tuples. Probably should go with array as this
+        #  might save time on checking whether the margins term is in the model,
+        #  without making sure we are not comparing a string and a list.
+        if isinstance(margins_term, str):
+            margins_term = [margins_term]
+        margins_term = np.array(margins_term)
+        if not all(
+                term in self.get_df()['term'].values for term in
+                margins_term):
+            raise RuntimeError(
+                f'Margins term: {[i for i in margins_term]}'
+                'not included in model')
         _r_margins = rst.pyr.rpackages.emmeans.emmeans(
             self._r_results,
             specs=margins_term,

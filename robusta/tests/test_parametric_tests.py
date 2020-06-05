@@ -71,40 +71,53 @@ class TestAnova(unittest.TestCase):
                                                                    'level_2': 'time'})
         anova_time = rst.Anova(data=df, within='time',
                                dependent='score', subject='id')
-        margins_time = anova_time.get_margins('time').round(3)
+        margins_time = anova_time.get_margins('time')
+
         anova_time_by_group = rst.Anova(
             data=df, between='group', within='time',
             dependent='score', subject='id')
-        margins_time_by_group_anova = anova_time_by_group.get_margins(
-            ('time', 'group')).round(3)
 
-
+        margins_time_by_group = anova_time_by_group.get_margins(
+            ('time', 'group'))
         """
+        # Now in R...
         library(tidyr)
         library(datarium)
         data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
         margins_time = emmeans(aov_ez(data=data_long, between='group', 
             within='time', dv='score', id='id'), 'time', type='response')
-            
-        #      time   emmean        SE       df lower.CL upper.CL
-        #    1   t1 16.91556 0.2323967 43.99952 16.44719 17.38392
-        #    2   t2 16.13556 0.2323967 43.99952 15.66719 16.60392
-        #    3   t3 15.19778 0.2323967 43.99952 14.72941 15.66614
-        emmeans(aov_ez(data=data_long, between='group', within='time', id='id', 
-            dv='score'), c('time', 'group'), type='response')
-        
-        #      time group   emmean        SE       df lower.CL upper.CL
-        #    1   t1  grp1 17.08667 0.4025229 43.99952 16.27543 17.89790
-        #    2   t2  grp1 16.92667 0.4025229 43.99952 16.11543 17.73790
-        #    3   t3  grp1 16.50667 0.4025229 43.99952 15.69543 17.31790
-        #    4   t1  grp2 16.64667 0.4025229 43.99952 15.83543 17.45790
-        #    5   t2  grp2 16.46667 0.4025229 43.99952 15.65543 17.27790
-        #    6   t3  grp2 15.52667 0.4025229 43.99952 14.71543 16.33790
-        #    7   t1  grp3 17.01333 0.4025229 43.99952 16.20210 17.82457
-        #    8   t2  grp3 15.01333 0.4025229 43.99952 14.20210 15.82457
-        #    9   t3  grp3 13.56000 0.4025229 43.99952 12.74877 14.37123
+
+        margins_time_by_group = emmeans(aov_ez(data=data_long, between='group', 
+            within='time', id='id', dv='score'), c('time', 'group'), 
+            type='response')
         """
-        raise NotImplementedError('Finish this test!')
+        r_res_time = pd.read_csv(pd.compat.StringIO("""
+               time   emmean        SE       df lower.CL upper.CL
+               t1 16.91556 0.2323967 43.99952 16.44719 17.38392
+               t2 16.13556 0.2323967 43.99952 15.66719 16.60392
+               t3 15.19778 0.2323967 43.99952 14.72941 15.66614"""),
+                                 delim_whitespace=True,
+                                 dtype={'time': 'category'})
+        r_res_time_by_group = pd.read_csv(pd.compat.StringIO("""
+        time group   emmean        SE       df lower.CL upper.CL
+               t1  grp1 17.08667 0.4025229 43.99952 16.27543 17.89790
+               t2  grp1 16.92667 0.4025229 43.99952 16.11543 17.73790
+               t3  grp1 16.50667 0.4025229 43.99952 15.69543 17.31790
+               t1  grp2 16.64667 0.4025229 43.99952 15.83543 17.45790
+               t2  grp2 16.46667 0.4025229 43.99952 15.65543 17.27790
+               t3  grp2 15.52667 0.4025229 43.99952 14.71543 16.33790
+               t1  grp3 17.01333 0.4025229 43.99952 16.20210 17.82457
+               t2  grp3 15.01333 0.4025229 43.99952 14.20210 15.82457
+               t3  grp3 13.56000 0.4025229 43.99952 12.74877 14.37123"""),
+                                          delim_whitespace=True,
+                                          dtype={'time': 'category',
+                                                 'group': 'category'})
+        pd.testing.assert_frame_equal(
+            margins_time, r_res_time, check_exact=False, check_less_precise=5)
+        pd.testing.assert_frame_equal(
+            margins_time_by_group, r_res_time_by_group, check_exact=False,
+            check_less_precise=5)
+
 
 class TestBayesAnova(unittest.TestCase):
 
