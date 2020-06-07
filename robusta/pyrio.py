@@ -24,7 +24,7 @@ pandas2ri.activate()
 
 r_libraries_to_include = ['backports', 'tidyr', 'lme4', 'emmeans',
                           'datasets', 'broom', 'afex', 'utils',
-                          'dplyr', 'datarium',
+                          'dplyr', 'datarium', 'tibble', 'generics',
                           'base', 'BayesFactor', 'stats', 'effsize', 'psych',
                           'Matrix']
 

@@ -13,14 +13,20 @@ class TestT1Sample(unittest.TestCase):
 
     def test_t1sample_get_df(self):
         sleep = rst.datasets.data('sleep')
-        t = rst.T1Sample(data=sleep.loc[sleep['group'] == '1'],
-                         dependent='extra', subject='ID', independent='group')
-        res = t.get_df().to_dict('records')[0]
-        [self.assertAlmostEqual(a1, a2, 4) for (a1, a2) in
-         zip(
-             res.values(),
-             [0.75, 1.32571, 0.2175978, 9, -0.5297804, 2.02978,
-              'One Sample t-test', 'two.sided'])]
+        res = rst.T1Sample(data=sleep.loc[sleep['group'] == '1'],
+                           dependent='extra', subject='ID',
+                           independent='group').get_df().drop(columns=['row_names'])
+        """# Now in R...
+        library(broom)
+        data.frame(tidy(t.test(x=sleep[sleep$group == 1, 'extra'])))
+        """
+        r_res = pd.read_csv(pd.compat.StringIO("""
+        estimate statistic p.value parameter conf.low conf.high method alternative
+    0.75 1.32571 0.2175978  9 -0.5297804  2.02978 "One Sample t-test" two.sided"""
+                                               ), delim_whitespace=True,
+                            dtype={'parameter': 'float64'})
+        pd.testing.assert_frame_equal(res, r_res, check_exact=False,
+                                      check_less_precise=5)
 
 
 class TestBayesT1Sample(unittest.TestCase):
@@ -34,6 +40,18 @@ class TestBayesT1Sample(unittest.TestCase):
                                 dependent='diff_scores', subject='ID',
                                 independent='group',
                                 null_interval=[-np.inf, 0]).get_df()
+        print(res)
+        """
+        library(BayesFactor)
+        diff = (sleep[sleep$group == 1, 'extra'] 
+            - sleep[sleep$group == 2, 'extra'])
+        res = data.frame(
+            ttestBF(
+                diff, nullInterval=c(-Inf, 0)))[, c('bf', 'er')]
+                                          bf        error
+        Alt., r=0.707 -Inf<d<0    34.4169360 2.549779e-07
+        Alt., r=0.707 !(-Inf<d<0)  0.1008246 6.210317e-04
+        """
         r_res = pd.DataFrame(columns=['bf', 'error'],
                              data=np.array([[34.416936, 2.549779e-07],
                                             [0.100825, 6.210317e-04]]))
@@ -47,55 +65,58 @@ class TestAnova(unittest.TestCase):
 
     def test_between_anova(self):
         anova = rst.Anova(data=rst.datasets.data('ToothGrowth'),
-                          dependent='len', subject='row_names',
-                          between=['supp', 'dose']).get_df().round(4)
+                          dependent='len', subject='dataset_rownames',
+                          between=['supp', 'dose']).get_df().drop(columns=['row_names'])
+        """
+        library(broom)
+        library(afex)
+        library(tibble)
+        data.frame(tidy(anova(aov_ez(rownames_to_column(ToothGrowth, 'dataset_rownames'),
+        id='dataset_rownames', between=c('supp', 'dose'),
+        dv='len', es='pes'))))
+        """
+        r_res = pd.read_csv(pd.compat.StringIO(
+        """
+               term num.Df den.Df      MSE statistic       ges      p.value
+                  supp      1     54 13.18715 15.571979 0.2238254 2.311828e-04
+                  dose      2     54 13.18715 91.999965 0.7731092 4.046291e-18
+             supp:dose      2     54 13.18715  4.106991 0.1320279 2.186027e-02"""),
+        delim_whitespace=True, dtype={'num.Df': 'float64', 'den.Df': 'float64'}
+        )
 
-        r_res = pd.DataFrame(
-            data=np.array([
-                ['supp', 'dose', 'supp:dose'],
-                [1.0, 2.0, 2.0],
-                [54.0] * 3,
-                [13.1871418] * 3,
-                [15.57197945, 91.99996489, 4.10699109],
-                [0.22382545, 0.77310918, 0.13202791],
-                [0.0002, 0.0000, 0.0219]
-            ]).T,
-            columns=['term', 'num.Df', 'den.Df', 'MSE', 'statistic', 'pes',
-                     'p.value']).apply(pd.to_numeric, errors='ignore').round(4)
-
-        pd.testing.assert_frame_equal(anova, r_res, check_exact=True)
+        pd.testing.assert_frame_equal(anova, r_res, check_exact=False,
+                                      check_less_precise=5)
 
     def test_margins(self):
-        df = rst.datasets.data('anxiety').drop(columns=['row_names']).set_index(
+        df = rst.datasets.data('anxiety').drop(columns=['dataset_rownames']).set_index(
             ['id', 'group']).stack().reset_index().rename(columns={0: 'score',
                                                                    'level_2': 'time'})
         anova_time = rst.Anova(data=df, within='time',
                                dependent='score', subject='id')
-        margins_time = anova_time.get_margins('time')
+        margins_time = anova_time.get_margins('time').drop(columns=['row_names'])
 
         anova_time_by_group = rst.Anova(
             data=df, between='group', within='time',
             dependent='score', subject='id')
-
         margins_time_by_group = anova_time_by_group.get_margins(
-            ('time', 'group'))
+            ('time', 'group')).drop(columns=['row_names'])
         """
         # Now in R...
         library(tidyr)
         library(datarium)
         data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
-        margins_time = emmeans(aov_ez(data=data_long, between='group', 
-            within='time', dv='score', id='id'), 'time', type='response')
+        margins_time = data.frame(emmeans(aov_ez(data=data_long, 
+                within='time', dv='score', id='id'), 'time', type='response'))
 
-        margins_time_by_group = emmeans(aov_ez(data=data_long, between='group', 
+        margins_time_by_group = data.frame(emmeans(aov_ez(data=data_long, between='group', 
             within='time', id='id', dv='score'), c('time', 'group'), 
-            type='response')
+            type='response'))
         """
         r_res_time = pd.read_csv(pd.compat.StringIO("""
                time   emmean        SE       df lower.CL upper.CL
-               t1 16.91556 0.2323967 43.99952 16.44719 17.38392
-               t2 16.13556 0.2323967 43.99952 15.66719 16.60392
-               t3 15.19778 0.2323967 43.99952 14.72941 15.66614"""),
+            t1 16.91556 0.2612364 55.02618 16.39203 17.43908
+            t2 16.13556 0.2612364 55.02618 15.61203 16.65908
+            t3 15.19778 0.2612364 55.02618 14.67425 15.72130"""),
                                  delim_whitespace=True,
                                  dtype={'time': 'category'})
         r_res_time_by_group = pd.read_csv(pd.compat.StringIO("""
@@ -127,30 +148,26 @@ class TestBayesAnova(unittest.TestCase):
         #  also the fact that
 
         anova = rst.BayesAnova(data=rst.datasets.data('ToothGrowth'),
-                               dependent='len', subject='row_names',
+                               dependent='len', subject='dataset_rownames',
                                between=['supp', 'dose'], iterations=100000
                                ).get_df()  # .round(4)
-
-        anova = anova.loc[anova['model'].isin(['supp', 'dose'])]
-
-        r_res = pd.DataFrame(
-            data=np.array([
-                ['supp', 1.198757e+00, 8.941079e-05],
-                ['dose', 4.983636e+12, 1.189630e-08],
-                # ['supp + dose', 2.878842e+14, 1.592787e-03],
-                # ['supp + dose + supp:dose', 7.743991e+14, 2.729397e-03]
-            ]),
-            columns=['model', 'bf', 'error']).apply(pd.to_numeric,
-                                                    errors='ignore')  # .round(4)
-
-        pd.testing.assert_series_equal(anova['model'], r_res['model'],
-                                       check_exact=False)
-        # The clanky testing is because of the great/small magnitude of
+        """#Now in R...
+        ToothGrowth$dose = as.factor(ToothGrowth$dose)
+        rownames_to_column(
+            data.frame(
+                anovaBF(len ~ supp*dose, data=ToothGrowth),
+                iterations=10000)[ , c('bf', 'error')], 'model')
+        """
+        r_res = pd.read_csv(pd.compat.StringIO("""
+                                model           bf        error
+                                supp 1.198757e+00 8.941079e-05
+                                dose 4.983636e+12 1.189630e-08
+                         "supp + dose" 2.823349e+14 1.579653e-02
+             "supp + dose + supp:dose" 7.830497e+14 1.781969e-02"""),
+                            delim_whitespace=True)
+        # The partial testing is because of the great/small magnitude of
         # Bayes factors and their error terms.
-        [np.testing.assert_approx_equal(y1, y2)
-         for (y1, y2) in zip(
-            anova[['bf', 'error']].values.flatten(),
-            r_res[['bf', 'error']].values.flatten())]
+        pd.testing.assert_frame_equal(anova.iloc[:2], r_res.iloc[:2])
 
 
 if __name__ == '__main__':

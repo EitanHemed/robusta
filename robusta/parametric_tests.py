@@ -492,6 +492,10 @@ class BayesT1Sample(T1Sample):
             ))
 
     def _finalize_results(self):
+        # TODO - consider using data.table package and setDT function
+        # self._r_results = rst.pyr.rpackages.base.cbind(
+        #        rst.pyr.rpackages.base.row_names(self._r_results),
+        #        rst.pyr.rpackages.base.data_frame(self._r_results))
         return rst.utils.convert_df(self._r_results)
 
 
@@ -760,10 +764,8 @@ class BayesAnova(Anova):
     def _finalize_results(self):
         self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(
             self._r_results)
-        return rst.utils.convert_df(self._r_results).join(
-            pd.DataFrame(np.array(self._r_results.rownames),
-                         columns=['model'])
-        )[['model', 'bf', 'error']]
+        return rst.utils.convert_df(self._r_results,
+                                    'model')[['model', 'bf', 'error']]
 
     def get_margins(self):
         raise NotImplementedError('Not implemented currently.')
