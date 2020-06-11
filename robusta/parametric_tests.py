@@ -256,7 +256,7 @@ class T2Samples(_BaseParametric):
 
     def _finalize_results(self):
         return rst.utils.convert_df(
-            rst.pyr.rpackages.broom.tidy_htest(self._r_results))
+            rst.pyr.rpackages.generics.tidy(self._r_results))
 
     def get_text_report(self):
         params = self.results
@@ -569,7 +569,7 @@ class Anova(_BaseParametric):
 
     def _finalize_results(self):
         return rst.utils.convert_df(
-            rst.pyr.rpackages.broom.tidy_anova(
+            rst.pyr.rpackages.generics.tidy(
                 rst.pyr.rpackages.stats.anova(self._r_results)))
 
     # Look at this - emmeans::as_data_frame_emm_list
@@ -758,6 +758,7 @@ class BayesAnova(Anova):
             rscaleEffects=self.r_scale_effects,
             multicore=self.multi_core,
             method=self.method,
+            progress=False
             # noSample=self.no_sample
         )
 
@@ -778,3 +779,4 @@ class PairwiseComparison:
     def __init__(self, data, correction_method):
         self.data = data
         self.correction_method = correction_method
+

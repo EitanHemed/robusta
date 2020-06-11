@@ -18,3 +18,4 @@ from . import datasets
 from . import examples
 from .parametric_tests import *
 from .regressions import *
+from .correlations import *

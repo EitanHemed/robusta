@@ -60,7 +60,7 @@ class LinearRegression(_BaseRegression):
 
     def _finalize_results(self):
         return rst.utils.convert_df(
-            rst.pyr.rpackages.broom.tidy_lm(self._r_results))
+            rst.pyr.rpackages.generics.tidy(self._r_results))
 
     def get_df(self):
         return self.results.apply(
@@ -74,7 +74,7 @@ class BayesianLinearRegression(LinearRegression):
     def _run_analysis(self):
         return rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.generalTestBF(
-                formula=self._r_formula, data=self.data))
+                formula=self._r_formula, data=self.data, progress=False))
 
     def _finalize_results(self):
         return rst.utils.convert_df(self._r_results,
@@ -107,6 +107,9 @@ class LogisticRegression(_BaseRegression):
         return self.results.apply(
             pd.to_numeric, errors='ignore')
 
+class BayesianLogisticRegression(LogisticRegression):
+    pass
+
 
 class MixedModel:
 
@@ -131,7 +134,7 @@ class MixedModel:
 
     def _finalize_results(self):
         return rst.utils.convert_df(
-            rst.pyr.rpackages.broom.tidy_lm(self._r_results))
+            rst.pyr.rpackages.generics.tidy(self._r_results))
 
     def get_df(self):
         return self.results.apply(
