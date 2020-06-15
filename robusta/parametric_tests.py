@@ -65,7 +65,7 @@ class _BaseParametric:
         self.max_levels = kwargs.get('max_levels', None)
         self._get_variables_and_formula(formula, dependent, between, within,
                                         subject)
-        self.data = self._select_data()
+        self._data = self._select_data()
         if self._perform_aggregation:
             self.data = self._aggregate_data()
         self.data.dropna(inplace=True)

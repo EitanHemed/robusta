@@ -2,16 +2,54 @@ import pandas as pd
 import numpy as np
 import robusta as rst
 
-__all__ = ['CorrChiSquare']
+__all__ = ['ChiSquare', 'Correlation', 'BayesCorrelation']
 
 
 class _BaseCorrelation:
 
-    def __init__(self, var1=None, var2=None, data=None, **kwargs):
+    def __init__(self, x=None, y=None, data=None,
+                 nan_action='raise',
+                 **kwargs):
         self.data = data
-        self.var1 = var1
-        self.var2 = var2
-        self.x, self.y = self.data[self.var1, self.var2].values.T
+        self.x = x
+        self.y = y
+        self._data = self._test_xy()
+        self.nan_action = nan_action
+
+    def _test_xy(self):
+        if self.data is None:
+            if isinstance(self.x, str) or isinstance(self.y, str):
+                raise ValueError('Specify enter dataframe and `x` and `y` as'
+                                 ' strings.')
+            try:
+                _data = pd.DataFrame(columns=['x', 'y'],
+                                     data=np.array([self.x, self.y]).T)
+            except TypeError:
+                raise TypeError('X and Y are not of the same length')
+
+            if np.nan(_data).max():
+                if self.nan_action == 'raise':
+                    raise ValueError('NaN in data, either specify action or '
+                                     'remove')
+                if self.nan_action == 'drop':
+                    _data.dropna(inplace=True)
+                if self.nan_action == 'replace':
+                    if self.nan_action in ('mean', 'median', 'mode'):
+                        raise NotImplementedError
+        if isinstance(self.x, str) and isinstance(self.y, str):
+            #if self.x in self.data.columns and self.y in self.data.columns:
+            try:
+                _data = self.data[[self.x, self.y]].copy()
+            except KeyError:
+                raise KeyError(f"Either `x` ({self.x}) or `y` ({self.y}) are not"
+                        f"columns in data")
+
+        else:
+            raise ValueError('Either enter `data` as a pd.DataFrame'
+                             'and `x` and `y` as two column names, or enter'
+                             '`x` and `y` as two np.arrays')
+        return _data
+
 
     def get_df(self):
         pass
@@ -26,11 +64,11 @@ class _BaseCorrelation:
         pass
 
 
-class CorrChiSquare(_BaseCorrelation):
+class ChiSquare(_BaseCorrelation):
     def __init__(self, apply_correction=True,
                  **kwargs):
         super().__init__(**kwargs)
-        self.crosstabulated_data = self._crosstab_data(self.data)
+        self.crosstabulated_data = self._crosstab_data(self._data)
         self.apply_correction = apply_correction
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
@@ -44,7 +82,7 @@ class CorrChiSquare(_BaseCorrelation):
         significance_result = np.where(_dat['p.value'] < .05, 'a', 'no')
         main_clause = (f"A Chi-Square test of independence shown"
                        f" {significance_result} significant association between"
-                       f" {self.var1} and {self.var2}"
+                       f" {self._data.columns[0]} and {self._data.columns[1]}"
                        )
         result_clause = (f"[\u03C7\u00B2({_dat['parameter']:.0f})" +
                          f" = {_dat['statistic']:.2f}, p = {_dat['p.value']:.3f}]")
@@ -52,7 +90,7 @@ class CorrChiSquare(_BaseCorrelation):
         return f'{main_clause} {result_clause}.'
 
     def _crosstab_data(self, data):
-        return pd.crosstab(self.x, self.y)
+        return pd.crosstab(*self._data.values.T)
 
     def _run_analysis(self):
         return rst.pyr.rpackages.stats.chisq_test(self.crosstabulated_data,
@@ -63,58 +101,41 @@ class CorrChiSquare(_BaseCorrelation):
             rst.pyr.rpackages.generics.tidy(self._r_results))
 
 
-class CorrPearson(_BaseCorrelation):
+class Correlation(_BaseCorrelation):
 
-    def __init__(self, **kwargs):
+    def __init__(self, method='pearson', **kwargs):
         super().__init__(**kwargs)
+
+        if method not in ('pearson', 'spearman', 'kendall'):
+            raise ValueError('Invalid correlation coefficient method - specify'
+                             ' either `pearson`, `spearman` or `kendall`')
+        self.method = method
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
 
     def _run_analysis(self):
         return rst.pyr.rpackages.stats.cor_test(
-            x=self.x,
-            y=self.y,
-            method='pearson'
+            *self._data.values.T,
+            method=self.method
         )
 
 
-class CorrSpearman(_BaseCorrelation):
+class PartCorreleation(_BaseCorrelation):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
-
-    def _run_analysis(self):
-        return rst.pyr.rpackages.stats.cor_test(
-            x=self.x,
-            y=self.y,
-            method='spearman'
-        )
-
-
-class CorrKendall(_BaseCorrelation):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
-
-    def _run_analysis(self):
-        return rst.pyr.rpackages.stats.cor_test(
-            x=self.x,
-            y=self.y,
-            method='kendall'
-        )
+    def __init__(self, z=None, part_type=None, **kwargs):
+        pass
 
 
 # TODO - see what other
-class BayesCorrelation(CorrPearson, **kwargs):
+class BayesCorrelation(Correlation):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def _run_analysis(self):
         return rst.pyr.rpackages.bayes_factor.correlationBF(
-            x=self.x, y=self.y
+            *self._data.values.T,
+            nullInterval=self.nullInterval,
+            rscale_prior=None,
+            posterior=self.posterior,
         )

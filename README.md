@@ -28,6 +28,7 @@ including:
 [JASP](https://jasp-stats.org/))
 - Bayesian posterior distribution plots 
 - Marginal effect plots
+- Correlogram
 
 
 

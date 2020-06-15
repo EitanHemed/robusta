@@ -108,7 +108,9 @@ class LogisticRegression(_BaseRegression):
             pd.to_numeric, errors='ignore')
 
 class BayesianLogisticRegression(LogisticRegression):
-    pass
+
+    def __init__(self):
+        raise NotImplementedError
 
 
 class MixedModel:
