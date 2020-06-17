@@ -140,7 +140,7 @@ class TestLogisticRegression(unittest.TestCase):
                 term,estimate,std.error,statistic,p.value
                 (Intercept),-0.6928304001240985,0.6232561393553371,-1.111630285488604,0.2662971454269263
                 extra,0.46520171520154907,0.27660635201304135,1.681818627142792,0.09260401556399948"""),
-        skipinitialspace =True)
+        skipinitialspace=True)
 
         pd.testing.assert_frame_equal(res, r_res)
 
