@@ -26,6 +26,47 @@ class _BaseRegression:
         self.data = data
         self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(
             formula)
+        self._prepare()
+        self._r_results = self._run_analysis()
+        self.results = self._finalize_results()
+
+    def _prepare(self):
+        self._test_subject_kwarg()
+        self._set_variables()
+        self._test_input()
+
+    def _set_variables(self):
+        self._vars = rst.utils.parse_variables_from_general_formula(
+            self.formula)
+        print(self._vars)
+
+    def _test_input(self):
+
+        if not isinstance(self.data, pd.DataFrame):
+            raise RuntimeError('No data!')
+
+        cols = self.data.columns
+        for v in self._vars:
+            if v not in cols:
+                raise KeyError(f'Variable {v} from formula not found in data!')
+
+        _data = self.data[self._vars].copy()
+
+        if _data.isnull().values.any():
+            if self.nan_action == 'raise':
+                raise ValueError(
+                    'NaN in data, either specify action or '
+                    'remove')
+            if self.nan_action == 'drop':
+                _data.dropna(inplace=True)
+            if self.nan_action == 'replace':
+                if self.nan_action in ('mean', 'median', 'mode'):
+                    raise NotImplementedError
+
+        return _data
+
+
+
 
     def _test_subject_kwarg(self):
         pass
@@ -39,13 +80,20 @@ class _BaseRegression:
             raise RuntimeError(f"Column {variable_name} should contain only"
                                f"the values 0 and 1")
 
+    def _run_analysis(self):
+        pass
+
+    def _finalize_results(self):
+        pass
+
+    def get_df(self):
+        return pd.DataFrame()
+
 
 class LinearRegression(_BaseRegression):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
 
     def _run_analysis(self):
         return rst.pyr.rpackages.stats.lm(
@@ -88,8 +136,6 @@ class LogisticRegression(_BaseRegression):
         # TODO - this is likely to break on spaces before the tilda sign.
         self.dependent = self.formula.split('~')[0]
         self._validate_binary_variables(self.dependent)
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
 
     def _run_analysis(self):
         return rst.pyr.rpackages.stats.glm(
@@ -107,10 +153,18 @@ class LogisticRegression(_BaseRegression):
         return self.results.apply(
             pd.to_numeric, errors='ignore')
 
+
 class BayesianLogisticRegression(LogisticRegression):
 
     def __init__(self):
         raise NotImplementedError
+
+    def _run_analysis(self):
+        return rst.pyr.rpackages.brms.brm(
+            formula=self.formula,
+            data=self._data,
+            family=rst.pyr.rpackages.brms.bernoulli(link='logit')
+        )
 
 
 class MixedModel:
@@ -120,8 +174,12 @@ class MixedModel:
                  **kwargs):
         self.levels = levels
         self.formula, self._r_formula = self.get_formula()
-
         super().__init__(**kwargs)
+
+    def _set_variables(self):
+        self._vars = rst.utils.parse_variables_from_lm4_style_formula(
+            self.formula)
+        print(self._vars)
 
     def _run_analysis(self):
         return rst.pyr.rpackages.lme4.lmer(

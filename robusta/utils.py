@@ -4,6 +4,7 @@ from itertools import chain
 import numpy as np
 import pandas as pd
 from rpy2 import robjects
+from patsy import ModelDesc
 
 import robusta as rst  # So we can get the PyR singleton
 
@@ -16,8 +17,8 @@ def to_list(values):
         chain.from_iterable(
             item if isinstance(
                 item, (list, tuple)) and not isinstance(
-                    item, str) else [
-            item] for item in values))
+                item, str) else [
+                item] for item in values))
 
 
 def tidy(df, result_type) -> pd.DataFrame:
@@ -73,8 +74,9 @@ def convert_df(df, df_rownames_column_name='row_names'):
         return _df
     elif type(df) == robjects.vectors.DataFrame:
         return pd.DataFrame(
-            robjects.pandas2ri.ri2py(rst.pyr.rpackages.tibble.rownames_to_column(
-                df, var=df_rownames_column_name)))
+            robjects.pandas2ri.ri2py(
+                rst.pyr.rpackages.tibble.rownames_to_column(
+                    df, var=df_rownames_column_name)))
     else:
         raise RuntimeError("Input can only be R/Python DataFrame object")
 
@@ -87,7 +89,6 @@ def bayes_style_formula(dependent, between, within, subject=None):
         return f'{dependent} ~ {independent} + {subject}'
 
 
-
 def build_general_formula(dependent, independent):
     independent = "*".join(to_list(independent))
     return f'{dependent} ~ {independent}'
@@ -96,8 +97,10 @@ def build_general_formula(dependent, independent):
 def parse_variables_from_general_formula(frml):
     dependent, frml = frml.split(
         '~')  # to remove the dependent variable from the formula
-    dependent = dependent[:-1]  # trim the trailing whitespace
-    frml = frml[1:]  # Trim the leading whitespace
+    if dependent[-1] == ' ':
+        dependent = dependent[:-1]  # trim the trailing whitespace
+    if frml[0] == ' ':
+        frml = frml[1:]  # Trim the leading whitespace
     independent, frml = frml.split('+')
     independent = list(filter(independent[:-1].split('*'),
                               ''))  # Drop the trailing whitespace and split to separate between subject variables
@@ -142,3 +145,64 @@ def parse_variables_from_lm4_style_formula(frml):
     if within == ['1']:
         within = []
     return dependent, between, within, subject
+
+
+class VariableParser():
+
+    def __init__(self, formula):
+
+        self.patsy_parsed = ModelDesc.from_formula(formula)
+        #super().from_formula(formula)
+
+    def parse_variable_names(self):
+        # This one is the easiest
+        between = []
+        within = []
+        subject = None
+
+        for t in self.patsy_parsed.rhs_termlist:
+            # Make sure it is an interaction
+            if len(t.factors) > 1 and ':' in t.name():
+                pass
+            # We expect something along the lines of (1|subject) or
+            # even (within_variable1|within_variable_2|id_variable)
+
+            if '|' in t.name():
+                pipe_count = t.name().count('|')
+                if pipe_count == 1:
+                    _, subject = t.name().split('|')
+                    # No within subject
+                    if bool(re.match('\s*1\s*', _)):
+                        pass
+                    else:
+                        within.append(_)
+                else:
+                    within.extend(_.split('|'))
+
+            else:
+                between.append(t.name())
+
+        try:
+            dependent = self.patsy_parsed.lhs_termlist[0].name()
+        except IndexError:
+            raise RuntimeError('No dependent variable defined. Use a formula'
+                               'similar to y~x')
+        if within + between == []: #
+            raise RuntimeError('No independent variables defined')
+        if subject is None:
+            raise RuntimeError('No subject term defined')
+
+        return dependent, between, within, subject
+
+
+class FormulaParser:
+
+    def __init__(self, dependent, between, within, subject):
+
+        self.formula = None
+
+    def parse_formula_from_variables(self):
+        pass
+
+    def get_formula(self):
+        return self.formula
