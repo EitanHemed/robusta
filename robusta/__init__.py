@@ -11,11 +11,14 @@ __author_email__ = 'Eitan.Hemed@gmail.com'
 #  use conda install -c anaconda python-dateutil
 
 from .pyrio import PyRIO
+
 pyr = PyRIO()
 
+from . import formula_tools
 from . import utils
 from . import datasets
 from . import examples
+
 from .parametric_tests import *
 from .regressions import *
 from .correlations import *

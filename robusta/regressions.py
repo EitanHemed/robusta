@@ -132,10 +132,15 @@ class BayesianLinearRegression(LinearRegression):
 
 class LogisticRegression(_BaseRegression):
     def __init__(self, **kwargs):
+        f = rst.formula_tools.VariablesParser(kwargs['formula'])
+        print(f.get_variables())
+
         super().__init__(**kwargs)
         # TODO - this is likely to break on spaces before the tilda sign.
         self.dependent = self.formula.split('~')[0]
         self._validate_binary_variables(self.dependent)
+
+
 
     def _run_analysis(self):
         return rst.pyr.rpackages.stats.glm(
