@@ -7,7 +7,7 @@ __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
            'PartialCorrelation', 'BayesCorrelation']
 
 
-class _PairwiseCorrelation:
+class _PairwiseCorrelation(rst.base.AbstractClass):
 
     def __init__(self, x=None, y=None, data=None,
                  nan_action='raise',
@@ -15,12 +15,12 @@ class _PairwiseCorrelation:
         self.data = data
         self.x = x
         self.y = y
-        self._data = self._test_input()
         self.nan_action = nan_action
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
+        super().__init__()
 
-    def _test_input(self):
+    def _select_input_data(self):
+        _data = None
+
         if self.data is None:
             if sum([isinstance(i, str) for i in [self.x, self.y]]) == 2:
                 raise ValueError('Specify dataframe and enter `x` and `y`'
@@ -31,36 +31,35 @@ class _PairwiseCorrelation:
             except ValueError:
                 raise ValueError('`x` and ``y` are not of the same length')
 
-            if _data.isnull().values.any():
-                if self.nan_action == 'raise':
-                    raise ValueError('NaN in data, either specify action or '
-                                     'remove')
-                if self.nan_action == 'drop':
-                    _data.dropna(inplace=True)
-                if self.nan_action == 'replace':
-                    if self.nan_action in ('mean', 'median', 'mode'):
-                        raise NotImplementedError
-            return _data
+        elif isinstance(self.data, pd.DataFrame):
+            if sum([isinstance(i, str) for i in [self.x, self.y]]) == 2:
+                try:
+                    _data = self.data[[self.x, self.y]].copy()
+                except KeyError:
+                    raise KeyError(f"Either `x` or ({self.x}),`y` ({self.y})"
+                                   f" are not columns in data")
 
-        if sum([isinstance(i, str) for i in [self.x, self.y]]) == 2:
-            try:
-                _data = self.data[[self.x, self.y]].copy()
-            except KeyError:
-                raise KeyError(f"Either `x` or ({self.x}),`y` ({self.y})"
-                               f" are not columns in data")
-        else:
+        if _data is None:  # Failed to parse data from input
             raise ValueError('Either enter `data` as a pd.DataFrame'
                              'and `x` and `y` as two column names, or enter'
                              '`x` and `y` as np.arrays')
-        return _data
 
-    def get_text(self):
-        pass
+        self._input_data = _data
 
-    def _finalize_results(self):
-        return pd.DataFrame()
+    def _test_input_data(self):
+        return
 
-    def _run_analysis(self):
+        if self._input_data.isnull().values.any():
+            if self.nan_action == 'raise':
+                raise ValueError('NaN in data, either specify action or '
+                                 'remove')
+            if self.nan_action == 'drop':
+                self._input_data.dropna(inplace=True)
+            if self.nan_action == 'replace':
+                if self.nan_action in ('mean', 'median', 'mode'):
+                    raise NotImplementedError
+
+    def _transform_input_data(self):
         pass
 
 
@@ -92,11 +91,9 @@ class ChiSquare(_PairwiseCorrelation):
         self.apply_correction = apply_correction
         super().__init__(**kwargs)
 
-    def _test_input(self):
-        _data = super()._test_input()
-        self.crosstabulated_data = self._crosstab_data(_data)
+    def _transform_input_data(self):
+        self._crosstab_data()
         self._test_crosstablated_data()
-        return _data
 
     def _test_crosstablated_data(self):
         if self.crosstabulated_data.min().min() < 5:
@@ -109,25 +106,26 @@ class ChiSquare(_PairwiseCorrelation):
         significance_result = np.where(_dat['p.value'] < .05, 'a', 'no')
         main_clause = (f"A Chi-Square test of independence shown"
                        f" {significance_result} significant association between"
-                       f" {self._data.columns[0]} and {self._data.columns[1]}"
+                       f" {self._input_data.columns[0]} and {self._input_data.columns[1]}"
                        )
         result_clause = (f"[\u03C7\u00B2({_dat['parameter']:.0f})" +
                          f" = {_dat['statistic']:.2f}, p = {_dat['p.value']:.3f}]")
 
         return f'{main_clause} {result_clause}.'
 
-    def _crosstab_data(self, _data):
+    def _crosstab_data(self):
         """Returns the crosstabulation of `x` and `y` categories."""
-        return pd.crosstab(*_data.values.T)
+        self.crosstabulated_data = pd.crosstab(*self._input_data.values.T)
 
-    def _run_analysis(self):
+    def _analyze(self):
         """Runs a Chi-Square test"""
-        return rst.pyr.rpackages.stats.chisq_test(self.crosstabulated_data,
-                                                  correct=self.apply_correction)
+        self._r_results = rst.pyr.rpackages.stats.chisq_test(
+            self.crosstabulated_data,
+            correct=self.apply_correction)
 
-    def _finalize_results(self):
+    def _tidy_results(self):
         """Tidy the test results and return as pd.DataFrame"""
-        return rst.utils.convert_df(
+        self._results = rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(self._r_results))
 
 
@@ -148,19 +146,17 @@ class Correlation(_PairwiseCorrelation):
     def __init__(self, method='pearson', **kwargs):
         self.method = method
         super().__init__(**kwargs)
-        # self._r_results = self._run_analysis()
-        # self.results = self._finalize_results()
 
-    def _test_input(self):
+    def _test_input_data(self):
         if self.method not in ('pearson', 'spearman', 'kendall'):
             raise ValueError('Invalid correlation coefficient method - specify'
                              ' either `pearson`, `spearman` or `kendall`')
 
-        super()._test_input()
+        super()._test_input_data()
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.stats.cor_test(
-            *self._data.values.T,
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.cor_test(
+            *self._input_data.values.T,
             method=self.method
         )
 
@@ -170,10 +166,10 @@ class _TriplewiseCorrelation(Correlation):
     def __init__(self, z=None, **kwargs):
         self.z = z
         super().__init__(**kwargs)
-        # self._r_results = self._run_analysis()
-        # self.results = self._finalize_results()
 
-    def _test_input(self):
+    def _select_input_data(self):
+        _data = None
+
         if self.data is None:
             if sum([isinstance(i, str) for i in [self.x, self.y, self.z]]) == 3:
                 raise ValueError('Specify dataframe and enter `x`, `y` and `z`'
@@ -184,31 +180,35 @@ class _TriplewiseCorrelation(Correlation):
             except ValueError:
                 raise ValueError('`x`, `y` and `z` are not of the same length')
 
-            if _data.isnull().values.any():
-                if self.nan_action == 'raise':
-                    raise ValueError('NaN in data, either specify action or '
-                                     'remove')
-                if self.nan_action == 'drop':
-                    _data.dropna(inplace=True)
-                if self.nan_action == 'replace':
-                    if self.nan_action in ('mean', 'median', 'mode'):
-                        raise NotImplementedError
-            return _data
-
-        if sum([isinstance(i, str) for i in [self.x, self.y, self.z]]) == 3:
+        elif sum([isinstance(i, str) for i in [self.x, self.y, self.z]]) == 3:
             try:
                 _data = self.data[[self.x, self.y, self.z]].copy()
             except KeyError:
                 raise KeyError(f"Either `x` ({self.x}),`y` ({self.y}) or `z`"
                                f" {self.z} are not columns in data")
-        else:
+
+        if _data is None:
             raise ValueError('Either enter `data` as a pd.DataFrame'
                              'and `x`, `y` and `z` as two column names, or enter'
                              '`x`, `y` and `z` as np.arrays')
-        return _data
 
-    def _finalize_results(self):
-        return rst.utils.convert_df(self._r_results)
+        self._input_data = _data
+
+    # def _aggregate_data(self):
+    #     if _data.isnull().values.any():
+    #         if self.nan_action == 'raise':
+    #             raise ValueError('NaN in data, either specify action or '
+    #                              'remove')
+    #         if self.nan_action == 'drop':
+    #             _data.dropna(inplace=True)
+    #         if self.nan_action == 'replace':
+    #             if self.nan_action in ('mean', 'median', 'mode'):
+    #                 raise NotImplementedError
+    #     return _data
+
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(self._r_results)
+
 
 
 class PartialCorrelation(_TriplewiseCorrelation):
@@ -216,9 +216,10 @@ class PartialCorrelation(_TriplewiseCorrelation):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.ppcor.pcor_test(*self._data.values.T,
-                                                 method=self.method)
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.ppcor.pcor_test(
+            *self._input_data.values.T,
+            method=self.method)
 
 
 class PartCorrelation(_TriplewiseCorrelation):
@@ -227,9 +228,10 @@ class PartCorrelation(_TriplewiseCorrelation):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.ppcor.spcor_test(*self._data.values.T,
-                                                  method=self.method)
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.ppcor.spcor_test(
+            *self._input_data.values.T,
+            method=self.method)
 
 
 # TODO - see what other
@@ -249,16 +251,16 @@ class BayesCorrelation(_PairwiseCorrelation):
 
         super().__init__(**kwargs)
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.bayesfactor.correlationBF(
-            *self._data.values.T,
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.bayesfactor.correlationBF(
+            *self._input_data.values.T,
             nullInterval=self.null_interval,
             rscale_prior=self.rscale_prior,
             posterior=self.posterior,
         )
 
-    def _finalize_results(self):
-        return rst.utils.convert_df(
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(
             rst.pyr.rpackages.base.data_frame(self._r_results,
                                               'model')).drop(columns=['time',
                                                                       'code'])

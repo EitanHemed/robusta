@@ -14,7 +14,7 @@ __all__ = [
 
 
 @dataclass
-class _BaseRegression:
+class _BaseRegression(rst.base.AbstractClass):
     formula: typing.Union[str, None]
     formula: typing.Union[str, None]
 
@@ -27,8 +27,9 @@ class _BaseRegression:
         self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(
             formula)
         self._prepare()
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
+        super().__init__()
+        # self._r_results = self._run_analysis()
+        # self.results = self._finalize_results()
 
     def _prepare(self):
         self._test_subject_kwarg()
@@ -36,8 +37,10 @@ class _BaseRegression:
         self._test_input()
 
     def _set_variables(self):
-        self._vars = rst.utils.parse_variables_from_general_formula(
-            self.formula)
+        # self._vars = rst.utils.parse_variables_from_general_formula(
+        #    self.formula)
+        vp = rst.formula_tools.VariablesParser(self.formula)
+        self._vars = vp.get_variables()
         print(self._vars)
 
     def _test_input(self):
@@ -65,9 +68,6 @@ class _BaseRegression:
 
         return _data
 
-
-
-
     def _test_subject_kwarg(self):
         pass
         # TODO - if linear regression check whether we should aggregate on
@@ -80,14 +80,14 @@ class _BaseRegression:
             raise RuntimeError(f"Column {variable_name} should contain only"
                                f"the values 0 and 1")
 
-    def _run_analysis(self):
+    def _analyze(self):
         pass
 
-    def _finalize_results(self):
+    def _tidy_results(self):
         pass
 
-    def get_df(self):
-        return pd.DataFrame()
+    def get_results(self):
+        pass
 
 
 class LinearRegression(_BaseRegression):
@@ -95,8 +95,8 @@ class LinearRegression(_BaseRegression):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.stats.lm(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.lm(
             **{
                 'formula': self._r_formula,
                 'data': self.data,
@@ -106,12 +106,12 @@ class LinearRegression(_BaseRegression):
             }
         )
 
-    def _finalize_results(self):
-        return rst.utils.convert_df(
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(self._r_results))
 
-    def get_df(self):
-        return self.results.apply(
+    def get_results(self):
+        return self._results.apply(
             pd.to_numeric, errors='ignore')
 
 
@@ -119,15 +119,15 @@ class BayesianLinearRegression(LinearRegression):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.base.data_frame(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.generalTestBF(
                 formula=self._r_formula, data=self.data, progress=False))
 
-    def _finalize_results(self):
-        return rst.utils.convert_df(self._r_results,
-                                    'model').drop(columns=['time',
-                                                           'code'])
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(self._r_results,
+                                             'model').drop(columns=['time',
+                                                                    'code'])
 
 
 class LogisticRegression(_BaseRegression):
@@ -140,21 +140,19 @@ class LogisticRegression(_BaseRegression):
         self.dependent = self.formula.split('~')[0]
         self._validate_binary_variables(self.dependent)
 
-
-
-    def _run_analysis(self):
-        return rst.pyr.rpackages.stats.glm(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.glm(
             formula=self.formula, data=self.data,
             family='binomial'
         )
 
-    def _finalize_results(self):
-        return rst.utils.convert_df(
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(
             rst.pyr.rpackages.base.data_frame(
                 rst.pyr.rpackages.generics.tidy(
                     self._r_results)))
 
-    def get_df(self):
+    def get_results(self):
         return self.results.apply(
             pd.to_numeric, errors='ignore')
 
@@ -164,7 +162,7 @@ class BayesianLogisticRegression(LogisticRegression):
     def __init__(self):
         raise NotImplementedError
 
-    def _run_analysis(self):
+    def _analyze(self):
         return rst.pyr.rpackages.brms.brm(
             formula=self.formula,
             data=self._data,

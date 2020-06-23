@@ -17,7 +17,7 @@ class TestLinearRegression(unittest.TestCase):
                                             4.32, 4.69]]).T)
 
         res = rst.LinearRegression(
-            formula='weight ~ group', data=data).get_df().drop(
+            formula='weight ~ group', data=data).get_results().drop(
             columns=['row_names'])
 
         """"
@@ -46,7 +46,7 @@ class TestLinearRegression(unittest.TestCase):
         res = rst.LinearRegression(
             data=rst.datasets.data('marketing'),
             formula='sales~youtube*facebook',
-            subject='dataset_rownames').get_df().drop(columns=['row_names'])
+            subject='dataset_rownames').get_results().drop(columns=['row_names'])
 
         """# Now in R...
         library(datarium)
@@ -68,7 +68,7 @@ class TestBayesianLinearRegression(unittest.TestCase):
 
     def test_simple_bayesian_regression(self):
         res = rst.BayesianLinearRegression(data=rst.datasets.data(
-            'attitude'), formula='rating ~ complaints').get_df()
+            'attitude'), formula='rating ~ complaints').get_results()
 
         """
         # Now in R...
@@ -87,7 +87,7 @@ class TestBayesianLinearRegression(unittest.TestCase):
 
     def test_multiple_bayesian_regression(self):
         res = rst.BayesianLinearRegression(data=rst.datasets.data(
-            'attitude'), formula='rating ~ privileges * complaints + raises').get_df()
+            'attitude'), formula='rating ~ privileges * complaints + raises').get_results()
 
         """
         # Now in R...
@@ -125,7 +125,7 @@ class TestLogisticRegression(unittest.TestCase):
 
         res = rst.LogisticRegression(
             formula='group~extra', data=rst.datasets.data('sleep')
-                                     ).get_df().drop(columns=['row_names'])
+                                     ).get_results().drop(columns=['row_names'])
 
         """
         # Now in R...

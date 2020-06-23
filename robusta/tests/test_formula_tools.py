@@ -35,21 +35,21 @@ class TestFormulaParset(unittest.TestCase):
 
     def test_all_terms(self):
         fp = rst.formula_tools.FormulaParser('luck', ['pj'], ['volume'], 's')
-        self.assert_equal('luck~pj+(volume|s)', fp.get_formula())
+        self.assertEqual('luck~pj+(volume|s)', fp.get_formula())
 
     def test_no_beteen_subject_term(self):
         fp = rst.formula_tools.FormulaParser('luck', [], ['volume'], 's')
-        self.assert_equal('luck~(volume|s)', fp.get_formula())
+        self.assertEqual('luck~(volume|s)', fp.get_formula())
 
     def test_many_terms(self):
         fp = rst.formula_tools.FormulaParser(
             'luck', ['h', 'pj'], ['volume', 'page'], 's')
-        self.assert_equal('luck~h*pj+(volume|page|s)', fp.get_formula())
+        self.assertEqual('luck~h*pj+(volume*page|s)', fp.get_formula())
 
     def test_missing_terms(self):
         fp = rst.formula_tools.FormulaParser(
             'luck', ['h', 'pj'], ['volume', 'page'], 's')
-        self.assert_equal('luck~h*pj+(volume|page|s)', fp.get_formula())
+        self.assertEqual('luck~h*pj+(volume*page|s)', fp.get_formula())
 
 
 

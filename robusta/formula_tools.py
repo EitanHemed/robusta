@@ -82,8 +82,12 @@ class FormulaParser:
         else:
             _ws = f"({'*'.join(within)}|{subject})"
 
-        _bs = '*'.join(between)
-        return f'{dependent}~{_bs}+{_ws}'
+        if between == []:
+            _bs = ''
+        else:
+            _bs = f"{'*'.join(between)}+"
+
+        return f'{dependent}~{_bs}{_ws}'
 
     def get_formula(self):
         return self.formula
