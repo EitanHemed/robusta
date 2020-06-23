@@ -20,7 +20,6 @@ class _PairwiseCorrelation:
         self._r_results = self._run_analysis()
         self.results = self._finalize_results()
 
-
     def _test_input(self):
         if self.data is None:
             if sum([isinstance(i, str) for i in [self.x, self.y]]) == 2:
@@ -55,10 +54,6 @@ class _PairwiseCorrelation:
                              '`x` and `y` as np.arrays')
         return _data
 
-    def get_df(self):
-        return self.results.apply(
-            pd.to_numeric, errors='ignore')
-
     def get_text(self):
         pass
 
@@ -91,6 +86,7 @@ class ChiSquare(_PairwiseCorrelation):
 
 
     """
+
     def __init__(self, apply_correction=True,
                  **kwargs):
         self.apply_correction = apply_correction
@@ -104,11 +100,12 @@ class ChiSquare(_PairwiseCorrelation):
 
     def _test_crosstablated_data(self):
         if self.crosstabulated_data.min().min() < 5:
-            warnings.warn('Less than 5 observations in some cell(s). Assumptions'
-                          'may be violated.')
+            warnings.warn(
+                'Less than 5 observations in some cell(s). Assumptions'
+                'may be violated.')
 
     def get_text(self, alpha=.05):
-        _dat = self.get_df().to_dict('records')[0]
+        _dat = self.get_results().to_dict('records')[0]
         significance_result = np.where(_dat['p.value'] < .05, 'a', 'no')
         main_clause = (f"A Chi-Square test of independence shown"
                        f" {significance_result} significant association between"
@@ -147,14 +144,14 @@ class Correlation(_PairwiseCorrelation):
     -------
 
     """
+
     def __init__(self, method='pearson', **kwargs):
         self.method = method
         super().__init__(**kwargs)
-        #self._r_results = self._run_analysis()
-        #self.results = self._finalize_results()
+        # self._r_results = self._run_analysis()
+        # self.results = self._finalize_results()
 
     def _test_input(self):
-
         if self.method not in ('pearson', 'spearman', 'kendall'):
             raise ValueError('Invalid correlation coefficient method - specify'
                              ' either `pearson`, `spearman` or `kendall`')
@@ -173,8 +170,8 @@ class _TriplewiseCorrelation(Correlation):
     def __init__(self, z=None, **kwargs):
         self.z = z
         super().__init__(**kwargs)
-        #self._r_results = self._run_analysis()
-        #self.results = self._finalize_results()
+        # self._r_results = self._run_analysis()
+        # self.results = self._finalize_results()
 
     def _test_input(self):
         if self.data is None:
@@ -221,7 +218,7 @@ class PartialCorrelation(_TriplewiseCorrelation):
 
     def _run_analysis(self):
         return rst.pyr.rpackages.ppcor.pcor_test(*self._data.values.T,
-                                                  method=self.method)
+                                                 method=self.method)
 
 
 class PartCorrelation(_TriplewiseCorrelation):
@@ -232,17 +229,16 @@ class PartCorrelation(_TriplewiseCorrelation):
 
     def _run_analysis(self):
         return rst.pyr.rpackages.ppcor.spcor_test(*self._data.values.T,
-                                                   method=self.method)
-
+                                                  method=self.method)
 
 
 # TODO - see what other
 class BayesCorrelation(_PairwiseCorrelation):
 
     def __init__(self,
-                    rscale_prior=None,
-                    null_interval=None,
-                    posterior=None, **kwargs):
+                 rscale_prior=None,
+                 null_interval=None,
+                 posterior=None, **kwargs):
 
         if rscale_prior is None:
             self.rscale_prior = 'medium'
@@ -264,6 +260,5 @@ class BayesCorrelation(_PairwiseCorrelation):
     def _finalize_results(self):
         return rst.utils.convert_df(
             rst.pyr.rpackages.base.data_frame(self._r_results,
-                                    'model')).drop(columns=['time',
-                                                           'code'])
-
+                                              'model')).drop(columns=['time',
+                                                                      'code'])

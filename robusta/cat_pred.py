@@ -8,7 +8,7 @@ analysis.
 - T1Sample, BayesT1Sample: One-Sample t-test.
 
 The class instances have the following methods:
-- get_df(): Returns a pandas dataframe with the results of the analysis.
+- get_results(): Returns a pandas dataframe with the results of the analysis.
 - get_text_report(): Returns a textual report of the analysis.
 - get_latex_report(): Returns a latex formatted report of the analysis.
 """
@@ -27,13 +27,8 @@ __all__ = [
     "T1Sample", "T2Samples",
     "BayesT1Sample", "BayesT2Samples"
 ]
-
-
-# TODO Use abstractmethod on all of the functions from _Baseparametric that
-#   are always overridden by child classes.
-
 @dataclass
-class _BaseParametric:
+class _CategoricalPredictor(rst.base.AbstractClass):
     """
     A basic class to handle pre-requisites of T-Tests and ANOVAs.
 
@@ -45,7 +40,6 @@ class _BaseParametric:
     dependent: typing.Union[str, None]
     formula: typing.Union[str, None]
     agg_func: typing.Union[str, typing.Callable]
-    _perform_aggregation: bool
     _perform_aggregation: bool
     max_levels = None
 
@@ -60,60 +54,78 @@ class _BaseParametric:
             agg_func='mean',
             **kwargs
     ):
-        self.agg_func = agg_func
-        self.data = data
-        self.max_levels = kwargs.get('max_levels', None)
-        self._get_variables_and_formula(formula, dependent, between, within,
-                                        subject)
-        self._data = self._select_data()
-        if self._perform_aggregation:
-            self.data = self._aggregate_data()
+
+        vars(self).update(
+            data=data,
+            formula=formula,
+            dependent=dependent,
+            between=between,
+            within=within,
+            subject=subject,
+            agg_func=agg_func,
+            max_levels=kwargs.get('max_levels', None)
+        )
         self.data.dropna(inplace=True)
+        super().__init__()
 
-    def _get_variables_and_formula(self, formula, dependent, between, within,
-                                   subject):
+    def _set_controllers(self):
         # Parse variables from formula or build formula from entered variables
-        if formula is None:
+        if self.formula is None:
             # Variables setting routine
-            self._set_variables(dependent, between, within, subject)
+            self._set_variables()
             # Build model formula from entered variables
-            self.formula, self._r_formula = self._get_formula_from_vars()
-        elif subject is None:
+            self._set_formula_from_vars()
+        elif self.formula is not None:
             # Parse models from entered formula
-            self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(
-                formula)
-            dependent, between, within, subject = self._get_vars_from_formula()
+            self._r_formula = self.formula, rst.pyr.rpackages.stats.formula(
+                self.formula)
+            self._set_vars_from_formula()
             # Variables setting routine
-            self._set_variables(dependent, between, within, subject)
-        else:
-            raise RuntimeError("")
+            self._set_variables()
 
-    def _set_variables(self, dependent, between, within, subject):
-        # Verify identity variable integrity
-        self.subject, self._perform_aggregation = self._set_subject(subject)
-        # Verify dependent variable integrity
-        self.dependent = self._set_dependent_var(dependent)
-        # To test whether DV can be coerced to float
-        rst.utils.verify_float(self.data[self.dependent].values)
+    def _set_formula_from_vars(self):
+        fp = rst.formula_tools.FormulaParser(
+            self.dependent, self.between, self.within, self.subject
+        )
+        self.formula = fp.get_formula()
+        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+
+    def _set_vars_from_formula(self):
+        vp = rst.formula_tools.VariablesParser(self.formula)
+        (self.dependent, self.between, self.within,
+         self.subject) = vp.get_variables()
+
+    # TODO - see if this can be removed
+    # def _set_formula(self):
+    #     self.formula = self._set_formula_from_vars()
+    #     self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+
+    # TODO - see if this can be removed
+    # def _get_variables_and_formula(self, formula, dependent, between, within,
+    #                                subject):
+    #     # Parse variables from formula or build formula from entered variables
+    #     if formula is None:
+    #         # Variables setting routine
+    #         self._set_variables(dependent, between, within, subject)
+    #         # Build model formula from entered variables
+    #         self.formula, self._r_formula = self._get_formula_from_vars()
+    #     elif subject is None:
+    #         # Parse models from entered formula
+    #         self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(
+    #             formula)
+    #         dependent, between, within, subject = self._get_vars_from_formula()
+    #         # Variables setting routine
+    #         self._set_variables(dependent, between, within, subject)
+    #     else:
+    #         raise RuntimeError("No formula or variables entered")
+
+    def _set_variables(self):
         # Verify independent variables integrity
-        self._between = self._set_independent_vars(between)
-        self._within = self._set_independent_vars(within)
-        self.independent = self._between + self._within
-        self._verify_independent_vars()
+        self.between = self._convert_independent_vars_to_list(self.between)
+        self.within = self._convert_independent_vars_to_list(self.within)
+        self.independent = self.between + self.within
 
-    def _get_formula_from_vars(self):
-        return None, None
-
-    def _get_vars_from_formula(self):
-        return None, [], [], None
-
-    def _set_subject(self, subject):
-        if subject not in self.data.columns:
-            raise KeyError(
-                'Subject ID variable {} not found in data'.format(subject))
-        return subject, len(self.data[subject].unique()) < len(self.data)
-
-    def _set_independent_vars(self, ind_vars: object) -> list:
+    def _convert_independent_vars_to_list(self, ind_vars: object) -> list:
         """Make sure that the you have a list of independent variables"""
         if isinstance(ind_vars, list):
             return ind_vars
@@ -127,51 +139,52 @@ class _BaseParametric:
             return []
         raise TypeError
 
-    def _verify_independent_vars(self):
-        # _ind_vars = self._between + self._within
+    def _select_input_data(self):
+        try:
+            data = self.data[
+                self.independent +
+                [self.subject, self.dependent]].copy()
+        except KeyError:
+            cols = self.data.columns
+            vars = [i for i in vars if i not in cols]
+            raise RuntimeError(f"Variables {'/'.join(vars)} not in data!")
+        self._input_data = data
+
+    def _test_input_data(self):
+        # To test whether DV can be coerced to float
+        rst.utils.verify_float(self._input_data[self.dependent].values)
+
+        # Verify ID variable uniqueness
+        self._perform_aggregation = len(
+            self._input_data[self.subject].unique()) < self._input_data.shape[0]
+
+        # Make sure the independent variables are actually variables
         for i in self.independent:
-            rst.utils.verify_levels(self.data[i].values, self.max_levels)
+            rst.utils.verify_levels(self._input_data[i].values, self.max_levels)
 
-    def _set_dependent_var(self, dependent):
-        if dependent not in self.data.columns:
-            raise KeyError("Dependent variable not found in data")
-        return dependent
-
-    def _select_data(self):
-        data = self.data[
-            self.independent +
-            [self.subject, self.dependent]].copy()
+    def _transform_input_data(self):
         # Make sure we are handing R a DataFrame with factor variables,
         # as some packages do not coerce factor type.
-        data[self.independent] = data[
+        if self._perform_aggregation:
+            self._aggregate_data()
+
+        self._input_data.loc[:, self.independent] = self._input_data[
             self.independent].astype('category')
-        return data
+        self._r_input_data = rst.utils.convert_df(self._input_data.copy())
+
+    def _verify_independent_vars(self):
+        # _ind_vars = self.between + self.within
+        for i in self.independent:
+            rst.utils.verify_levels(self._input_data[i].values, self.max_levels)
 
     def _aggregate_data(self):
-        return self.data.groupby(
+        self._input_data.groupby(
             rst.utils.to_list(
                 [self.subject] + self.independent)).agg(
             self.agg_func).reset_index()
 
-    def _run_analysis(self):
-        pass
-
-    def _finalize_results(self):
-        pass
-        # return rst.utils.tidy(self._r_results, type(self).__name__)
-
-    def get_df(self, **kwargs):
-        return self.results.copy()
-
-    def get_text_report(self):
-        pass
-
-    def get_latex_report(self, **kwargs):
-        pass
-
-
 @register_dataframe_accessor("t2samples")
-class T2Samples(_BaseParametric):
+class T2Samples(_CategoricalPredictor):
     """
     Run a frequentist dependent or independent samples t-test.
 
@@ -209,7 +222,6 @@ class T2Samples(_BaseParametric):
         Applicable only to independent samples t-test. Whether to assume that
         the two samples have equal variance. If True runs regular two-sample,
         if False runs Welch two-sample test. Default is True.
-
     """
 
     def __init__(self,
@@ -217,6 +229,8 @@ class T2Samples(_BaseParametric):
                  independent=None,
                  tail='two.sided',
                  assume_equal_variance=True,
+                 x=None,
+                 y=None,
                  **kwargs):
         self.paired = paired
         self.tail = tail
@@ -226,6 +240,7 @@ class T2Samples(_BaseParametric):
         if independent is None:
             try:
                 independent = kwargs[{False: 'between', True: 'within'}[paired]]
+            # TODO - should be an error raised
             except KeyError as e:
                 if paired:
                     print(f'Specify `independent` or `within`: {e}')
@@ -236,30 +251,25 @@ class T2Samples(_BaseParametric):
             kwargs[{False: 'between', True: 'within'}[paired]] = independent
 
         super().__init__(**kwargs)
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
 
-    def _select_data(self):
-        data = self.data[
-            rst.utils.to_list(
-                [self.dependent, self.independent, self.subject])]
-        self.x, self.y = data.groupby(
+    def _select_input_data(self):
+        super()._select_input_data()
+        self.x, self.y = self._input_data.groupby(
             getattr(self, 'independent'))[getattr(self, 'dependent')].apply(
             lambda s: s.values)
-        return data
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.stats.t_test(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.t_test(
             **{'x': self.x, 'y': self.y, 'paired': self.paired,
                'alternative': self.alternative, 'tail': self.tail,
                'var.equal': self.assume_equal_variance})
 
-    def _finalize_results(self):
-        return rst.utils.convert_df(
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(self._r_results))
 
     def get_text_report(self):
-        params = self.results
+        params = self._r_results
         t_clause = self.results['t']
 
 
@@ -334,8 +344,8 @@ class BayesT2Samples(T2Samples):
         self.mu = mu
         super().__init__(**kwargs)
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.base.data_frame(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.ttestBF(
                 x=self.x,
                 y=self.y,
@@ -348,8 +358,8 @@ class BayesT2Samples(T2Samples):
                 mu=self.mu
             ))
 
-    def _finalize_results(self):
-        return rst.utils.convert_df(self._r_results)
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(self._r_results)
 
 
 @register_dataframe_accessor("t1sample")
@@ -393,15 +403,12 @@ class T1Sample(T2Samples):
         self.max_levels = 1
         super().__init__(**kwargs)
 
-    def _select_data(self):
-        data = self.data[
-            rst.utils.to_list(
-                [self.dependent, self.independent, self.subject])]
-        self.x = data[getattr(self, 'dependent')].values
-        return data
+    def _select__input_data(self):
+        super()._select_input_data()
+        self.x = self._input_data[getattr(self, 'dependent')].values
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.stats.t_test(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.t_test(
             x=self.x,
             mu=self.mu,
             alternative=self.tail
@@ -480,8 +487,8 @@ class BayesT1Sample(T1Sample):
         kwargs['mu'] = mu
         super().__init__(**kwargs)
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.base.data_frame(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.ttestBF(
                 x=self.x,
                 nullInterval=self.null_interval,
@@ -491,16 +498,12 @@ class BayesT1Sample(T1Sample):
                 mu=self.mu
             ))
 
-    def _finalize_results(self):
-        # TODO - consider using data.table package and setDT function
-        # self._r_results = rst.pyr.rpackages.base.cbind(
-        #        rst.pyr.rpackages.base.row_names(self._r_results),
-        #        rst.pyr.rpackages.base.data_frame(self._r_results))
-        return rst.utils.convert_df(self._r_results)
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(self._r_results)
 
 
 @register_dataframe_accessor("anova")
-class Anova(_BaseParametric):
+class Anova(_CategoricalPredictor):
     """
     Run a mixed (between + within) frequentist ANOVA.
 
@@ -541,34 +544,32 @@ class Anova(_BaseParametric):
         self.margins_term = margins_term
 
         super().__init__(**kwargs)
-        self._r_results = self._run_analysis()
-        self.results = self._finalize_results()
 
         if self.margins_term is not None:
             self.margins_df = self.get_margins()
 
-    def _get_formula_from_vars(self):
-        return rst.utils.build_lm4_style_formula(
-            dependent=self.dependent,
-            between=self._between,
-            within=self._within,
-            subject=self.subject
-        )
+    # def _set_formula_from_vars(self):
+    #     return rst.utils.build_lm4_style_formula(
+    #         dependent=self.dependent,
+    #         between=self.between,
+    #         within=self.within,
+    #         subject=self.subject
+    #     )
 
-    def _get_vars_from_formula(self):
-        return rst.utils.parse_variables_from_lm4_style_formula(self.formula)
+    # def _get_vars_from_formula(self):
+    #    return rst.utils.parse_variables_from_lm4_style_formula(self.formula)
 
-    def _run_analysis(self):
-        return rst.pyr.rpackages.afex.aov_4(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
-            data=rst.utils.convert_df(self.data),
+            data=self._r_input_data,
             es=self.effect_size,
             correction=self.sphericity_correction)
         # TODO: Add reliance on aov_ez aggregation functionality.
         # TODO: Add this functionality - sig_symbols= rst.pyr.vectors.StrVector(["", "", "", ""]))
 
-    def _finalize_results(self):
-        return rst.utils.convert_df(
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(
                 rst.pyr.rpackages.stats.anova(self._r_results)))
 
@@ -596,7 +597,7 @@ class Anova(_BaseParametric):
             margins_term = [margins_term]
         margins_term = np.array(margins_term)
         if not all(
-                term in self.get_df()['term'].values for term in
+                term in self.get_results()['term'].values for term in
                 margins_term):
             raise RuntimeError(
                 f'Margins term: {[i for i in margins_term]}'
@@ -720,36 +721,22 @@ class BayesAnova(Anova):
         self.no_sample = no_sample
         self.include_subject = include_subject
 
-        # if not ('between' in kwargs and 'within' in kwargs):
-        #    raise ValueError(
-        #        "A Mixed Anova was selected. Specify both `between`"
-        #        "and `within`")
         super().__init__(**kwargs)
 
-    def _get_formula_from_vars(self):
-        frml = rst.utils.bayes_style_formula(self.dependent, self._between,
-                                             self._within,
+    def _set_formula_from_vars(self):
+        frml = rst.utils.bayes_style_formula(self.dependent, self.between,
+                                             self.within,
                                              subject={
                                                  False: None,
                                                  True: self.subject
                                              }[self.include_subject])
-        return frml, rst.pyr.rpackages.stats.formula(frml)
+        self.formula = frml
+        self._r_formula = rst.pyr.rpackages.stats.formula(frml)
 
-    def _get_vars_from_formula(self):
-        dependent, between, within, subject = rst.utils.parse_variables_from_lm4_style_formula(
-            self.formula)
-        # And now we can update the formula, as BayesFactor packages requires
-        self._update_formula()
-        return dependent, between, within, subject
-
-    def _update_formula(self):
-        self.formula = rst.utils.bayes_style_formula(self.formula)
-        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
-
-    def _run_analysis(self):
-        return rst.pyr.rpackages.bayesfactor.anovaBF(
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.bayesfactor.anovaBF(
             self._r_formula,
-            rst.utils.convert_df(self.data),
+            self._r_input_data,
             whichRandom=self.subject,
             whichModels=self.which_models,
             iterations=self.iterations,
@@ -762,10 +749,10 @@ class BayesAnova(Anova):
             # noSample=self.no_sample
         )
 
-    def _finalize_results(self):
+    def _tidy_results(self):
         self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(
             self._r_results)
-        return rst.utils.convert_df(self._r_results,
+        self._results = rst.utils.convert_df(self._r_results,
                                     'model')[['model', 'bf', 'error']]
 
     def get_margins(self):
@@ -779,4 +766,3 @@ class PairwiseComparison:
     def __init__(self, data, correction_method):
         self.data = data
         self.correction_method = correction_method
-

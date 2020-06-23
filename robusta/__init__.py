@@ -14,11 +14,13 @@ from .pyrio import PyRIO
 
 pyr = PyRIO()
 
+from . import base
 from . import formula_tools
 from . import utils
 from . import datasets
 from . import examples
 
-from .parametric_tests import *
+
+from .cat_pred import *
 from .regressions import *
 from .correlations import *

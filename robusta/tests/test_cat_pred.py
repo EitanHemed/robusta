@@ -11,11 +11,11 @@ import robusta as rst
 
 class TestT1Sample(unittest.TestCase):
 
-    def test_t1sample_get_df(self):
+    def test_t1sample_get_results(self):
         sleep = rst.datasets.data('sleep')
         res = rst.T1Sample(data=sleep.loc[sleep['group'] == '1'],
                            dependent='extra', subject='ID',
-                           independent='group').get_df().drop(columns=['row_names'])
+                           independent='group').get_results().drop(columns=['row_names'])
         """# Now in R...
         library(broom)
         data.frame(tidy(t.test(x=sleep[sleep$group == 1, 'extra'])))
@@ -39,8 +39,7 @@ class TestBayesT1Sample(unittest.TestCase):
         res = rst.BayesT1Sample(data=data,
                                 dependent='diff_scores', subject='ID',
                                 independent='group',
-                                null_interval=[-np.inf, 0]).get_df()
-        print(res)
+                                null_interval=[-np.inf, 0]).get_results()
         """
         library(BayesFactor)
         diff = (sleep[sleep$group == 1, 'extra'] 
@@ -66,7 +65,7 @@ class TestAnova(unittest.TestCase):
     def test_between_anova(self):
         anova = rst.Anova(data=rst.datasets.data('ToothGrowth'),
                           dependent='len', subject='dataset_rownames',
-                          between=['supp', 'dose']).get_df().drop(columns=['row_names'])
+                          between=['supp', 'dose']).get_results().drop(columns=['row_names'])
         """
         library(broom)
         library(afex)
@@ -150,7 +149,7 @@ class TestBayesAnova(unittest.TestCase):
         anova = rst.BayesAnova(data=rst.datasets.data('ToothGrowth'),
                                dependent='len', subject='dataset_rownames',
                                between=['supp', 'dose'], iterations=100000
-                               ).get_df()  # .round(4)
+                               ).get_results()  # .round(4)
         """#Now in R...
         ToothGrowth$dose = as.factor(ToothGrowth$dose)
         rownames_to_column(
