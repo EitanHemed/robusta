@@ -38,9 +38,9 @@ class AbstractClass(metaclass=abc.ABCMeta):
     def _analyze(self):
         pass
 
-    @abc.abstractmethod
     def _tidy_results(self):
         self._results = pd.DataFrame()
+
 
     def get_results(self):
         return self._results.apply(pd.to_numeric, errors='ignore').copy()

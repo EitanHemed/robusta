@@ -15,11 +15,11 @@ class TestLinearRegression(unittest.TestCase):
                                             5.17, 4.53, 5.33, 5.14, 4.81, 4.17,
                                             4.41, 3.59, 5.87, 3.83, 6.03, 4.89,
                                             4.32, 4.69]]).T)
+        data.reset_index(drop=False, inplace=True)
+        data.rename(columns={'index': 'dataset_rownames'}, inplace=True)
 
         res = rst.LinearRegression(
-            formula='weight ~ group', data=data).get_results().drop(
-            columns=['row_names'])
-
+            formula='weight ~ group + 1|dataset_rownames', data=data).get_results()
         """"
         # Now in R...
         library(broom)
@@ -45,8 +45,8 @@ class TestLinearRegression(unittest.TestCase):
 
         res = rst.LinearRegression(
             data=rst.datasets.data('marketing'),
-            formula='sales~youtube*facebook',
-            subject='dataset_rownames').get_results().drop(columns=['row_names'])
+            formula='sales~youtube*facebook + 1|dataset_rownames',
+            subject='dataset_rownames').get_results()
 
         """# Now in R...
         library(datarium)
@@ -63,12 +63,18 @@ class TestLinearRegression(unittest.TestCase):
         pd.testing.assert_frame_equal(res, r_res, check_exact=False,
                                       check_less_precise=5)
 
+    def test_missing_columns(self):
+        df = rst.datasets.data('sleep')
+        with self.assertRaises(KeyError):
+            rst.LinearRegression(data=df, formula='extra ~ condition + 1|ID')
+
+
 
 class TestBayesianLinearRegression(unittest.TestCase):
 
     def test_simple_bayesian_regression(self):
         res = rst.BayesianLinearRegression(data=rst.datasets.data(
-            'attitude'), formula='rating ~ complaints').get_results()
+            'attitude'), formula='rating ~ complaints + 1|dataset_rownames').get_results()
 
         """
         # Now in R...
@@ -86,8 +92,9 @@ class TestBayesianLinearRegression(unittest.TestCase):
                                       check_less_precise=5)
 
     def test_multiple_bayesian_regression(self):
-        res = rst.BayesianLinearRegression(data=rst.datasets.data(
-            'attitude'), formula='rating ~ privileges * complaints + raises').get_results()
+        res = rst.BayesianLinearRegression(data=rst.datasets.data('attitude'),
+            formula='rating ~ privileges * complaints + raises + 1|dataset_rownames'
+        ).get_results()
 
         """
         # Now in R...
@@ -113,9 +120,6 @@ class TestBayesianLinearRegression(unittest.TestCase):
                 privileges + complaints + privileges:complaints + raises,6308.610998910358,3.0041097303250905e-6
                 """), lineterminator='\n', skipinitialspace =True)
 
-        # TODO - see if the commented line below can be deleted
-        # r_res['model'] = r_res['model'].str.strip().values
-
         pd.testing.assert_frame_equal(res, r_res, check_exact=False,
                                       check_less_precise=5)
 
@@ -124,8 +128,8 @@ class TestLogisticRegression(unittest.TestCase):
     def test_simple_logistic_regression(self):
 
         res = rst.LogisticRegression(
-            formula='group~extra', data=rst.datasets.data('sleep')
-                                     ).get_results().drop(columns=['row_names'])
+            formula='group~extra+1|ID', data=rst.datasets.data('sleep')
+                                     ).get_results()
 
         """
         # Now in R...

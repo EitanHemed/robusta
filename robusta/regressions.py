@@ -5,6 +5,10 @@ import numpy as np
 from dataclasses import dataclass
 from pandas_flavor import register_dataframe_accessor
 import robusta as rst
+import warnings
+
+warnings.warn("Currently the regressions module is under development,"
+              "nothing is promised to work correctly.")
 
 __all__ = [
     'LinearRegression', 'BayesianLinearRegression',
@@ -24,49 +28,57 @@ class _BaseRegression(rst.base.AbstractClass):
                  subject=None
                  ):
         self.data = data
-        self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(
-            formula)
-        self._prepare()
+        self.formula = formula
         super().__init__()
-        # self._r_results = self._run_analysis()
-        # self.results = self._finalize_results()
 
-    def _prepare(self):
-        self._test_subject_kwarg()
-        self._set_variables()
-        self._test_input()
+    def _set_controllers(self):
+        # First we parse the variables from the formula
+        self._set_variables_from_formula()
+        # So we can make sure that the formula is compatible
+        self._set_formula()
 
-    def _set_variables(self):
-        # self._vars = rst.utils.parse_variables_from_general_formula(
-        #    self.formula)
+    def _set_variables_from_formula(self):
+
         vp = rst.formula_tools.VariablesParser(self.formula)
-        self._vars = vp.get_variables()
-        print(self._vars)
+        self.dependent, self.between, self.within, self.subject = vp.get_variables()
+        self._vars = rst.utils.to_list(vp.get_variables())
 
-    def _test_input(self):
+    def _set_formula(self):
+        # Beautify the formula
+        fp = rst.formula_tools.FormulaParser(
+            self.dependent, self.between, self.within, self.subject
+        )
+        frml = fp.get_formula()
+        frml = frml.replace(f'+(1|{self.subject})', '')
+        self.formula = frml
+        self._r_formula = rst.pyr.rpackages.stats.formula(frml)
+
+    def _select_input_data(self):
+        _data = None
 
         if not isinstance(self.data, pd.DataFrame):
             raise RuntimeError('No data!')
+        _data = self.data[self._vars].copy()
+        self._input_data = _data
 
-        cols = self.data.columns
-        for v in self._vars:
-            if v not in cols:
+    def _test_input_data(self):
+        for v in rst.utils.to_list(self._vars):
+            if v not in self._input_data.columns:
                 raise KeyError(f'Variable {v} from formula not found in data!')
 
-        _data = self.data[self._vars].copy()
-
-        if _data.isnull().values.any():
+        if self._input_data.isnull().values.any():
             if self.nan_action == 'raise':
                 raise ValueError(
                     'NaN in data, either specify action or '
                     'remove')
             if self.nan_action == 'drop':
-                _data.dropna(inplace=True)
+                self._input_data.dropna(inplace=True)
             if self.nan_action == 'replace':
                 if self.nan_action in ('mean', 'median', 'mode'):
                     raise NotImplementedError
 
-        return _data
+    def _transform_input_data(self):
+        pass
 
     def _test_subject_kwarg(self):
         pass
@@ -84,10 +96,14 @@ class _BaseRegression(rst.base.AbstractClass):
         pass
 
     def _tidy_results(self):
-        pass
+        self._results = rst.utils.convert_df(
+            rst.pyr.rpackages.base.data_frame(
+                rst.pyr.rpackages.generics.tidy(
+                    self._r_results)))
 
     def get_results(self):
-        pass
+        return self._results.apply(
+            pd.to_numeric, errors='ignore')
 
 
 class LinearRegression(_BaseRegression):
@@ -106,23 +122,22 @@ class LinearRegression(_BaseRegression):
             }
         )
 
-    def _tidy_results(self):
-        self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self._r_results))
-
-    def get_results(self):
-        return self._results.apply(
-            pd.to_numeric, errors='ignore')
-
 
 class BayesianLinearRegression(LinearRegression):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    #def _set_formula(self):
+        #super()._set_formula()
+        #frml = self.formula + f"+{self.subject}"
+        #self.formula = frml
+        #self._r_formula = rst.pyr.rpackages.stats.formula(frml)
+
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.generalTestBF(
-                formula=self._r_formula, data=self.data, progress=False))
+                formula=self._r_formula, data=self._input_data, progress=False,
+                whichRandom=self.subject, neverExclude=self.subject))
 
     def _tidy_results(self):
         self._results = rst.utils.convert_df(self._r_results,
@@ -132,12 +147,12 @@ class BayesianLinearRegression(LinearRegression):
 
 class LogisticRegression(_BaseRegression):
     def __init__(self, **kwargs):
-        f = rst.formula_tools.VariablesParser(kwargs['formula'])
-        print(f.get_variables())
-
         super().__init__(**kwargs)
         # TODO - this is likely to break on spaces before the tilda sign.
-        self.dependent = self.formula.split('~')[0]
+        # self.dependent = self.formula.split('~')[0]
+
+    def _test_input_data(self):
+        super()._test_input_data()
         self._validate_binary_variables(self.dependent)
 
     def _analyze(self):
@@ -145,16 +160,6 @@ class LogisticRegression(_BaseRegression):
             formula=self.formula, data=self.data,
             family='binomial'
         )
-
-    def _tidy_results(self):
-        self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.base.data_frame(
-                rst.pyr.rpackages.generics.tidy(
-                    self._r_results)))
-
-    def get_results(self):
-        return self.results.apply(
-            pd.to_numeric, errors='ignore')
 
 
 class BayesianLogisticRegression(LogisticRegression):
@@ -182,7 +187,6 @@ class MixedModel:
     def _set_variables(self):
         self._vars = rst.utils.parse_variables_from_lm4_style_formula(
             self.formula)
-        print(self._vars)
 
     def _run_analysis(self):
         return rst.pyr.rpackages.lme4.lmer(

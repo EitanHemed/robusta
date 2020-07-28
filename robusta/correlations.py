@@ -59,6 +59,9 @@ class _PairwiseCorrelation(rst.base.AbstractClass):
                 if self.nan_action in ('mean', 'median', 'mode'):
                     raise NotImplementedError
 
+    def _analyze(self):
+        pass
+
     def _transform_input_data(self):
         pass
 

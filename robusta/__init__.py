@@ -21,6 +21,6 @@ from . import datasets
 from . import examples
 
 
-from .cat_pred import *
+from .groupwise import *
 from .regressions import *
 from .correlations import *

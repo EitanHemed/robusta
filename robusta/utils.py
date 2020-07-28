@@ -58,7 +58,7 @@ def verify_levels(a: object, max_levels: object = None) -> None:
     # TODO - this should raise a runtime error ^
 
 
-def convert_df(df, df_rownames_column_name='row_names'):
+def convert_df(df, df_rownames_column_name=None):
     """A utility for safe conversion
     @type df: An R or Python DataFrame.
     """
@@ -72,10 +72,10 @@ def convert_df(df, df_rownames_column_name='row_names'):
                 _df[_df.names.index(cn)])
         return _df
     elif type(df) == robjects.vectors.DataFrame:
-        return pd.DataFrame(
-            robjects.pandas2ri.ri2py(
-                rst.pyr.rpackages.tibble.rownames_to_column(
-                    df, var=df_rownames_column_name)))
+        if df_rownames_column_name is not None:
+            df = rst.pyr.rpackages.tibble.rownames_to_column(
+                    df, var=df_rownames_column_name)
+        return pd.DataFrame(robjects.pandas2ri.ri2py(df))
     else:
         raise RuntimeError("Input can only be R/Python DataFrame object")
 
