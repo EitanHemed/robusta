@@ -10,23 +10,30 @@ class VariablesParser():
 
     def __init__(self, formula):
         self.formula = formula
+        self.parsed_formula = self.parse_regression_formula()
+        self.assign_variables_from_formula()
+        self.test_and_finalize_variables()
 
-        # self.patsy_parsed = ModelDesc.from_formula(formula)
-        self.dependent, self.between, self.within, self.subject = (
-            self.parse_variables_from_formula())
-
-    def parse_variables_from_formula(self):
+    def assign_variables_from_formula(self):
         # Todo - rewrite all incorrect specification of formula and
-        parsed = self.parse_regression_formula(self.formula)
-        _d = parsed.asDict()
-        dependent = _d['dependent'][0]
-        between = _d.get('between', [])
+        _d = self.parsed_formula.asDict()
+        self.dependent = _d['dependent'][0]
+        self.between = _d.get('between', [])
+        self.within = _d.get('within')
+        self.subject = _d['subject']
+
+    def test_and_finalize_variables(self):
+        if self.subject == '':
+            raise RuntimeError('No subject variables defined')
+        if (self.within + self.between) == []:
+            raise RuntimeError('No between or within variables defined')
+
         # TODO - This is an ugly patch that designs with no within-subject term
         #  the handling should occur within the parser definition
-        within = [] if _d.get('within') == ['1'] else _d.get('within')
+        if self.within == ['1']:
+            self.within = []
 
-        subject = _d['subject']
-        return (dependent, between, within, subject)
+        return
 
         # This one is the easiest
         between = []
@@ -86,7 +93,7 @@ class VariablesParser():
     # def get_formula(self):
     #    return self.patsy_parsed
 
-    def parse_regression_formula(self, formula):
+    def parse_regression_formula(self):
 
         # A possible variable name is:
         varname = pyparsing.Word(
@@ -111,7 +118,7 @@ class VariablesParser():
                 + varname.setResultsName('subject'))
 
         prsr = (dependent + between_terms + within_and_subject_terms)
-        return prsr.parseString(formula)
+        return prsr.parseString(self.formula)
 
 
         within_terms = (pyparsing.OneOrMore(

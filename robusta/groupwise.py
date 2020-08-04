@@ -27,8 +27,10 @@ __all__ = [
     "T1Sample", "T2Samples",
     "BayesT1Sample", "BayesT2Samples"
 ]
+
+
 @dataclass
-class _CategoricalPredictor(rst.base.AbstractClass):
+class _GroupwiseAnalysis(rst.base.AbstractClass):
     """
     A basic class to handle pre-requisites of T-Tests and ANOVAs.
 
@@ -95,29 +97,6 @@ class _CategoricalPredictor(rst.base.AbstractClass):
         (self.dependent, self.between, self.within,
          self.subject) = vp.get_variables()
 
-    # TODO - see if this can be removed
-    # def _set_formula(self):
-    #     self.formula = self._set_formula_from_vars()
-    #     self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
-
-    # TODO - see if this can be removed
-    # def _get_variables_and_formula(self, formula, dependent, between, within,
-    #                                subject):
-    #     # Parse variables from formula or build formula from entered variables
-    #     if formula is None:
-    #         # Variables setting routine
-    #         self._set_variables(dependent, between, within, subject)
-    #         # Build model formula from entered variables
-    #         self.formula, self._r_formula = self._get_formula_from_vars()
-    #     elif subject is None:
-    #         # Parse models from entered formula
-    #         self.formula, self._r_formula = formula, rst.pyr.rpackages.stats.formula(
-    #             formula)
-    #         dependent, between, within, subject = self._get_vars_from_formula()
-    #         # Variables setting routine
-    #         self._set_variables(dependent, between, within, subject)
-    #     else:
-    #         raise RuntimeError("No formula or variables entered")
 
     def _set_variables(self):
         # Verify independent variables integrity
@@ -183,8 +162,9 @@ class _CategoricalPredictor(rst.base.AbstractClass):
                 [self.subject] + self.independent)).agg(
             self.agg_func).reset_index()
 
+
 @register_dataframe_accessor("t2samples")
-class T2Samples(_CategoricalPredictor):
+class T2Samples(_GroupwiseAnalysis):
     """
     Run a frequentist dependent or independent samples t-test.
 
@@ -503,7 +483,7 @@ class BayesT1Sample(T1Sample):
 
 
 @register_dataframe_accessor("anova")
-class Anova(_CategoricalPredictor):
+class Anova(_GroupwiseAnalysis):
     """
     Run a mixed (between + within) frequentist ANOVA.
 
@@ -753,10 +733,83 @@ class BayesAnova(Anova):
         self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(
             self._r_results)
         self._results = rst.utils.convert_df(self._r_results,
-                                    'model')[['model', 'bf', 'error']]
+                                             'model')[['model', 'bf', 'error']]
 
     def get_margins(self):
         raise NotImplementedError('Not implemented currently.')
+
+
+class Wilcoxon1Sample(T1Sample):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.wilcox_test(
+            x=self.x, alternative=self.tail, mu=self.mu,
+            exact=True, correct=True
+        )
+
+
+class Wilcoxon2Sample(T2Samples):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.wilcox_test(
+            x=self.x, y=self.y, paired=self.paired,
+            alternative=self.tail, mu=self.mu,
+            exact=True, correct=True
+        )
+
+
+class KruskalWallisTest(Anova):
+    """Non-parametric between subject anova"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _test_input_data(self):
+        super()._test_input_data()
+        if len(self.between) != 1:
+            raise RuntimeError('More than one between subject factors defined')
+        if self.within != []:
+            raise RuntimeError('A within subject factor has been defined')
+
+    def _set_formula_from_vars(self):
+        super()._set_formula_from_vars()
+        self.formula = f'{self.dependent} ~ {self.between[0]}'
+        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.kruskal_test(
+            self._r_formula, data=self._r_input_data
+        )
+
+
+class FriemanTest(Anova):
+    """Non-parametric within subject anova"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _test_input_data(self):
+        super()._test_input_data()
+        if len(self.within) != 1:
+            raise RuntimeError('More than one within subject factors defined')
+        if self.between != []:
+            raise RuntimeError('A between subject factor has been defined')
+
+    def _set_formula_from_vars(self):
+        super()._set_formula_from_vars()
+        self.formula = f'{self.dependent} ~ {self.between[0]}'
+        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+
+    def _analyze(self):
+        self._r_results = rst.pyr.rpackages.stats.friedman_test(
+            self._r_formula, data=self._r_input_data
+        )
 
 
 class PairwiseComparison:
