@@ -15,7 +15,7 @@ class TestT1Sample(unittest.TestCase):
         sleep = rst.datasets.data('sleep')
         res = rst.T1Sample(data=sleep.loc[sleep['group'] == '1'],
                            dependent='extra', subject='ID',
-                           independent='group').get_results().drop(columns=['row_names'])
+                           independent='group').get_results()
         """# Now in R...
         library(broom)
         data.frame(tidy(t.test(x=sleep[sleep$group == 1, 'extra'])))
@@ -65,7 +65,7 @@ class TestAnova(unittest.TestCase):
     def test_between_anova(self):
         anova = rst.Anova(data=rst.datasets.data('ToothGrowth'),
                           dependent='len', subject='dataset_rownames',
-                          between=['supp', 'dose']).get_results().drop(columns=['row_names'])
+                          between=['supp', 'dose']).get_results()
         """
         library(broom)
         library(afex)
@@ -87,18 +87,18 @@ class TestAnova(unittest.TestCase):
                                       check_less_precise=5)
 
     def test_margins(self):
-        df = rst.datasets.data('anxiety').drop(columns=['dataset_rownames']).set_index(
+        df = rst.datasets.data('anxiety').set_index(
             ['id', 'group']).stack().reset_index().rename(columns={0: 'score',
                                                                    'level_2': 'time'})
         anova_time = rst.Anova(data=df, within='time',
                                dependent='score', subject='id')
-        margins_time = anova_time.get_margins('time').drop(columns=['row_names'])
+        margins_time = anova_time.get_margins('time')
 
         anova_time_by_group = rst.Anova(
             data=df, between='group', within='time',
             dependent='score', subject='id')
         margins_time_by_group = anova_time_by_group.get_margins(
-            ('time', 'group')).drop(columns=['row_names'])
+            ('time', 'group'))
         """
         # Now in R...
         library(tidyr)

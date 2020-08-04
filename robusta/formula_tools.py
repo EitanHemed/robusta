@@ -9,12 +9,25 @@ from patsy.desc import ModelDesc
 class VariablesParser():
 
     def __init__(self, formula):
+        self.formula = formula
 
-        self.patsy_parsed = ModelDesc.from_formula(formula)
+        # self.patsy_parsed = ModelDesc.from_formula(formula)
         self.dependent, self.between, self.within, self.subject = (
             self.parse_variables_from_formula())
 
     def parse_variables_from_formula(self):
+        # Todo - rewrite all incorrect specification of formula and
+        parsed = self.parse_regression_formula(self.formula)
+        _d = parsed.asDict()
+        dependent = _d['dependent'][0]
+        between = _d.get('between', [])
+        # TODO - This is an ugly patch that designs with no within-subject term
+        #  the handling should occur within the parser definition
+        within = [] if _d.get('within') == ['1'] else _d.get('within')
+
+        subject = _d['subject']
+        return (dependent, between, within, subject)
+
         # This one is the easiest
         between = []
         within = []
@@ -70,8 +83,46 @@ class VariablesParser():
     def get_variables(self):
         return self.dependent, self.between, self.within, self.subject
 
-    def get_formula(self):
-        return self.patsy_parsed
+    # def get_formula(self):
+    #    return self.patsy_parsed
+
+    def parse_regression_formula(self, formula):
+
+        # A possible variable name is:
+        varname = pyparsing.Word(
+            pyparsing.alphanums + re.sub('[+*$|()~]', '', string.punctuation))
+        # We need to identify the dependent, between, within and subject variables
+        # First we define the patterns
+        # Dependent variable
+        dependent = (varname + pyparsing.Suppress('~')).setResultsName(
+            'dependent')
+        # There are two possible patterns for within and subject variables
+        # 1. Only subject variable (1|ID)
+        # 2. Within and subject (condition|order|ID)
+
+        between_terms = pyparsing.ZeroOrMore(
+                varname + pyparsing.Suppress(pyparsing.oneOf(['+', '*']))
+        ).setResultsName('between')
+        within_and_subject_terms = (
+                (pyparsing.OneOrMore(
+                    pyparsing.OneOrMore(
+                        varname + pyparsing.Suppress('|'))
+                    | pyparsing.Suppress('1'))).setResultsName('within')
+                + varname.setResultsName('subject'))
+
+        prsr = (dependent + between_terms + within_and_subject_terms)
+        return prsr.parseString(formula)
+
+
+        within_terms = (pyparsing.OneOrMore(
+            varname + pyparsing.Suppress('|')) |
+                        pyparsing.Suppress('1') + pyparsing.Suppress('|')
+                        ).setResultsName('within')
+        subject = varname.setResultsName('subject')
+        formula_parsing = (dependent
+                           + between_terms
+                           + within_terms
+                           + subject)
 
 
 class FormulaParser:
@@ -97,69 +148,53 @@ class FormulaParser:
     def get_formula(self):
         return self.formula
 
+# '''
+# # A helpful example
+# # https://www.accelebrate.com/blog/pyparseltongue-parsing-text-with-pyparsing
+#
+# URL grammar
+#   url ::= scheme '://' [userinfo] host [port] [path] [query] [fragment]
+#   scheme ::= http | https | ftp | file
+#   userinfo ::= url_chars+ ':' url_chars+ '@'
+#   host ::= alphanums | host (. + alphanums)
+#   port ::= ':' nums
+#   path ::= url_chars+
+#   query ::= '?' + query_pairs
+#   query_pairs ::= query_pairs | (query_pairs '&' query_pair)
+#   query_pair = url_chars+ '=' url_chars+
+#   fragment = '#' + url_chars
+#   url_chars = alphanums + '-_.~%+'
+#
+# Formula grammer
+#     formula ::= varname '~' indepdendent_vars
+#     varname = alphanums + re.sub('[~+$|()]', '', string.punctuation)
+#
+#     only_subject = pyparsing.Suppress(pyparsing.Literal('1')
+#                                       + pyparsing.Literal('|')) + varname
+#     both_subject_and_within = (
+#             varname
+#             + pyparsing.Suppress(pyparsing.Literal('|'))
+#             + varname
+#             + pyparsing.ZeroOrMore(
+#         pyparsing.Suppress(pyparsing.Literal('|')) + pyparsing.delimitedList(
+#             varname, '|')))
+#     subject_and_within_options = (only_subject | both_subject_and_within)
+#     # Between subject variables
+#     rhs_between = pyparsing.delimitedList(varname, pyparsing.oneOf(['+', '*']))
+#
+#
+#     subject_and_no_within_vars = (
+#             pyparsing.Suppress(pyparsing.Literal('1') + pyparsing.Literal('|'))
+#             + varname)
+#     subject_and_within_vars = (
+#             varname
+#             + pyparsing.Suppress(pyparsing.Literal('|'))
+#             + pyparsing.OneOrMore(pyparsing.delimitedList(varname, '|')))
+#     rhs_within_and_subject = (
+#             subject_and_no_within_vars | subject_and_within_vars)
+#     rhs = (pyparsing.Optional(rhs_between) + rhs_within_and_subject)
+#     formula_parsing = (lhs
+#                        + pyparsing.Suppress(pyparsing.Literal('~'))
+#                        + rhs)
+# """
 
-'''
-# A helpful example
-# https://www.accelebrate.com/blog/pyparseltongue-parsing-text-with-pyparsing
-
-URL grammar
-  url ::= scheme '://' [userinfo] host [port] [path] [query] [fragment]
-  scheme ::= http | https | ftp | file
-  userinfo ::= url_chars+ ':' url_chars+ '@'
-  host ::= alphanums | host (. + alphanums)
-  port ::= ':' nums
-  path ::= url_chars+
-  query ::= '?' + query_pairs
-  query_pairs ::= query_pairs | (query_pairs '&' query_pair)
-  query_pair = url_chars+ '=' url_chars+
-  fragment = '#' + url_chars
-  url_chars = alphanums + '-_.~%+'
-  
-Formula grammer
-    formula ::= varname '~' indepdendent_vars
-    varname = alphanums + re.sub('[~+$|()]', '', string.punctuation)
-'''
-
-
-def parse_regression_formula(formula):
-
-
-# A possible variable name is:
-varname = pyparsing.Word(
-    pyparsing.alphanums + re.sub('[+$|()~]', '', string.punctuation))
-# We need to identify the dependent, between, within and subject variables
-# First we define the patterns
-# Dependent variable
-lhs = varname.setResultsName('dependent')
-only_subject = pyparsing.Suppress(pyparsing.Literal('1')
-                                  + pyparsing.Literal('|')) + varname
-both_subject_and_within = (
-        varname
-        + pyparsing.Suppress(pyparsing.Literal('|'))
-        + varname
-        + pyparsing.ZeroOrMore(
-    pyparsing.Suppress(pyparsing.Literal('|')) + pyparsing.delimitedList(
-        varname, '|')))
-subject_and_within_options = (only_subject | both_subject_and_within)
-
-# Between subject variables
-rhs_between = pyparsing.delimitedList(
-    ~subject_and_within_options # Yes
-    + varname, pyparsing.oneOf(['+', '*']))
-
-# There are two possible patterns for within and subject variables
-# 1. Only subject variable (1|ID)
-subject_and_no_within_vars = (
-        pyparsing.Suppress(pyparsing.Literal('1') + pyparsing.Literal('|'))
-        + varname)
-# 2. Within and subject (condition|ID)
-subject_and_within_vars = (
-        varname
-        + pyparsing.Suppress(pyparsing.Literal('|'))
-        + pyparsing.OneOrMore(pyparsing.delimitedList(varname, '|')))
-rhs_within_and_subject = (
-        subject_and_no_within_vars | subject_and_within_vars)
-rhs = (pyparsing.Optional(rhs_between) + rhs_within_and_subject)
-formula_parsing = (lhs
-                   + pyparsing.Suppress(pyparsing.Literal('~'))
-                   + rhs)

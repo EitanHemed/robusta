@@ -18,7 +18,7 @@ class Test_PairwiseCorrelation(unittest.TestCase):
 class TestChiSquare(unittest.TestCase):
     def test_chisquare_get_df(self):
         res = rst.ChiSquare(x='am', y='vs', data=rst.datasets.data('mtcars')
-                            ).get_results().drop(columns=['row_names'])
+                            ).get_results()
         """
         # Now in R...
         options(width=120)
@@ -106,7 +106,7 @@ class TestPartialCorrelation(unittest.TestCase):
         hsgpa = [3.0, 3.2, 2.8, 2.5, 3.2, 3.8, 3.9, 3.8, 3.5, 3.1]
         fgpa = [2.8, 3.0, 2.8, 2.2, 3.3, 3.3, 3.5, 3.7, 3.4, 2.9]
         res = rst.PartialCorrelation(x=satv, y=hsgpa, z=fgpa, method='pearson'
-                                     ).get_results().drop(columns=['row_names'])
+                                     ).get_results()
 
         """
         # Now in R...
@@ -136,7 +136,7 @@ class TestPartCorrelation(unittest.TestCase):
         hsgpa = [3.0, 3.2, 2.8, 2.5, 3.2, 3.8, 3.9, 3.8, 3.5, 3.1]
         fgpa = [2.8, 3.0, 2.8, 2.2, 3.3, 3.3, 3.5, 3.7, 3.4, 2.9]
         res = rst.PartCorrelation(x=satv, y=hsgpa, z=fgpa, method='pearson'
-                                  ).get_results().drop(columns=['row_names'])
+                                  ).get_results()
 
         """
         # Now in R...
@@ -164,8 +164,7 @@ class TestBayesCorrelation(unittest.TestCase):
     def test_output(self):
         res = rst.BayesCorrelation(x='Sepal.Width', y='Sepal.Length',
                                    data=rst.datasets.data('iris')).get_results(
-        ).drop(columns=['row_names'])
-
+        )
         """
         # Now in R
         options(width=120)
