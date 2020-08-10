@@ -788,7 +788,7 @@ class KruskalWallisTest(Anova):
         )
 
 
-class FriemanTest(Anova):
+class FriedmanTest(Anova):
     """Non-parametric within subject anova"""
 
     def __init__(self, **kwargs):
