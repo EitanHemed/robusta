@@ -11,7 +11,18 @@ Welcome to Robusta's documentation!
    :caption: Contents:
 
 
-robusta T-test and Anova
+robusta correlations
 =====================
-.. automodule:: robusta.ttest_and_anova
+.. automodule:: robusta.correlations
    :members:
+   :inherited-members:
+robusta GroupWise
+=====================
+.. automodule:: robusta.groupwise
+   :members:
+   :inherited-members:
+robusta Regressions
+=====================
+.. automodule:: robusta.regressions
+   :members:
+   :inherited-members:
