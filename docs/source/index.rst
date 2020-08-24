@@ -3,26 +3,34 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Robusta's documentation!
+robusta
+*******
+
+robusta is an open-source statistical analysis package in Python. It uses
+`rpy2 <https://rpy2.github.io/>`_ as a backend. robusta features most of the
+common statistical tests such as:
+ * t-tests and ANOVAs
+ * correlation coefficients
+ * regression and mixed modeling
+
+Most tests include both parametric and non-parametric versions. Also,
+most tests include both Frequentist and Bayesian versions.
+
+For a full list see :ref:`API <api>`
+
+robusta is designed with two main use cases in mind
+   1. Interactive sessions (teaching, data exploration).
+   2. Pipelining (producing periodic reports, generating publication
+      ready textual reports).
+
+
 ===================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+
+   Installation
+   API
 
 
-robusta correlations
-=====================
-.. automodule:: robusta.correlations
-   :members:
-   :inherited-members:
-robusta GroupWise
-=====================
-.. automodule:: robusta.groupwise
-   :members:
-   :inherited-members:
-robusta Regressions
-=====================
-.. automodule:: robusta.regressions
-   :members:
-   :inherited-members:
+

@@ -4,9 +4,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Welcome to Robusta’s documentation! &#8212; robusta 0.0.1 documentation</title>
+    <title>robusta &#8212; robusta 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
@@ -15,6 +16,7 @@
     <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="Installation.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -31,635 +33,36 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-robusta-s-documentation">
-<h1>Welcome to Robusta’s documentation!<a class="headerlink" href="#welcome-to-robusta-s-documentation" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-</div>
-</div>
-<div class="section" id="module-robusta.correlations">
-<span id="robusta-correlations"></span><h1>robusta correlations<a class="headerlink" href="#module-robusta.correlations" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt id="robusta.correlations.ChiSquare">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.correlations.</code><code class="sig-name descname">ChiSquare</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">apply_correction</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.ChiSquare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a frequentist Chi-Square χ² test of independence.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>y</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>data</strong> (<em>pd.DataFrame</em><em>, </em><em>optional</em>) – Dataframe of data to test, with the columns specieid in <cite>x</cite> and <cite>y</cite>.
-Each of the relevant columns must contain only two unique values.</p></li>
-<li><p><strong>correction</strong> (<em>bool</em>) – Whether to apply Yates’ correction (True) or not (False). Default is
-False.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Warns</dt>
-<dd class="field-even"><p><strong>RuntimeWarning</strong> – In case the crosstabulation of the data contains cells with less
-than 5 observeations and apply_correction is set to False.</p>
-</dd>
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>ValueError</strong> – If x and y (strings) are not names of columns in data.
-    If x and y (array-like) are not of the same length.</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.correlations.ChiSquare.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.ChiSquare.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.correlations.ChiSquare.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.ChiSquare.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.correlations.Correlation">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.correlations.</code><code class="sig-name descname">Correlation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'pearson'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.Correlation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate correlation coefficient in one of several methods.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>y</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>data</strong> (<em>pd.DataFrame</em><em>, </em><em>optional</em>) – Dataframe of data to test, with the columns specieid in <cite>x</cite> and <cite>y</cite>.
-Each of the relevant columns must contain only two unique values.</p></li>
-<li><p><strong>method</strong> (<em>str</em>) – Type of correlation coefficient. Possible values are
-‘pearson’, ‘spearman’ or ‘kendall’. Default is ‘pearson’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If x and y (strings) are not names of columns in data.
-    If x and y (array-like) are not of the same length.</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.correlations.Correlation.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.Correlation.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.correlations.Correlation.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.Correlation.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.correlations.PartCorrelation">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.correlations.</code><code class="sig-name descname">PartCorrelation</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.PartCorrelation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculates part (Semi-partial) correlation.</p>
-<p>Part correlation is the correlation between x and y while the correlation
-between <cite>y and z</cite> is controlled for.</p>
-<p>R implementation - <a class="reference external" href="https://www.rdocumentation.org/packages/ppcor/versions/1.1/topics/spcor.test">https://www.rdocumentation.org/packages/ppcor/versions/1.1/topics/spcor.test</a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>y</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>data</strong> (<em>pd.DataFrame</em><em>, </em><em>optional</em>) – Dataframe of data to test, with the columns specieid in <cite>x</cite> and <cite>y</cite>.
-Each of the relevant columns must contain only two unique values.</p></li>
-<li><p><strong>method</strong> (<em>str</em>) – Type of correlation coefficient. Possible values are
-‘pearson’, ‘spearman’ or ‘kendall’. Default is ‘pearson’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If x and y (strings) are not names of columns in data.
-    If x and y (array-like) are not of the same length.</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.correlations.PartCorrelation.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.PartCorrelation.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.correlations.PartCorrelation.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.PartCorrelation.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.correlations.PartialCorrelation">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.correlations.</code><code class="sig-name descname">PartialCorrelation</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.PartialCorrelation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculates partial correlation.</p>
-<p>Part correlation is the correlation between x and y while
-the correlation between both <cite>x and z</cite> and <cite>y and z</cite> is controlled for.</p>
-<p>R implementation - <a class="reference external" href="https://www.rdocumentation.org/packages/ppcor/versions/1.1/topics/pcor.test">https://www.rdocumentation.org/packages/ppcor/versions/1.1/topics/pcor.test</a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>y</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>data</strong> (<em>pd.DataFrame</em><em>, </em><em>optional</em>) – Dataframe of data to test, with the columns specieid in <cite>x</cite> and <cite>y</cite>.
-Each of the relevant columns must contain only two unique values.</p></li>
-<li><p><strong>method</strong> (<em>str</em>) – Type of correlation coefficient. Possible values are
-‘pearson’, ‘spearman’ or ‘kendall’. Default is ‘pearson’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If x and y (strings) are not names of columns in data.
-    If x and y (array-like) are not of the same length.</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.correlations.PartialCorrelation.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.PartialCorrelation.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.correlations.PartialCorrelation.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.PartialCorrelation.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.correlations.BayesCorrelation">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.correlations.</code><code class="sig-name descname">BayesCorrelation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rscale_prior</span><span class="o">=</span><span class="default_value">'medium'</span></em>, <em class="sig-param"><span class="n">null_interval</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">posterior</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.BayesCorrelation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculates Bayes factor or returns posterior samples for correlation.</p>
-<p>R implementation - <a class="reference external" href="https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/correlationBF">https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/correlationBF</a></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>y</strong> (<em>[</em><em>str</em><em>, </em><em>array-like</em><em>]</em>) – Input to test. Either strings with the names of columns on the
-<cite>data</cite> dataframe or two array-like objects. Each array-like object
-must contain only two unique values.</p></li>
-<li><p><strong>data</strong> (<em>pd.DataFrame</em><em>, </em><em>optional</em>) – Dataframe of data to test, with the columns specieid in <cite>x</cite> and <cite>y</cite>.
-Each of the relevant columns must contain only two unique values.</p></li>
-<li><p><strong>rscale_prior</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>float?</em><em>]</em>) – # TODO - FILL THIS</p></li>
-<li><p><strong>null_interval</strong> (<em>Array-like</em>) – Sets the lower and upper bounds for an interval hypothesis, in correlation
-units. Default is None. None will be translated to an informative null interval
-[-1, 1].</p></li>
-<li><p><strong>posterior</strong> (<em>bool</em>) – Whether to calculate a Bayes factor (False) or return the samples from the
-posterior (True). Default is False.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If x and y (strings) are not names of columns in data.
-    If x and y (array-like) are not of the same length.</p>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.correlations.BayesCorrelation.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.BayesCorrelation.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.correlations.BayesCorrelation.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.correlations.BayesCorrelation.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="module-robusta.groupwise">
-<span id="robusta-groupwise"></span><h1>robusta GroupWise<a class="headerlink" href="#module-robusta.groupwise" title="Permalink to this headline">¶</a></h1>
-<p>ttest_and_anova contains many classes capable of running common t-test and
-analysis of variance. Each analysis is accompanied by a matching Bayesian
-analysis.</p>
-<ul class="simple">
-<li><p>Anova, BayesAnovaBS: Between/Within/Mixed n-way analysis of variance.</p></li>
-<li><p>T2Samples, BayesT2Samples: Independent/Dependent samples t-test.</p></li>
-<li><p>T1Sample, BayesT1Sample: One-Sample t-test.</p></li>
-</ul>
-<p>The class instances have the following methods:
-- get_results(): Returns a pandas dataframe with the results of the analysis.
-- get_text_report(): Returns a textual report of the analysis.
-- get_latex_report(): Returns a latex formatted report of the analysis.</p>
-<dl class="py class">
-<dt id="robusta.groupwise.Anova">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.groupwise.</code><code class="sig-name descname">Anova</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">margins_term</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.Anova" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a mixed (between + within) frequentist ANOVA.</p>
-<p>To run a model either specify the dependent, independent and subject
-variables, or enter a formula (SPECIFY FORM HERE).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variable(s) as
-columns.</p></li>
-<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
-The column data type should be numeric.</p></li>
-<li><p><strong>within</strong> (<em>between</em><em>,</em>) – <p>For both <cite>between</cite> and <cite>within</cite> - Either a string or a list with the
-name(s) of the independent variables in the data. The column data type</p>
+  <div class="section" id="robusta">
+<h1>robusta<a class="headerlink" href="#robusta" title="Permalink to this headline">¶</a></h1>
+<p>robusta is an open-source statistical analysis package in Python. It uses
+<a class="reference external" href="https://rpy2.github.io/">rpy2</a> as a backend. robusta features most of the
+common statistical tests such as:</p>
 <blockquote>
-<div><p>should be preferebly be string or category.</p>
-</div></blockquote>
-</p></li>
-<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
-<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An lme4-like formula specifying the model, in the form of
-dependent ~ (within | subject). See examples.
-TODO - give a more verbose example</p></li>
-<li><p><strong>effect_size</strong> (<em>str</em><em>, </em><em>optional</em>) – Optional values are ‘ges’, (<span class="math notranslate nohighlight">\(generalized-{\eta}^2\)</span>) ‘pes’
-(<span class="math notranslate nohighlight">\(partial-{\eta}^2\)</span>) or ‘none’. Default value is ‘pes’.</p></li>
-<li><p><strong>correction</strong> (<em>str</em><em>, </em><em>optional</em>) – Sphericity correction method. Possible values are “GG”
-(Greenhouse-Geisser), “HF” (Hyunh-Feldt) or “none”. Default is ‘none’.</p></li>
+<div><ul class="simple">
+<li><p>t-tests and ANOVAs</p></li>
+<li><p>correlation coefficients</p></li>
+<li><p>regression and mixed modeling</p></li>
 </ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.groupwise.Anova.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.Anova.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.groupwise.Anova.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.Anova.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.groupwise.BayesAnova">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.groupwise.</code><code class="sig-name descname">BayesAnova</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">which_models</span><span class="o">=</span><span class="default_value">'withmain'</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">scale_prior_fixed</span><span class="o">=</span><span class="default_value">'medium'</span></em>, <em class="sig-param"><span class="n">scale_prior_random</span><span class="o">=</span><span class="default_value">'nuisance'</span></em>, <em class="sig-param"><span class="n">r_scale_effects</span><span class="o">=</span><span class="default_value">rpy2.rinterface.NULL</span></em>, <em class="sig-param"><span class="n">multi_core</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'auto'</span></em>, <em class="sig-param"><span class="n">no_sample</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">include_subject</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesAnova" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a mixed (between + within) Bayesian ANOVA.</p>
-<p>To run a model either specify the dependent, independent and subject
-variables, or enter a formula (SPECIFY FORM HERE).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variable(s) as
-columns.</p></li>
-<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
-The column data type should be numeric.</p></li>
-<li><p><strong>within</strong> (<em>between</em><em>,</em>) – <p>For both <cite>between</cite> and <cite>within</cite> - Either a string or a list with the
-name(s) of the independent variables in the data. The column data type</p>
-<blockquote>
-<div><p>should be preferebly be string or category.</p>
 </div></blockquote>
-</p></li>
-<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
-<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An lme4-like formula specifying the model, in the form of
-dependent ~ (within | subject). See examples.
-TODO - give a more verbose example</p></li>
-<li><p><strong>which_models</strong> (<em>str</em><em>, </em><em>optional</em>) – Setting which_models to ‘all’ will test all models that can be
-created by including or not including a main effect or interaction.
-‘top’ will test all models that can be created by removing or
-leaving in a main effect or interaction term from the full model.
-‘bottom’ creates models by adding single factors or interactions to
-the null model. ‘withmain’ will test all models, with the constraint
-that if an interaction is included, the corresponding main effects
-are also included. Default value is ‘withmain’.</p></li>
-<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – <dl class="simple">
-<dt>Number of iterations used to estimate Bayes factor. Default value is</dt><dd><ol class="arabic simple" start="10000">
-<li></li>
+<p>Most tests include both parametric and non-parametric versions. Also,
+most tests include both Frequentist and Bayesian versions.</p>
+<p>For a full list see <a class="reference internal" href="API.html#api"><span class="std std-ref">API</span></a></p>
+<dl class="simple">
+<dt>robusta is designed with two main use cases in mind</dt><dd><ol class="arabic simple">
+<li><p>Interactive sessions (teaching, data exploration).</p></li>
+<li><p>Pipelining (producing periodic reports, generating publication
+ready textual reports).</p></li>
 </ol>
 </dd>
 </dl>
-</p></li>
-<li><p><strong>scale_prior_fixed</strong> (<em>[</em><em>float</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – <p>Controls the scale of the prior distribution for fixed factors.
-Default value is 1.0  which yields a standard Cauchy prior.
-It is also possible to pass ‘medium’, ‘wide’ or ‘ultrawide’ as input</p>
-<blockquote>
-<div><p>arguments instead of a float (matching the values of</p>
-</div></blockquote>
-<p><span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>, respectively).</p>
-</p></li>
-<li><p><strong>scale_prior_random</strong> (<em>[</em><em>float</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Similar to <cite>scale_prior_fixed</cite> but applies to random factors and can
-except all values specified above and also ‘nuisance’ - variance
-in the data that may stem from variables which are irrelevant to the
-model, such as participants. Default value is ‘nuisance’.
-r_scale_effects=rst.pyr.rinterface.NULL,</p></li>
-<li><p><strong>mutli_core</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to use multiple cores for estimation. Not available on
-Windows. Default value is False.</p></li>
-<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – <dl class="simple">
-<dt>The method used to estimate the Bayes factor depends on the method</dt><dd><p>argument. “simple” is most accurate for small to moderate sample
-sizes, and uses the Monte Carlo sampling method described in Rouder
-et al. (2012). “importance” uses an importance sampling algorithm
-with an importance distribution that is multivariate normal on
-log(g). “laplace” does not sample, but uses a Laplace approximation
-to the integral. It is expected to be more accurate for large sample
-sizes, where MC sampling is slow. If method=”auto”, then an initial
-run with both samplers is done, and
-the sampling method that yields the least-variable samples is
-chosen. The number of initial test iterations is determined by
-options(BFpretestIterations).</p>
-</dd>
-<dt>no_sample<span class="classifier">bool, optional</span></dt><dd><p>Will prevent sampling when possible (i.e., rely on calculation of
-BayesFactor). Default value is False. Currently <cite>True</cite> is not
-implemented and may lead to an error.
-TODO test how we would handle <cite>no_sample = True</cite></p>
-</dd>
-</dl>
-</p></li>
+<hr class="docutils" />
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="API.html">API Reference</a></li>
 </ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.groupwise.BayesAnova.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesAnova.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.groupwise.BayesAnova.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesAnova.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.groupwise.T1Sample">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.groupwise.</code><code class="sig-name descname">T1Sample</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tail</span><span class="o">=</span><span class="default_value">'two.sided'</span></em>, <em class="sig-param"><span class="n">mu</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.T1Sample" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a frequentist one-sample t-test.</p>
-<p>To run a model either specify the dependent and subject
-variables, or enter a formula (SPECIFY FORM HERE).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
-(usually not in a ‘long file’ format).</p></li>
-<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
-The column data type should be numeric.</p></li>
-<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
-<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – <dl class="simple">
-<dt>TODO fill this out based on whether we will depractate the formula</dt><dd><p>functionality or not.</p>
-</dd>
-</dl>
-</p></li>
-<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – Population mean value to text x against. Default value is 0.</p></li>
-<li><p><strong>tail</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the tested hypothesis. Optional values are ‘two.sided’
-(H1: x != mu), ‘less’ (H1: x &lt; mu) and ‘greater’ (H1: x &gt; mu).
-Default value is ‘two.sided’.
-TODO allow translation of x != y, x &gt; y, x &lt; y</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.groupwise.T1Sample.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.T1Sample.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.groupwise.T1Sample.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.T1Sample.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.groupwise.T2Samples">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.groupwise.</code><code class="sig-name descname">T2Samples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">paired</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">independent</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tail</span><span class="o">=</span><span class="default_value">'two.sided'</span></em>, <em class="sig-param"><span class="n">assume_equal_variance</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">x</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.T2Samples" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a frequentist dependent or independent samples t-test.</p>
-<p>To run a model either specify the dependent, independent and subject
-variables, or enter a formula (SPECIFY FORM HERE).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
-(usually not in a ‘long file’ format).
-TODO - see if data can become a non-default.</p></li>
-<li><p><strong>paired</strong> (<em>bool</em>) – Whether the test is dependent/paired-samples (True) or
-independent-samples (False). Default is True.</p></li>
-<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
-The column data type should be numeric.</p></li>
-<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data.
-The column could be either numeric or object, but can contain up to two
-unique values. Alias for <cite>within</cite> for paired, <cite>between</cite> for unpaired.</p></li>
-<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
-<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – TODO fill this out</p></li>
-<li><p><strong>tail</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the tested hypothesis. Optional values are ‘two.sided’
-(H1: x != y), ‘less’ (H1: x &lt; y) and ‘greater’ (H1: x &gt; y).
-Default value is ‘two.sided’.</p></li>
-<li><p><strong>assume_equal_variance</strong> (<em>bool</em><em>, </em><em>optional</em>) – Applicable only to independent samples t-test. Whether to assume that
-the two samples have equal variance. If True runs regular two-sample,
-if False runs Welch two-sample test. Default is True.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.groupwise.T2Samples.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.T2Samples.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.groupwise.T2Samples.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.T2Samples.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.groupwise.BayesT1Sample">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.groupwise.</code><code class="sig-name descname">BayesT1Sample</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">null_interval</span><span class="o">=</span><span class="default_value">- inf, inf</span></em>, <em class="sig-param"><span class="n">prior_r_scale</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'medium'</span></em>, <em class="sig-param"><span class="n">sample_from_posterior</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">mu</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesT1Sample" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a frequentist independent-samples t-test.</p>
-<p>To run a model either specify the dependent, independent and subject
-variables, or enter a formula (SPECIFY FORM HERE).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
-(usually not in a ‘long file’ format).</p></li>
-<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
-The column data type should be numeric.</p></li>
-<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data.
-The column could be either numeric or object, but can contain up to two
-unique values.</p></li>
-<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
-<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – TODO fill this out</p></li>
-<li><p><strong>null_interval</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Predicted interval for standardized effect size to test against the null
-hypothesis. Optional values for a ‘simple’ directional test are
-[-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES &lt; 0) and
-[0, np.inf] (H1: ES &gt; 0). However, it is better to confine null_interval
-specification to a more confined range (e.g., [0.2, 0.5], if you expect
-a positive small standardized effect size), if you have a prior belief
-regarding the expected effect size.
-Default value is [-np.inf, np.inf].</p></li>
-<li><p><strong>return_both</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True returns Bayes factor for both H1 and H0, else, returns only for
-H1. Used only on directional hypothesis. Default is False.
-TODO - implement return of both bayes factors.</p></li>
-<li><p><strong>scale_prior</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
-yields a standard Cauchy prior. It is also possible to pass ‘medium’,
-‘wide’ or ‘ultrawide’ as input arguments instead of a float (matching
-the values of <span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>, respectively).
-TODO - limit str input values.</p></li>
-<li><p><strong>sample_from_posterior</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True return samples from the posterior, if False returns Bayes
-factor. Default is False.</p></li>
-<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of samples used to estimate Bayes factor or posterior. Default
-is 1000.</p></li>
-<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – The null (H0) predicted value for the mean difference compared with the
-population’s mean (mu), in un-standardized effect size (e.g., raw
-measure units). Default value is 0.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.groupwise.BayesT1Sample.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesT1Sample.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.groupwise.BayesT1Sample.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesT1Sample.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.groupwise.BayesT2Samples">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.groupwise.</code><code class="sig-name descname">BayesT2Samples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">null_interval</span><span class="o">=</span><span class="default_value">- inf, inf</span></em>, <em class="sig-param"><span class="n">prior_r_scale</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'medium'</span></em>, <em class="sig-param"><span class="n">sample_from_posterior</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">mu</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesT2Samples" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a frequentist independent-samples t-test.</p>
-<p>To run a model either specify the dependent, independent and subject
-variables, or enter a formula (SPECIFY FORM HERE).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns
-(usually not in a ‘long file’ format).</p></li>
-<li><p><strong>dependent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable in the data.
-The column data type should be numeric.</p></li>
-<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data.
-The column could be either numeric or object, but can contain up to two
-unique values.</p></li>
-<li><p><strong>subject</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the subject variable in the data.</p></li>
-<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – TODO fill this out</p></li>
-<li><p><strong>null_interval</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Predicted interval for standardized effect size to test against the null
-hypothesis. Optional values for a ‘simple’ directional test are
-[-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES &lt; 0) and
-[0, np.inf] (H1: ES &gt; 0). However, it is better to confine null_interval
-specification to a narrower range (e.g., [0.2, 0.5], if you expect
-a positive small standardized effect size), if you have a prior belief
-regarding the expected effect size.
-Default value is [-np.inf, np.inf].</p></li>
-<li><p><strong>return_both</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True returns Bayes factor for both H1 and H0, else, returns only for
-H1. Used only on directional hypothesis. Default is False.
-TODO - implement return of both bayes factors.</p></li>
-<li><p><strong>scale_prior</strong> (<em>float</em><em>, </em><em>optional</em>) – Controls the scale of the prior distribution. Default value is 1.0 which
-yields a standard Cauchy prior. It is also possible to pass ‘medium’,
-‘wide’ or ‘ultrawide’ as input arguments instead of a float (matching
-the values of <span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>,
-respectively).
-TODO - limit str input values.</p></li>
-<li><p><strong>sample_from_posterior</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True return samples from the posterior, if False returns Bayes
-factor. Default is False.</p></li>
-<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of samples used to estimate Bayes factor or posterior. Default
-is 1000.
-# mu (on dependent Bayesian t-test)</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="robusta.groupwise.BayesT2Samples.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesT2Samples.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.groupwise.BayesT2Samples.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesT2Samples.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
 </div>
-<div class="section" id="module-robusta.regressions">
-<span id="robusta-regressions"></span><h1>robusta Regressions<a class="headerlink" href="#module-robusta.regressions" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt id="robusta.regressions.LinearRegression">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.regressions.</code><code class="sig-name descname">LinearRegression</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.LinearRegression" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt id="robusta.regressions.LinearRegression.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.LinearRegression.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.regressions.LinearRegression.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.LinearRegression.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.regressions.BayesianLinearRegression">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.regressions.</code><code class="sig-name descname">BayesianLinearRegression</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.BayesianLinearRegression" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt id="robusta.regressions.BayesianLinearRegression.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.BayesianLinearRegression.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.regressions.BayesianLinearRegression.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.BayesianLinearRegression.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="robusta.regressions.LogisticRegression">
-<em class="property">class </em><code class="sig-prename descclassname">robusta.regressions.</code><code class="sig-name descname">LogisticRegression</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.LogisticRegression" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt id="robusta.regressions.LogisticRegression.mro">
-<code class="sig-name descname">mro</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.LogisticRegression.mro" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a type’s method resolution order.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="robusta.regressions.LogisticRegression.register">
-<code class="sig-name descname">register</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">subclass</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.regressions.LogisticRegression.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a virtual subclass of an ABC.</p>
-<p>Returns the subclass, to allow usage as a class decorator.</p>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 
 
@@ -679,11 +82,16 @@ is 1000.
 
 
 <h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="API.html">API Reference</a></li>
+</ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="Installation.html" title="next chapter">Installation</a></li>
   </ul></li>
 </ul>
 </div>

@@ -33,7 +33,9 @@ release = '0.0.1'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx.ext.autosummary',
+    'sphinx_automodapi.automodapi',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -59,3 +61,8 @@ html_static_path = ['_static']
 
 # Display todos by setting to True
 todo_include_todos = False
+
+
+automodsumm_writereprocessed = True
+numpydoc_show_class_members = False
+automodapi_inheritance_diagram = False
