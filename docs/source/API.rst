@@ -1,31 +1,13 @@
 .. _api:
 
+*************
 API Reference
-=====================
-|
+*************
 
-Correlations
-************
-.. automodapi:: robusta.correlations
-..
-|
-|
-|
+.. toctree::
+   :maxdepth: 1
 
-GroupWise
-*********
-.. automodapi:: robusta.groupwise
-|
-Regressions
-***********
-.. automodapi:: robusta.regressions
-|
-Plotting
-***********
-.. automodapi:: robusta.plotting
-|
-Assumptions
-***********
-.. automodapi:: robusta.assumptions
+   Statistical Tests
+   Additionals
 
 

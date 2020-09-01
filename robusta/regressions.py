@@ -3,7 +3,6 @@ import textwrap
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass
-from pandas_flavor import register_dataframe_accessor
 import robusta as rst
 import warnings
 
@@ -20,7 +19,17 @@ __all__ = [
 @dataclass
 class _BaseRegression(rst.base.AbstractClass):
     formula: typing.Union[str, None]
-    formula: typing.Union[str, None]
+
+    """
+    Parameters
+    ----------
+    formula : str
+        An r-like formula specifying the regression model. Must contain dependent,
+        at least one independent variable and subject term
+    data : pd.DataFrame
+        A pd.DataFrame containing the model variables. Either one row per subject
+        or more.
+    """
 
     def __init__(self,
                  data=None,
@@ -105,12 +114,30 @@ class _BaseRegression(rst.base.AbstractClass):
         return self._results.apply(
             pd.to_numeric, errors='ignore')
 
+    def predict(self):
+        raise NotImplementedError
+
 
 class LinearRegression(_BaseRegression):
+    """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    Parameters
+    ----------
+    # TODO - implement these:
+    weights
+    method
+    model
+    singular_ok
+    contrasts
+    offset
 
+    Returns
+    -------
+
+
+
+    Inplemented R function: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
+    """
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.stats.lm(
             **{
@@ -122,22 +149,40 @@ class LinearRegression(_BaseRegression):
             }
         )
 
-
 class BayesianLinearRegression(LinearRegression):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    """
 
-    #def _set_formula(self):
-        #super()._set_formula()
-        #frml = self.formula + f"+{self.subject}"
-        #self.formula = frml
-        #self._r_formula = rst.pyr.rpackages.stats.formula(frml)
+        Parameters
+        ----------
+        # TODO - implement these:
+        whichRandom
+        whichModels
+        neverExclude
+        rscaleFixed
+        multicore
+        multicore
+        method
+        noSample
+        Returns
+        -------
+
+        Inplemented R function: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
+        """
+
+    def __init__(self, **kwargs):
+
+        self.iterations = iterations
+
+
 
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.generalTestBF(
                 formula=self._r_formula, data=self._input_data, progress=False,
-                whichRandom=self.subject, neverExclude=self.subject))
+                whichRandom=self.subject, neverExclude=self.subject,
+                iterations=self.iterations,
+                progress=False
+            ))
 
     def _tidy_results(self):
         self._results = rst.utils.convert_df(self._r_results,
@@ -146,10 +191,6 @@ class BayesianLinearRegression(LinearRegression):
 
 
 class LogisticRegression(_BaseRegression):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # TODO - this is likely to break on spaces before the tilda sign.
-        # self.dependent = self.formula.split('~')[0]
 
     def _test_input_data(self):
         super()._test_input_data()

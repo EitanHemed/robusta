@@ -3,6 +3,7 @@ import typing
 from dataclasses import dataclass
 import abc
 import pandas as pd
+import custom_inherit
 
 import robusta as rst
 
@@ -41,6 +42,8 @@ class AbstractClass(metaclass=abc.ABCMeta):
     def _tidy_results(self):
         self._results = pd.DataFrame()
 
-
     def get_results(self):
         return self._results.apply(pd.to_numeric, errors='ignore').copy()
+
+    def get_test_data(self):
+        return self._input_data

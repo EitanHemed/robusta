@@ -1,0 +1,37 @@
+.. currentmodule:: robusta.correlations
+
+.. autosummary::
+    :toctree: api
+
+    ChiSquare
+    Correlation
+    PartCorrelation
+    PartialCorrelation
+    BayesCorrelation
+.. currentmodule:: robusta.groupwise
+
+.. autosummary::
+    :toctree: api
+
+    Anova
+    BayesAnova
+    T1Sample
+    T2Samples
+    BayesT1Sample
+    BayesT2Samples
+.. currentmodule:: robusta.regressions
+
+.. autosummary::
+    :toctree: api
+
+    LinearRegression
+    BayesianLinearRegression
+    LogisticRegression
+    MixedModel
+.. currentmodule:: robusta.assumptions
+
+.. autosummary::
+    :toctree: api
+
+    normality
+

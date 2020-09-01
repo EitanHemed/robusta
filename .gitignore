@@ -1,2 +1,11 @@
 .idea/
 __pycache__/
+dist/
+lib/
+build/
+dist/
+robusta_Eitan.Hemed.egg-info/
+conda/
+
+# Files under developmenet
+/robusta/plotting.py

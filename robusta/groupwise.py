@@ -97,7 +97,6 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
         (self.dependent, self.between, self.within,
          self.subject) = vp.get_variables()
 
-
     def _set_variables(self):
         # Verify independent variables integrity
         self.between = self._convert_independent_vars_to_list(self.between)
@@ -741,9 +740,6 @@ class BayesAnova(Anova):
 
 class Wilcoxon1Sample(T1Sample):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.stats.wilcox_test(
             x=self.x, alternative=self.tail, mu=self.mu,
@@ -752,9 +748,6 @@ class Wilcoxon1Sample(T1Sample):
 
 
 class Wilcoxon2Sample(T2Samples):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.stats.wilcox_test(
@@ -766,9 +759,6 @@ class Wilcoxon2Sample(T2Samples):
 
 class KruskalWallisTest(Anova):
     """Non-parametric between subject anova"""
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def _test_input_data(self):
         super()._test_input_data()
@@ -790,9 +780,6 @@ class KruskalWallisTest(Anova):
 
 class FriedmanTest(Anova):
     """Non-parametric within subject anova"""
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def _test_input_data(self):
         super()._test_input_data()

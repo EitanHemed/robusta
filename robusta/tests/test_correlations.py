@@ -17,8 +17,8 @@ class Test_PairwiseCorrelation(unittest.TestCase):
 
 class TestChiSquare(unittest.TestCase):
     def test_chisquare_get_df(self):
-        res = rst.ChiSquare(x='am', y='vs', data=rst.datasets.data('mtcars')
-                            ).get_results()
+        res = rst.ChiSquare(x='am', y='vs', data=rst.datasets.data('mtcars'),
+                    apply_correction=True).get_results()
         """
         # Now in R...
         options(width=120)
@@ -38,23 +38,25 @@ class TestChiSquare(unittest.TestCase):
                                       check_less_precise=5)
 
     def test_chisquare_get_text(self):
-        nonsignificant_res = rst.ChiSquare(x='am', y='vs',
-                                           data=rst.datasets.data('mtcars')
-                                           ).get_text()
-        self.assertEqual(
-            nonsignificant_res,
-            'A Chi-Square test of independence shown '
-            'no significant association between am and '
-            'vs [χ²(1) = 0.35, p = 0.556].')
+        with self.assertRaises(NotImplementedError):
 
-        significant_res = rst.ChiSquare(x='gear', y='vs',
-                                        data=rst.datasets.data('mtcars')
-                                        ).get_text()
-        self.assertEqual(
-            significant_res,
-            'A Chi-Square test of independence shown '
-            'a significant association between gear and '
-            'vs [χ²(2) = 12.22, p = 0.002].')
+            nonsignificant_res = rst.ChiSquare(x='am', y='vs',
+                                               data=rst.datasets.data('mtcars')
+                                               ).get_text()
+            self.assertEqual(
+                nonsignificant_res,
+                'A Chi-Square test of independence shown '
+                'no significant association between am and '
+                'vs [χ²(1) = 0.35, p = 0.556].')
+
+            significant_res = rst.ChiSquare(x='gear', y='vs',
+                                            data=rst.datasets.data('mtcars')
+                                            ).get_text()
+            self.assertEqual(
+                significant_res,
+                'A Chi-Square test of independence shown '
+                'a significant association between gear and '
+                'vs [χ²(2) = 12.22, p = 0.002].')
 
 
 class TestCorrelation(unittest.TestCase):
