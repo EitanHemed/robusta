@@ -138,6 +138,7 @@ class LinearRegression(_BaseRegression):
 
     Inplemented R function: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
     """
+
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.stats.lm(
             **{
@@ -148,6 +149,26 @@ class LinearRegression(_BaseRegression):
                 # 'offset': np.nan
             }
         )
+
+    # This can potentially be a static rather than a class method,
+    # as it may be relevant to a logistic regression as well
+    def predict(self,
+                new_data: pd.DataFrame,
+                interval_type: typing.Union[str, None]):
+
+        if interval_type is None:
+            interval_type = 'none'
+        else:
+            if interval_type not in ['prediction', 'confidence']:
+                raise ValueError("interval type must be one of None, "
+                                 "'confidence' or 'prediction'")
+
+        rst.convert_df(rst.pyr.rpackages.stats.predict(
+            self._r_results,
+            new_data,
+            interval_type=interval_type
+        ))
+
 
 class BayesianLinearRegression(LinearRegression):
     """
@@ -160,7 +181,6 @@ class BayesianLinearRegression(LinearRegression):
         neverExclude
         rscaleFixed
         multicore
-        multicore
         method
         noSample
         Returns
@@ -169,20 +189,27 @@ class BayesianLinearRegression(LinearRegression):
         Inplemented R function: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
         """
 
-    def __init__(self, **kwargs):
-
+    def __init__(self,
+                 iterations : int=10000,
+                 exclude_subject: bool=True,
+                 # TODO add type hints to the next argument
+                 never_exclude = rst.pyr.rinterface.NULL,
+                 **kwargs):
         self.iterations = iterations
-
-
+        self.exclude_subject = exclude_subject
+        self.never_exclude = never_exclude
+        super().__init__(**kwargs)
 
     def _analyze(self):
+        raise NotImplementedError("Currently the formula tools just assumes all interactions rather than "
+                                  "going by the supplied formula. This has to be solved ASAP.")
         self._r_results = rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.generalTestBF(
                 formula=self._r_formula, data=self._input_data, progress=False,
-                whichRandom=self.subject, neverExclude=self.subject,
-                iterations=self.iterations,
-                progress=False
-            ))
+                whichRandom=rst.pyr.rinterface.NULL if self.exclude_subject else self.subject,
+                neverExclude=rst.pyr.rinterface.NULL,
+                iterations=self.iterations))
+
 
     def _tidy_results(self):
         self._results = rst.utils.convert_df(self._r_results,

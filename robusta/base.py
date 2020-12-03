@@ -47,3 +47,6 @@ class AbstractClass(metaclass=abc.ABCMeta):
 
     def get_test_data(self):
         return self._input_data
+
+    def accept(self, visitor):
+        visitor.visit(self)

@@ -28,6 +28,11 @@ __all__ = [
     "BayesT1Sample", "BayesT2Samples"
 ]
 
+DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
+PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
+DEFAULT_ITERATIONS = 100
+DEFAULT_MU = 0
+
 
 @dataclass
 class _GroupwiseAnalysis(rst.base.AbstractClass):
@@ -47,13 +52,14 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
 
     def __init__(
             self,
-            data=None,
-            dependent=None,
-            between=None,
-            within=None,
-            subject=None,
-            formula=None,
-            agg_func='mean',
+            data: pd.DataFrame = None,
+            dependent: str = None,
+            between: typing.Optional[str] = None,
+            within: typing.Optional[str] = None,
+            subject: str = None,
+            formula: typing.Optional[str] = None,
+            na_action: typing.Optional[str] = None,
+            agg_func: typing.Optional[typing.Union[str, typing.Callable]] = np.mean,
             **kwargs
     ):
 
@@ -65,6 +71,7 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
             within=within,
             subject=subject,
             agg_func=agg_func,
+            na_action=na_action,
             max_levels=kwargs.get('max_levels', None)
         )
         self.data.dropna(inplace=True)
@@ -133,8 +140,9 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
         rst.utils.verify_float(self._input_data[self.dependent].values)
 
         # Verify ID variable uniqueness
-        self._perform_aggregation = len(
-            self._input_data[self.subject].unique()) < self._input_data.shape[0]
+        self._perform_aggregation = (
+            self._input_data.groupby(
+                [self.subject] + self.independent).size().any() > 1)
 
         # Make sure the independent variables are actually variables
         for i in self.independent:
@@ -144,7 +152,7 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
         # Make sure we are handing R a DataFrame with factor variables,
         # as some packages do not coerce factor type.
         if self._perform_aggregation:
-            self._aggregate_data()
+            self._input_data = self._aggregate_data()
 
         self._input_data.loc[:, self.independent] = self._input_data[
             self.independent].astype('category')
@@ -156,7 +164,7 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
             rst.utils.verify_levels(self._input_data[i].values, self.max_levels)
 
     def _aggregate_data(self):
-        self._input_data.groupby(
+        return self._input_data.groupby(
             rst.utils.to_list(
                 [self.subject] + self.independent)).agg(
             self.agg_func).reset_index()
@@ -309,10 +317,10 @@ class BayesT2Samples(T2Samples):
 
     def __init__(
             self,
-            null_interval=(-np.inf, np.inf),
+            null_interval=DEFAULT_GROUPWISE_NULL_INTERVAL,
             prior_r_scale: str = 'medium',
             sample_from_posterior: bool = False,
-            iterations: int = 10000,
+            iterations: int = DEFAULT_ITERATIONS,
             mu: float = 0,
             **kwargs
     ):
@@ -375,7 +383,7 @@ class T1Sample(T2Samples):
 
     def __init__(self,
                  tail='two.sided',
-                 mu=0,
+                 mu=DEFAULT_MU,
                  **kwargs):
         self.mu = mu
         kwargs['paired'] = True
@@ -527,18 +535,8 @@ class Anova(_GroupwiseAnalysis):
         if self.margins_term is not None:
             self.margins_df = self.get_margins()
 
-    # def _set_formula_from_vars(self):
-    #     return rst.utils.build_lm4_style_formula(
-    #         dependent=self.dependent,
-    #         between=self.between,
-    #         within=self.within,
-    #         subject=self.subject
-    #     )
-
-    # def _get_vars_from_formula(self):
-    #    return rst.utils.parse_variables_from_lm4_style_formula(self.formula)
-
     def _analyze(self):
+
         self._r_results = rst.pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
             data=self._r_input_data,
@@ -553,14 +551,15 @@ class Anova(_GroupwiseAnalysis):
                 rst.pyr.rpackages.stats.anova(self._r_results)))
 
     # Look at this - emmeans::as_data_frame_emm_list
-    def get_margins(self, margins_term=None, by=None, ci=95):
+    def get_margins(self, margins_term: typing.List[str]=None,
+                    by:typing.List[str] = rst.pyr.rinterface.NULL, ci: int=95):
         # TODO - Documentation
         # TODO - Issue the 'balanced-design' warning etc.
         # TODO - allow for by option
         # TODO - implement between and within CI calculation
 
-        if by is not None:
-            raise NotImplementedError
+        #if by is not None:
+        #    raise NotImplementedError
         if margins_term is None:
             if self.margins_term is None:
                 raise RuntimeError('No margins term defined')
@@ -581,11 +580,14 @@ class Anova(_GroupwiseAnalysis):
             raise RuntimeError(
                 f'Margins term: {[i for i in margins_term]}'
                 'not included in model')
+
         _r_margins = rst.pyr.rpackages.emmeans.emmeans(
             self._r_results,
             specs=margins_term,
             type='response',
-            level=ci)
+            level=ci,
+            #by=by
+        )
         return rst.utils.convert_df(
             rst.pyr.rpackages.emmeans.as_data_frame_emmGrid(
                 _r_margins))
@@ -596,7 +598,8 @@ class Anova(_GroupwiseAnalysis):
         if not type(margins_term) == str:
             raise RuntimeError('Specify one model term (not an interaction)'
                                'as str')
-
+        # Here we will return a PairwiseComparison issued by the term
+        return PairwiseComparisons()
 
 @register_dataframe_accessor("bayes_anova")
 class BayesAnova(Anova):
@@ -680,7 +683,7 @@ class BayesAnova(Anova):
     def __init__(
             self,
             which_models="withmain",
-            iterations=10000,
+            iterations=DEFAULT_ITERATIONS,
             scale_prior_fixed="medium",
             scale_prior_random="nuisance",
             r_scale_effects=rst.pyr.rinterface.NULL,
@@ -735,7 +738,7 @@ class BayesAnova(Anova):
                                              'model')[['model', 'bf', 'error']]
 
     def get_margins(self):
-        raise NotImplementedError('Not implemented currently.')
+        raise NotImplementedError
 
 
 class Wilcoxon1Sample(T1Sample):
@@ -799,10 +802,11 @@ class FriedmanTest(Anova):
         )
 
 
-class PairwiseComparison:
-    """To be implemented - runs all pairwise comparisons between two groups
-    in a dataframe"""
+class PairwiseComparisons:
+    """To be implemented - runs all pairwise comparisons between groups
+    in a dataframe defines by a variable. Used for exploration"""
 
     def __init__(self, data, correction_method):
+        raise NotImplementedError
         self.data = data
         self.correction_method = correction_method

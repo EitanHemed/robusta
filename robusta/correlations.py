@@ -2,12 +2,7 @@
 The correlations module contains several classes for calculating correlation
 coefficients.
 """
-
-CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
-DEFAULT_CORRELATION_METHOD = 'pearson'
-REDUNDENT_BAYES_RESULT_COLS = ['time',
-                               'code']
-
+import typing
 import warnings
 import pandas as pd
 import numpy as np
@@ -17,6 +12,11 @@ import custom_inherit
 __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
            'PartialCorrelation', 'BayesCorrelation']
 
+CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
+DEFAULT_CORRELATION_METHOD = 'pearson'
+REDUNDENT_BAYES_RESULT_COLS = ['time',
+                               'code']
+DEFAULT_CORRELATION_NULL_INTERVAL = [-1, 1]
 
 class _PairwiseCorrelation(rst.base.AbstractClass):
     """
@@ -47,8 +47,12 @@ class _PairwiseCorrelation(rst.base.AbstractClass):
 
     """
 
-    def __init__(self, x=None, y=None, data=None,
-                 nan_action='raise',
+    def __init__(self,
+                 # TODO - modify the 'x' and 'y' types to be non-mapping iterables
+                 x: typing.Iterable = None,
+                 y: typing.Iterable = None,
+                 data: typing.Optional[pd.DataFrame] = None,
+                 nan_action: str = 'raise',
                  **kwargs):
         self.data = data
         self.x = x
@@ -60,17 +64,17 @@ class _PairwiseCorrelation(rst.base.AbstractClass):
         _data = None
 
         if self.data is None:
-            if sum([isinstance(i, str) for i in [self.x, self.y]]) == 2:
+            if isinstance(self.x, str) and isinstance(self.y, str):
                 raise ValueError('Specify dataframe and enter `x` and `y`'
                                  ' as strings.')
             try:
                 _data = pd.DataFrame(columns=['x', 'y'],
                                      data=np.array([self.x, self.y]).T)
             except ValueError:
-                raise ValueError('`x` and ``y` are not of the same length')
+                raise ValueError('Possibly `x` and ``y` are not of the same length')
 
         elif isinstance(self.data, pd.DataFrame):
-            if sum([isinstance(i, str) for i in [self.x, self.y]]) == 2:
+            if isinstance(self.x, str) and isinstance(self.y, str):
                 try:
                     _data = self.data[[self.x, self.y]].copy()
                 except KeyError:
@@ -85,8 +89,6 @@ class _PairwiseCorrelation(rst.base.AbstractClass):
         self._input_data = _data
 
     def _test_input_data(self):
-        return
-
         if self._input_data.isnull().values.any():
             if self.nan_action == 'raise':
                 raise ValueError('NaN in data, either specify action or '
@@ -96,6 +98,8 @@ class _PairwiseCorrelation(rst.base.AbstractClass):
             if self.nan_action == 'replace':
                 if self.nan_action in ('mean', 'median', 'mode'):
                     raise NotImplementedError
+                    self._input_data.fillna(self._input_data.apply(nan_action),
+                                            inplace=True)
 
     def _analyze(self):
         pass
@@ -123,7 +127,7 @@ class ChiSquare(_PairwiseCorrelation):
         than 5 observeations and apply_correction is set to False.
     """
 
-    def __init__(self, apply_correction=False,
+    def __init__(self, apply_correction: bool = False,
                  **kwargs):
         self.apply_correction = apply_correction
         super().__init__(**kwargs)
@@ -184,7 +188,7 @@ class Correlation(_PairwiseCorrelation):
 
     """
 
-    def __init__(self, method='pearson', **kwargs):
+    def __init__(self, method: str ='pearson', **kwargs):
         self.method = method
         super().__init__(**kwargs)
 
@@ -222,7 +226,7 @@ class _TriplewiseCorrelation(Correlation):
         if x, y, and z are not of the same type.
     """
 
-    def __init__(self, z=None, **kwargs):
+    def __init__(self, z: typing.Union[str, ], **kwargs):
         self.z = z
         super().__init__(**kwargs)
 
@@ -332,11 +336,14 @@ class BayesCorrelation(_PairwiseCorrelation):
     """
 
     def __init__(self,
-                 rscale_prior='medium',
-                 null_interval=None,
-                 sample_from_posterior=False, **kwargs):
+                 rscale_prior: typing.Union[str, float]='medium',
+                 null_interval: typing.Optional[typing.List[int]]=None,
+                 sample_from_posterior: bool=False, **kwargs):
+        self.rscale_prior = rscale_prior
+        self.sample_from_posterior = sample_from_posterior
+
         if null_interval is None:
-            self.null_interval = [-1, 1]
+            self.null_interval = DEFAULT_CORRELATION_NULL_INTERVAL
 
         super().__init__(**kwargs)
 

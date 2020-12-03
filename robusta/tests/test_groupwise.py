@@ -88,7 +88,7 @@ class TestAnova(unittest.TestCase):
 
     def test_margins(self):
         df = rst.datasets.data('anxiety').set_index(
-            ['id', 'group']).stack().reset_index().rename(columns={0: 'score',
+            ['id', 'group']).filter(regex='^t[1-3]$').stack().reset_index().rename(columns={0: 'score',
                                                                    'level_2': 'time'})
         anova_time = rst.Anova(data=df, within='time',
                                dependent='score', subject='id')
