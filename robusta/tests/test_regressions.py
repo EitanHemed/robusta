@@ -19,7 +19,7 @@ class TestLinearRegression(unittest.TestCase):
         data.rename(columns={'index': 'dataset_rownames'}, inplace=True)
 
         res = rst.LinearRegression(
-            formula='weight ~ group + 1|dataset_rownames', data=data).get_results()
+            formula='weight ~ group + 1| dataset_rownames', data=data).get_results()
         """"
         # Now in R...
         library(broom)
@@ -92,8 +92,9 @@ class TestBayesianLinearRegression(unittest.TestCase):
                                       check_less_precise=5)
 
     def test_multiple_bayesian_regression(self):
-        res = rst.BayesianLinearRegression(data=rst.datasets.data('attitude'),
-            formula='rating ~ privileges * complaints + raises + 1|dataset_rownames'
+        res = rst.BayesianLinearRegression(
+            data=rst.datasets.data('attitude'),
+            formula='rating ~ privileges * complaints + raises + 1| dataset_rownames'
         ).get_results()
 
         """
@@ -128,7 +129,31 @@ class TestLogisticRegression(unittest.TestCase):
     def test_simple_logistic_regression(self):
 
         res = rst.LogisticRegression(
-            formula='group~extra+1|ID', data=rst.datasets.data('sleep')
+            formula='group~extra+1 | ID', data=rst.datasets.data('sleep')
+                                     ).get_results()
+
+        """
+        # Now in R...
+        library(readr)
+        library(broom)
+        cat(format_csv(
+            data.frame(tidy(glm(group ~ extra, family='binomial', data=sleep)))
+            ))
+        """
+        r_res = pd.read_csv(
+            pd.compat.StringIO("""
+                term,estimate,std.error,statistic,p.value
+                (Intercept),-0.6928304001240985,0.6232561393553371,-1.111630285488604,0.2662971454269263
+                extra,0.46520171520154907,0.27660635201304135,1.681818627142792,0.09260401556399948"""),
+        skipinitialspace=True)
+
+        pd.testing.assert_frame_equal(res, r_res)
+
+
+    def test_multiple_logistic_regression(self):
+
+        res = rst.LogisticRegression(
+            formula='group~extra+1 | ID', data=rst.datasets.data('sleep')
                                      ).get_results()
 
         """

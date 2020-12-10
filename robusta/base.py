@@ -48,5 +48,6 @@ class AbstractClass(metaclass=abc.ABCMeta):
     def get_test_data(self):
         return self._input_data
 
+    # TODO - do we need this?
     def accept(self, visitor):
         visitor.visit(self)

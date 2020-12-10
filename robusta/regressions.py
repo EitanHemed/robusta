@@ -1,3 +1,4 @@
+import re
 import typing
 import textwrap
 import pandas as pd
@@ -53,13 +54,21 @@ class _BaseRegression(rst.base.AbstractClass):
         self._vars = rst.utils.to_list(vp.get_variables())
 
     def _set_formula(self):
-        # Beautify the formula
+        """
         fp = rst.formula_tools.FormulaParser(
-            self.dependent, self.between, self.within, self.subject
-        )
+             self.dependent, self.between, self.within, self.subject)
         frml = fp.get_formula()
+        print(frml)
         frml = frml.replace(f'+(1|{self.subject})', '')
+        #frml = self.formula.replace(f'+(1|{self.subject})', '')
+        print(frml)
         self.formula = frml
+        # Else, just use the entered formula
+        """
+        pattern = re.compile(r'\s*\+{1,1}\(*\s*1{1,1}\s*\|{1,1}\s*' + self.subject + r'\s*\)*')
+        frml = re.sub(pattern, '', self.formula)
+        print(self.formula)
+        print(frml)
         self._r_formula = rst.pyr.rpackages.stats.formula(frml)
 
     def _select_input_data(self):
@@ -114,8 +123,17 @@ class _BaseRegression(rst.base.AbstractClass):
         return self._results.apply(
             pd.to_numeric, errors='ignore')
 
-    def predict(self):
-        raise NotImplementedError
+    def predict(self, new_data: pd.DataFrame, type: str = 'response'):
+        """
+        @param new_data: pd.DataFrame
+            A dataframe containing the same variables as used on the model.
+        @param type: str
+            Options are 'response' and 'type'. Default is 'response'.
+        @return:
+        """
+        return rst.convert_df(rst.pyr.rpackages.stats.predict(
+            self._r_results, new_data, type=self.default_predict_type))
+
 
 
 class LinearRegression(_BaseRegression):
@@ -201,8 +219,8 @@ class BayesianLinearRegression(LinearRegression):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        raise NotImplementedError("Currently the formula tools just assumes all interactions rather than "
-                                  "going by the supplied formula. This has to be solved ASAP.")
+        #raise NotImplementedError("Currently the formula tools just assumes all interactions rather than "
+        #                          "going by the supplied formula. This has to be solved ASAP.")
         self._r_results = rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.generalTestBF(
                 formula=self._r_formula, data=self._input_data, progress=False,
@@ -225,7 +243,7 @@ class LogisticRegression(_BaseRegression):
 
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.stats.glm(
-            formula=self.formula, data=self.data,
+            formula=self._r_formula, data=self.data,
             family='binomial'
         )
 

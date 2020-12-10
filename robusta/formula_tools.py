@@ -96,20 +96,24 @@ class VariablesParser():
     def parse_regression_formula(self):
 
         # A possible variable name is:
+        # Alphanumeirc + sum non-meaningful punctuation marks
         varname = pyparsing.Word(
             pyparsing.alphanums + re.sub('[+*$|()~]', '', string.punctuation))
         # We need to identify the dependent, between, within and subject variables
         # First we define the patterns
-        # Dependent variable
+        # Dependent variable is the stub in the form of 'y~'
         dependent = (varname + pyparsing.Suppress('~')).setResultsName(
             'dependent')
-        # There are two possible patterns for within and subject variables
-        # 1. Only subject variable (1|ID)
-        # 2. Within and subject (condition|order|ID)
 
+        # Usually the dependent is followed by the between-subject terms.
+        # Between terms are optional (looking something like dose + condition)
         between_terms = pyparsing.ZeroOrMore(
                 varname + pyparsing.Suppress(pyparsing.oneOf(['+', '*']))
         ).setResultsName('between')
+
+        # There are two possible patterns for within and subject variables
+        # 1. Only subject variable (e.g., 1|ID), no within-term
+        # 2. Within and subject (such as condition|order|ID)
         within_and_subject_terms = (
                 (pyparsing.OneOrMore(
                     pyparsing.OneOrMore(
@@ -119,17 +123,6 @@ class VariablesParser():
 
         prsr = (dependent + between_terms + within_and_subject_terms)
         return prsr.parseString(self.formula)
-
-
-        within_terms = (pyparsing.OneOrMore(
-            varname + pyparsing.Suppress('|')) |
-                        pyparsing.Suppress('1') + pyparsing.Suppress('|')
-                        ).setResultsName('within')
-        subject = varname.setResultsName('subject')
-        formula_parsing = (dependent
-                           + between_terms
-                           + within_terms
-                           + subject)
 
 
 class FormulaParser:
