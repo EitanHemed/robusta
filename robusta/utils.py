@@ -48,14 +48,33 @@ def verify_float(a):
         print("data type can't be coerced to float")
 
 
-def verify_levels(a: object, max_levels: object = None) -> None:
-    cur_levels = len(pd.Series(a).unique())
-    if cur_levels < 2:
-        print('Not a variable! number of levels should be >= 2')
-    if max_levels is not None and cur_levels > max_levels:
-        print('Number of levels should be not be more'
-              'than {}, but it is currently {}'.format(max_levels, cur_levels))
-    # TODO - this should raise a runtime error ^
+def verify_levels(df: pd.DataFrame, max_levels: object = None) -> None:
+
+    levels = df.apply(
+        lambda s: s.unique().size)
+    if (levels < 2).any():
+        non_varying_levels = levels[levels < 2].index.values
+        composed = [f'- Variable {variable} - has {num} levels'
+                    for variable, num in
+                    zip(
+                        non_varying_levels,
+                        levels[non_varying_levels].values)].join('\n')
+        raise RuntimeError("Non-varying independent variables encountered. "
+                           "Make sure that each independent variable has"
+                           "at least 2 levels. Invalid variables: "
+                           f"{composed}")
+
+    if max_levels is not None and (levels > max_levels).any():
+        too_many_levels_variables = levels[levels > max_levels].index.values
+        composed = [f'- Variable {variable} - has {num} levels'
+                    for variable, num in
+                    zip(
+                        too_many_levels_variables,
+                        levels[too_many_levels_variables].values)].join('\n')
+        raise RuntimeError("Variables with more levels than allowed encountered. "
+                           "Make sure that each independent variable has"
+                           f"at most {max_levels} levels. Invalid variables: "
+                           f"{composed}")
 
 
 def convert_df(df, df_rownames_column_name=None):

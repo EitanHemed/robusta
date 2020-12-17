@@ -14,11 +14,11 @@ The class instances have the following methods:
 """
 
 import typing
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from pandas_flavor import register_dataframe_accessor
 
 import robusta as rst
 
@@ -30,7 +30,7 @@ __all__ = [
 
 DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
 PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
-DEFAULT_ITERATIONS = 100
+DEFAULT_ITERATIONS = 10000
 DEFAULT_MU = 0
 
 
@@ -59,7 +59,8 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
             subject: str = None,
             formula: typing.Optional[str] = None,
             na_action: typing.Optional[str] = None,
-            agg_func: typing.Optional[typing.Union[str, typing.Callable]] = np.mean,
+            agg_func: typing.Optional[
+                typing.Union[str, typing.Callable]] = np.mean,
             **kwargs
     ):
 
@@ -141,12 +142,11 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
 
         # Verify ID variable uniqueness
         self._perform_aggregation = (
-            self._input_data.groupby(
-                [self.subject] + self.independent).size().any() > 1)
+                self._input_data.groupby(
+                    [self.subject] + self.independent).size().any() > 1)
 
-        # Make sure the independent variables are actually variables
-        for i in self.independent:
-            rst.utils.verify_levels(self._input_data[i].values, self.max_levels)
+        # Make sure that you have at least two levels on each independent variable
+        self._verify_independent_vars()
 
     def _transform_input_data(self):
         # Make sure we are handing R a DataFrame with factor variables,
@@ -159,9 +159,9 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
         self._r_input_data = rst.utils.convert_df(self._input_data.copy())
 
     def _verify_independent_vars(self):
-        # _ind_vars = self.between + self.within
         for i in self.independent:
-            rst.utils.verify_levels(self._input_data[i].values, self.max_levels)
+            rst.utils.verify_levels(self._input_data[self.independent],
+                                    self.max_levels)
 
     def _aggregate_data(self):
         return self._input_data.groupby(
@@ -170,7 +170,6 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
             self.agg_func).reset_index()
 
 
-@register_dataframe_accessor("t2samples")
 class T2Samples(_GroupwiseAnalysis):
     """
     Run a frequentist dependent or independent samples t-test.
@@ -186,7 +185,6 @@ class T2Samples(_GroupwiseAnalysis):
     data :  pd.DataFrame
         Containing the subject, dependent and independent variables as columns
         (usually not in a 'long file' format).
-        TODO - see if data can become a non-default.
     paired : bool
         Whether the test is dependent/paired-samples (True) or
         independent-samples (False). Default is True.
@@ -212,10 +210,10 @@ class T2Samples(_GroupwiseAnalysis):
     """
 
     def __init__(self,
-                 paired=True,
-                 independent=None,
-                 tail='two.sided',
-                 assume_equal_variance=True,
+                 paired: bool = None,
+                 independent: bool = None,
+                 tail: str = 'two.sided',
+                 assume_equal_variance: bool = True,
                  x=None,
                  y=None,
                  **kwargs):
@@ -226,13 +224,13 @@ class T2Samples(_GroupwiseAnalysis):
 
         if independent is None:
             try:
-                independent = kwargs[{False: 'between', True: 'within'}[paired]]
-            # TODO - should be an error raised
+                independent = kwargs[{
+                    False: 'between', True: 'within'}[paired]]
             except KeyError as e:
                 if paired:
-                    print(f'Specify `independent` or `within`: {e}')
+                    raise TypeError(f'Specify `independent` or `within`: {e}')
                 else:
-                    print(f'Specify `independent` or `between`: {e}')
+                    raise TypeError(f'Specify `independent` or `between`: {e}')
                 raise e
         else:
             kwargs[{False: 'between', True: 'within'}[paired]] = independent
@@ -260,7 +258,6 @@ class T2Samples(_GroupwiseAnalysis):
         t_clause = self.results['t']
 
 
-@register_dataframe_accessor("bayes_t2samples")
 class BayesT2Samples(T2Samples):
     """
     Run a frequentist independent-samples t-test.
@@ -349,7 +346,6 @@ class BayesT2Samples(T2Samples):
         self._results = rst.utils.convert_df(self._r_results)
 
 
-@register_dataframe_accessor("t1sample")
 class T1Sample(T2Samples):
     """
     Run a frequentist one-sample t-test.
@@ -402,7 +398,6 @@ class T1Sample(T2Samples):
         )
 
 
-@register_dataframe_accessor("bayes_t1sample")
 class BayesT1Sample(T1Sample):
     """
     Run a frequentist independent-samples t-test.
@@ -489,7 +484,6 @@ class BayesT1Sample(T1Sample):
         self._results = rst.utils.convert_df(self._r_results)
 
 
-@register_dataframe_accessor("anova")
 class Anova(_GroupwiseAnalysis):
     """
     Run a mixed (between + within) frequentist ANOVA.
@@ -527,13 +521,16 @@ class Anova(_GroupwiseAnalysis):
 
     def __init__(self, margins_term=None, **kwargs):
         self.effect_size = kwargs.get('effect_size', 'pes')
-        self.sphericity_correction = kwargs.get('sphericity_correction', 'none')
+        self.sphericity_correction = kwargs.get(
+            'sphericity_correction', 'none')
         self.margins_term = margins_term
 
         super().__init__(**kwargs)
 
+        self.margins_results = {}
+
         if self.margins_term is not None:
-            self.margins_df = self.get_margins()
+            self.get_margins()
 
     def _analyze(self):
 
@@ -543,7 +540,8 @@ class Anova(_GroupwiseAnalysis):
             es=self.effect_size,
             correction=self.sphericity_correction)
         # TODO: Add reliance on aov_ez aggregation functionality.
-        # TODO: Add this functionality - sig_symbols= rst.pyr.vectors.StrVector(["", "", "", ""]))
+        # TODO: Add this functionality - sig_symbols=
+        # rst.pyr.vectors.StrVector(["", "", "", ""]))
 
     def _tidy_results(self):
         self._results = rst.utils.convert_df(
@@ -551,20 +549,33 @@ class Anova(_GroupwiseAnalysis):
                 rst.pyr.rpackages.stats.anova(self._r_results)))
 
     # Look at this - emmeans::as_data_frame_emm_list
-    def get_margins(self, margins_term: typing.List[str]=None,
-                    by:typing.List[str] = rst.pyr.rinterface.NULL, ci: int=95):
+    def get_margins(
+            self,
+            margins_term: typing.List[str] = None,
+            by: typing.List[str] = rst.pyr.rinterface.NULL,
+            ci: int = 95,
+            overwrite_margins_results: bool = False):
         # TODO - Documentation
         # TODO - Issue the 'balanced-design' warning etc.
-        # TODO - allow for by option
+        # TODO - allow for `by` option
         # TODO - implement between and within CI calculation
 
-        #if by is not None:
+        # if by is not None:
         #    raise NotImplementedError
         if margins_term is None:
             if self.margins_term is None:
                 raise RuntimeError('No margins term defined')
-            else:
-                margins_term = self.margins_term
+            margins_term = self.margins_term
+
+        if margins_term in self.margins_results and not overwrite_margins_results:
+            # TODO - either way this is only a temporary implementation. It is
+            #  insufficient in the case the a user wants to run a margins analysis with
+            #   a similar margins term but with different parameters (e.g.
+            #   different adjust, type, etc.)
+            raise RuntimeError(
+                'Margins already defined. To re-run, get_margins'
+                'with `overwrite_margins_results` kwarg set '
+                'to True')
 
         # TODO Currently this does not support integer arguments if we would
         #  get those. Also we need to make sure that we get a list or array
@@ -586,22 +597,43 @@ class Anova(_GroupwiseAnalysis):
             specs=margins_term,
             type='response',
             level=ci,
-            #by=by
+            # by=by
         )
-        return rst.utils.convert_df(
+        margins = rst.utils.convert_df(
             rst.pyr.rpackages.emmeans.as_data_frame_emmGrid(
                 _r_margins))
 
-    def get_pairwise(self, margins_term: str):
-        raise NotImplementedError
-        # TODO - implement pairwise from emmeans::pairwise
-        if not type(margins_term) == str:
-            raise RuntimeError('Specify one model term (not an interaction)'
-                               'as str')
-        # Here we will return a PairwiseComparison issued by the term
-        return PairwiseComparisons()
+        self.margins_results[margins_term] = {
+            'margins': margins, 'r_margins': _r_margins}
+        return margins
 
-@register_dataframe_accessor("bayes_anova")
+    def get_pairwise(self,
+                     margins_term: typing.Optional[typing.Union[str]] = None,
+                     overwrite_pairwise_results: bool = False):
+        # TODO - Documentation.
+        # TODO - Testing.
+        # TODO - implement pairwise options (e.g., `infer`)
+        warnings.warn('Currently under development. Expect bugs.')
+
+        if not isinstance(str, margins_term):
+            if self.margins_term is None:
+                raise RuntimeError("No margins_term defined")
+            else:
+                margins_term = self.margins_term
+        if '*' in margins_term:  # an interaction
+            raise RuntimeError('get_pairwise cannot be run using an interaction'
+                               'margins term')
+        if margins_term in self.margins_results:
+            if ('pairwise' in self.margins_results[margins_term]
+                    and not overwrite_pairwise_results):
+                raise RuntimeError(
+                    'Margins already defined. To re-run, get_margins'
+                    'with `overwrite_margins_results` kwarg set '
+                    'to True')
+        return rst.utils.convert_df(rst.pyr.rpackages.emmeans.pairs(
+            self.margins_results[margins_term]['r_margins']))
+
+
 class BayesAnova(Anova):
     # TODO - Formula specification will be using the lme4 syntax and variables
     #  will be parsed from it
