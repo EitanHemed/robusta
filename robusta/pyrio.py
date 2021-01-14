@@ -8,8 +8,9 @@ pyrio is in charge of the following:
     - Starting an R session.
     - Transferring objects into the R environment and back.
 """
-from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface
-
+import rpy2.robjects as ro
+from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface, r
+#packages, rinterface, r
 # from outdated import warn_if_outdated
 
 numpy2ri.activate()

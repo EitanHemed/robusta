@@ -67,8 +67,6 @@ class _BaseRegression(rst.base.AbstractClass):
         """
         pattern = re.compile(r'\s*\+{1,1}\(*\s*1{1,1}\s*\|{1,1}\s*' + self.subject + r'\s*\)*')
         frml = re.sub(pattern, '', self.formula)
-        print(self.formula)
-        print(frml)
         self._r_formula = rst.pyr.rpackages.stats.formula(frml)
 
     def _select_input_data(self):

@@ -1,16 +1,22 @@
 """
-ttest_and_anova contains many classes capable of running common t-test and
-analysis of variance. Each analysis is accompanied by a matching Bayesian
-analysis.
+ttest_and_anova contains classes used to run statistical tests in which a
+central tendency measure of groups is compared:
+- Anova, BayesAnovaBS: Between/Within/Mixed n-way analysis of variance
+    (frequentist and Bayesian)
+- T2Samples, BayesT2Samples: Independent/Dependent samples t-test
+    (Frequentist and Bayesian)
+- T1Sample, BayesT1Sample: One-Sample t-test (Frequentist and Bayesian)
 
-- Anova, BayesAnovaBS: Between/Within/Mixed n-way analysis of variance.
-- T2Samples, BayesT2Samples: Independent/Dependent samples t-test.
-- T1Sample, BayesT1Sample: One-Sample t-test.
+Additionally, there are classes for running non-parametric tests such as:
+- Wilcoxon1Sample, Wilcoxon2Sample: One- and two-sample variations of the
+ Wilcoxon signed rank test
+- KruskalWalisTest, FriedmanTest: The Kruskal-Walis test and Friedman test
+    are used as non parametric analysis of variance for between-subject and
+    within-subject designs, respectively.
 
-The class instances have the following methods:
+All classes have at least these postestimation methods:
 - get_results(): Returns a pandas dataframe with the results of the analysis.
 - get_text_report(): Returns a textual report of the analysis.
-- get_latex_report(): Returns a latex formatted report of the analysis.
 """
 
 import typing
@@ -49,6 +55,7 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
     agg_func: typing.Union[str, typing.Callable]
     _perform_aggregation: bool
     max_levels = None
+    min_levels = None
 
     def __init__(
             self,
@@ -142,10 +149,11 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
 
         # Verify ID variable uniqueness
         self._perform_aggregation = (
-                self._input_data.groupby(
-                    [self.subject] + self.independent).size().any() > 1)
+            self._input_data.groupby(
+                [self.subject] + self.independent).size().any() > 1)
 
-        # Make sure that you have at least two levels on each independent variable
+        # Make sure that you have at least two levels on each independent
+        # variable
         self._verify_independent_vars()
 
     def _transform_input_data(self):
@@ -159,9 +167,10 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
         self._r_input_data = rst.utils.convert_df(self._input_data.copy())
 
     def _verify_independent_vars(self):
+
         for i in self.independent:
             rst.utils.verify_levels(self._input_data[self.independent],
-                                    self.max_levels)
+                                    self.min_levels, self.max_levels)
 
     def _aggregate_data(self):
         return self._input_data.groupby(
@@ -221,6 +230,7 @@ class T2Samples(_GroupwiseAnalysis):
         self.tail = tail
         self.assume_equal_variance = assume_equal_variance
         kwargs['max_levels'] = 2
+        kwargs['min_levels'] = 2
 
         if independent is None:
             try:
@@ -231,7 +241,6 @@ class T2Samples(_GroupwiseAnalysis):
                     raise TypeError(f'Specify `independent` or `within`: {e}')
                 else:
                     raise TypeError(f'Specify `independent` or `between`: {e}')
-                raise e
         else:
             kwargs[{False: 'between', True: 'within'}[paired]] = independent
 
@@ -384,6 +393,7 @@ class T1Sample(T2Samples):
         self.mu = mu
         kwargs['paired'] = True
         self.max_levels = 1
+        self.min_levels = 1
         super().__init__(**kwargs)
 
     def _select__input_data(self):
@@ -603,7 +613,7 @@ class Anova(_GroupwiseAnalysis):
             rst.pyr.rpackages.emmeans.as_data_frame_emmGrid(
                 _r_margins))
 
-        self.margins_results[margins_term] = {
+        self.margins_results[tuple(margins_term)] = {
             'margins': margins, 'r_margins': _r_margins}
         return margins
 
@@ -621,8 +631,9 @@ class Anova(_GroupwiseAnalysis):
             else:
                 margins_term = self.margins_term
         if '*' in margins_term:  # an interaction
-            raise RuntimeError('get_pairwise cannot be run using an interaction'
-                               'margins term')
+            raise RuntimeError(
+                'get_pairwise cannot be run using an interaction'
+                'margins term')
         if margins_term in self.margins_results:
             if ('pairwise' in self.margins_results[margins_term]
                     and not overwrite_pairwise_results):
@@ -793,7 +804,9 @@ class Wilcoxon2Sample(T2Samples):
 
 
 class KruskalWallisTest(Anova):
-    """Non-parametric between subject anova"""
+    """Runs a Kruskal-Wallis test, similar to a non-parametric between
+    subject anova.
+    """
 
     def _test_input_data(self):
         super()._test_input_data()
@@ -814,7 +827,8 @@ class KruskalWallisTest(Anova):
 
 
 class FriedmanTest(Anova):
-    """Non-parametric within subject anova"""
+    """Runs a Friedman test, similar to a non-parametric within-subject anova.
+    """
 
     def _test_input_data(self):
         super()._test_input_data()
@@ -840,5 +854,3 @@ class PairwiseComparisons:
 
     def __init__(self, data, correction_method):
         raise NotImplementedError
-        self.data = data
-        self.correction_method = correction_method

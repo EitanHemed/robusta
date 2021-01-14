@@ -3,6 +3,7 @@ from itertools import chain
 
 import numpy as np
 import pandas as pd
+import typing
 from rpy2 import robjects
 
 import robusta as rst  # So we can get the PyR singleton
@@ -48,36 +49,38 @@ def verify_float(a):
         print("data type can't be coerced to float")
 
 
-def verify_levels(df: pd.DataFrame, max_levels: object = None) -> None:
+def verify_levels(df: pd.DataFrame, min_levels: int = 2,
+                  max_levels: object = None) -> None:
 
     levels = df.apply(
         lambda s: s.unique().size)
-    if (levels < 2).any():
-        non_varying_levels = levels[levels < 2].index.values
-        composed = [f'- Variable {variable} - has {num} levels'
+
+    if (levels < min_levels).any():
+        non_varying_levels = levels[levels < min_levels].index.values
+        composed = '\n'.join([f'- Variable {variable} - has {num} levels'
                     for variable, num in
                     zip(
                         non_varying_levels,
-                        levels[non_varying_levels].values)].join('\n')
-        raise RuntimeError("Non-varying independent variables encountered. "
-                           "Make sure that each independent variable has"
-                           "at least 2 levels. Invalid variables: "
+                        levels[non_varying_levels].values)])
+        raise RuntimeError("Non-varying independent variables encountered.\n"
+                           "Make sure that each independent variable has\n"
+                           f"at least {min_levels} levels. Invalid variables: \n"
                            f"{composed}")
 
     if max_levels is not None and (levels > max_levels).any():
         too_many_levels_variables = levels[levels > max_levels].index.values
-        composed = [f'- Variable {variable} - has {num} levels'
+        composed = "\n".join([f'- Variable {variable} - has {num} levels'
                     for variable, num in
                     zip(
                         too_many_levels_variables,
-                        levels[too_many_levels_variables].values)].join('\n')
-        raise RuntimeError("Variables with more levels than allowed encountered. "
-                           "Make sure that each independent variable has"
-                           f"at most {max_levels} levels. Invalid variables: "
+                        levels[too_many_levels_variables].values)])
+        raise RuntimeError("Variables with more levels than allowed encountered.\n"
+                           "Make sure that each independent variable has\n"
+                           f"at most {max_levels} levels. Invalid variables:\n"
                            f"{composed}")
 
 
-def convert_df(df, df_rownames_column_name=None):
+def convert_df(df, rownames_to_column_name: typing.Union[None, str]=None):
     """A utility for safe conversion
     @type df: An R or Python DataFrame.
     """
@@ -91,10 +94,18 @@ def convert_df(df, df_rownames_column_name=None):
                 _df[_df.names.index(cn)])
         return _df
     elif type(df) == robjects.vectors.DataFrame:
-        if df_rownames_column_name is not None:
+        if rownames_to_column_name is None:
+            return pd.DataFrame(robjects.pandas2ri.ri2py(df))
+        else:
+            if not isinstance(rownames_to_column_name, str):
+                raise ValueError("Column name of previous row names must be a str")
             df = rst.pyr.rpackages.tibble.rownames_to_column(
-                    df, var=df_rownames_column_name)
-        return pd.DataFrame(robjects.pandas2ri.ri2py(df))
+                    df, var=rownames_to_column_name)
+            df = pd.DataFrame(robjects.pandas2ri.ri2py(df))
+            cols = df.columns.tolist()
+            cols = cols[-1:] + cols[:-1]
+            df = df[cols]
+            return df
     else:
         raise RuntimeError("Input can only be R/Python DataFrame object")
 

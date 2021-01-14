@@ -19,23 +19,16 @@ class TestChiSquare(unittest.TestCase):
     def test_chisquare_get_df(self):
         res = rst.ChiSquare(x='am', y='vs', data=rst.datasets.data('mtcars'),
                     apply_correction=True).get_results()
+        r_res = rst.pyrio.r(
         """
-        # Now in R...
-        options(width=120)
-        library(broom)
-        library(readr) 
+        library(broom) 
         data.frame(tidy(chisq.test(table(mtcars[ , c('am', 'vs')]))))
         """
+        )
 
-        r_res = pd.read_csv(pd.compat.StringIO(
-            """statistic,p.value,parameter,method
-            0.34753550543024225,0.5555115470131495,1,Pearson's Chi-squared test with Yates' continuity correction"""
-        ), lineterminator='\n', skipinitialspace=True,
-            dtype={'parameter': 'int32'})
         # TODO - find a way to avoid this ugly recasting ^
 
-        pd.testing.assert_frame_equal(res, r_res, check_exact=False,
-                                      check_less_precise=5)
+        pd.testing.assert_frame_equal(res, r_res)
 
     def test_chisquare_get_text(self):
         with self.assertRaises(NotImplementedError):
@@ -110,25 +103,20 @@ class TestPartialCorrelation(unittest.TestCase):
         res = rst.PartialCorrelation(x=satv, y=hsgpa, z=fgpa, method='pearson'
                                      ).get_results()
 
+        r_res = rst.pyrio.r(
         """
-        # Now in R...
         library(ppcor)
-        library(readr)
         SATV <-  c(500, 550, 450, 400, 600, 650, 700, 550, 650, 550)
         HSGPA <- c(3.0, 3.2, 2.8, 2.5, 3.2, 3.8, 3.9, 3.8, 3.5, 3.1)
         FGPA <-  c(2.8, 3.0, 2.8, 2.2, 3.3, 3.3, 3.5, 3.7, 3.4, 2.9)
-        cat(format_csv(pcor.test(SATV, HSGPA, FGPA)))
+        pcor.test(SATV, HSGPA, FGPA)
         """
+        )
+        # The method column is returned as a categorical type
+        r_res['Method'] = r_res['Method'].astype(str).values
 
-        r_res = pd.read_csv(pd.compat.StringIO("""
-        estimate,p.value,statistic,n,gp,Method
-        0.5499630584146348,0.12500736420985112,1.7421990896994466,10,1,pearson"""
-                                               ), skipinitialspace=True,
-                            dtype={'n': 'int64', 'gp': 'int64'})
-        # TODO - figure out a way around the following problem - the read_csv
-        #  function defines integers as int32, while the returned result is
-        #  int 64.
-        pd.testing.assert_frame_equal(res, r_res, check_dtype=False)
+
+        pd.testing.assert_frame_equal(res, r_res)
 
 
 class TestPartCorrelation(unittest.TestCase):
@@ -140,24 +128,21 @@ class TestPartCorrelation(unittest.TestCase):
         res = rst.PartCorrelation(x=satv, y=hsgpa, z=fgpa, method='pearson'
                                   ).get_results()
 
+        r_res = rst.pyrio.r(
         """
         # Now in R...
         library(ppcor)
-        library(readr)
+        library(broom)
         SATV <-  c(500, 550, 450, 400, 600, 650, 700, 550, 650, 550)
         HSGPA <- c(3.0, 3.2, 2.8, 2.5, 3.2, 3.8, 3.9, 3.8, 3.5, 3.1)
         FGPA <-  c(2.8, 3.0, 2.8, 2.2, 3.3, 3.3, 3.5, 3.7, 3.4, 2.9)
-        cat(format_csv(spcor.test(SATV, HSGPA, FGPA)))
+        spcor.test(SATV, HSGPA, FGPA)
         """
+        )
 
-        r_res = pd.read_csv(pd.compat.StringIO("""
-        estimate,p.value,statistic,n,gp,Method
-        0.31912011585544464,0.4025675494246841,0.8908934739230737,10,1,pearson"""
-                                               ), skipinitialspace=True,
-                            dtype={'n': 'int64', 'gp': 'int64'})
-        # TODO - figure out a way around the following problem - the read_csv
-        #  function defines integers as int32, while the returned result is
-        #  int 64.
+        # The method column is returned as a categorical type
+        r_res['Method'] = r_res['Method'].astype(str).values
+
         pd.testing.assert_frame_equal(res, r_res, check_dtype=False)
 
 
@@ -167,23 +152,17 @@ class TestBayesCorrelation(unittest.TestCase):
         res = rst.BayesCorrelation(x='Sepal.Width', y='Sepal.Length',
                                    data=rst.datasets.data('iris')).get_results(
         )
+        r_res = rst.pyrio.r(
         """
-        # Now in R
-        options(width=120)
         library(BayesFactor)
         library(tibble)
-        library(readr)
 
-         r_res = rownames_to_column(
+        r_res = rownames_to_column(
             data.frame(correlationBF(y = iris$Sepal.Length,
             x = iris$Sepal.Width))[, c('bf', 'error')], 'model')
-        cat(format_delim(r_res, ';'))
         """
-
-        r_res = pd.read_csv(pd.compat.StringIO("""
-        model;bf;error
-        Alt., r=0.333;0.5090175116477023;0"""), skipinitialspace=True,
-                            sep=';')
+        )
+        pd.testing.assert_frame_equal(res, r_res)
 
 if __name__ == '__main__':
     unittest.main()

@@ -14,9 +14,9 @@ __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
 
 CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
 DEFAULT_CORRELATION_METHOD = 'pearson'
-REDUNDENT_BAYES_RESULT_COLS = ['time',
-                               'code']
-DEFAULT_CORRELATION_NULL_INTERVAL = [-1, 1]
+REDUNDANT_BAYES_RESULT_COLS = ['time', 'code']
+DEFAULT_CORRELATION_NULL_INTERVAL = rst.pyr.rinterface.NULL # [-1, 1]
+
 
 class _PairwiseCorrelation(rst.base.AbstractClass):
     """
@@ -71,7 +71,8 @@ class _PairwiseCorrelation(rst.base.AbstractClass):
                 _data = pd.DataFrame(columns=['x', 'y'],
                                      data=np.array([self.x, self.y]).T)
             except ValueError:
-                raise ValueError('Possibly `x` and ``y` are not of the same length')
+                raise ValueError(
+                    'Possibly `x` and ``y` are not of the same length')
 
         elif isinstance(self.data, pd.DataFrame):
             if isinstance(self.x, str) and isinstance(self.y, str):
@@ -188,7 +189,7 @@ class Correlation(_PairwiseCorrelation):
 
     """
 
-    def __init__(self, method: str ='pearson', **kwargs):
+    def __init__(self, method: str = 'pearson', **kwargs):
         self.method = method
         super().__init__(**kwargs)
 
@@ -226,7 +227,7 @@ class _TriplewiseCorrelation(Correlation):
         if x, y, and z are not of the same type.
     """
 
-    def __init__(self, z: typing.Union[str, ], **kwargs):
+    def __init__(self, z: typing.Union[str,], **kwargs):
         self.z = z
         super().__init__(**kwargs)
 
@@ -336,9 +337,9 @@ class BayesCorrelation(_PairwiseCorrelation):
     """
 
     def __init__(self,
-                 rscale_prior: typing.Union[str, float]='medium',
-                 null_interval: typing.Optional[typing.List[int]]=None,
-                 sample_from_posterior: bool=False, **kwargs):
+                 rscale_prior: typing.Union[str, float] = 'medium',
+                 null_interval: typing.Optional[typing.List[int]] = None,
+                 sample_from_posterior: bool = False, **kwargs):
         self.rscale_prior = rscale_prior
         self.sample_from_posterior = sample_from_posterior
 
@@ -357,6 +358,6 @@ class BayesCorrelation(_PairwiseCorrelation):
 
     def _tidy_results(self):
         self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.base.data_frame(self._r_results,
-                                              'model')).drop(
-            columns=REDUNDENT_BAYES_RESULT_COLS)
+            rst.pyr.rpackages.base.data_frame(self._r_results),
+                                              'model').drop(
+            columns=REDUNDANT_BAYES_RESULT_COLS)
