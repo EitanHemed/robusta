@@ -20,13 +20,13 @@ academia and industry (most come both with
 - Mixed-Effects Models (Coming soon)
 
 
-Along the statistical tools, Robusta offers several tools which are
+Along the statistical tools, robusta offers several tools which are
 useful for quickly producing publication-ready reports:
 - Plain text 
 - LaTex formatted   
 - ?
 
-The plotting functions of Robusta include inferential and descriptive plots,
+The plotting functions of robusta include inferential and descriptive plots,
 including:
 - Bayesian sequential analysis plots (inspired by 
 [JASP](https://jasp-stats.org/))

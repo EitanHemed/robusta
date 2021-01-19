@@ -31,7 +31,9 @@ import robusta as rst
 __all__ = [
     "Anova", "BayesAnova",
     "T1Sample", "T2Samples",
-    "BayesT1Sample", "BayesT2Samples"
+    "BayesT1Sample", "BayesT2Samples",
+    "Wilcoxon1Sample", "Wilcoxon2Sample",
+    "KruskalWallisTest", "FriedmanTest"
 ]
 
 DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
@@ -139,8 +141,10 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
                 [self.subject, self.dependent]].copy()
         except KeyError:
             cols = self.data.columns
-            vars = [i for i in vars if i not in cols]
-            raise RuntimeError(f"Variables {'/'.join(vars)} not in data!")
+            vars = [i for i in [
+                self.independent +
+                [self.subject, self.dependent]] if i not in cols]
+            raise RuntimeError(f"Variables not in data: \n {','.join(vars)}")
         self._input_data = data
 
     def _test_input_data(self):
@@ -396,8 +400,9 @@ class T1Sample(T2Samples):
         self.min_levels = 1
         super().__init__(**kwargs)
 
-    def _select__input_data(self):
-        super()._select_input_data()
+    def _select_input_data(self):
+        # Skip the method implemented by parent (T2Samples)
+        _GroupwiseAnalysis._select_input_data(self)
         self.x = self._input_data[getattr(self, 'dependent')].values
 
     def _analyze(self):
@@ -558,13 +563,13 @@ class Anova(_GroupwiseAnalysis):
             rst.pyr.rpackages.generics.tidy(
                 rst.pyr.rpackages.stats.anova(self._r_results)))
 
-    # Look at this - emmeans::as_data_frame_emm_list
     def get_margins(
             self,
             margins_term: typing.List[str] = None,
             by: typing.List[str] = rst.pyr.rinterface.NULL,
             ci: int = 95,
             overwrite_margins_results: bool = False):
+        # TODO Look at this - emmeans::as_data_frame_emm_list
         # TODO - Documentation
         # TODO - Issue the 'balanced-design' warning etc.
         # TODO - allow for `by` option
@@ -786,19 +791,26 @@ class BayesAnova(Anova):
 
 class Wilcoxon1Sample(T1Sample):
 
+    def __init__(self, **kwargs):
+        super().__init__(paired=True, **kwargs)
+
+    """Mann-Whitney"""
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.stats.wilcox_test(
-            x=self.x, alternative=self.tail, mu=self.mu,
+            x=self.x, mu=self.mu, alternative=self.tail,
             exact=True, correct=True
         )
 
 
 class Wilcoxon2Sample(T2Samples):
 
+    #def __init__(self, **kwargs):
+    #    super().__init__(**kwargs)
+
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.stats.wilcox_test(
             x=self.x, y=self.y, paired=self.paired,
-            alternative=self.tail, mu=self.mu,
+            alternative=self.tail,
             exact=True, correct=True
         )
 
@@ -824,6 +836,10 @@ class KruskalWallisTest(Anova):
         self._r_results = rst.pyr.rpackages.stats.kruskal_test(
             self._r_formula, data=self._r_input_data
         )
+
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(
+            rst.pyr.rpackages.generics.tidy(self._r_results))
 
 
 class FriedmanTest(Anova):
