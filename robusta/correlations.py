@@ -4,10 +4,12 @@ coefficients.
 """
 import typing
 import warnings
-import pandas as pd
-import numpy as np
-import robusta as rst
+
 import custom_inherit
+import numpy as np
+import pandas as pd
+
+import robusta as rst
 
 __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
            'PartialCorrelation', 'BayesCorrelation']
@@ -15,7 +17,7 @@ __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
 CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
 DEFAULT_CORRELATION_METHOD = 'pearson'
 REDUNDANT_BAYES_RESULT_COLS = ['time', 'code']
-DEFAULT_CORRELATION_NULL_INTERVAL = rst.pyr.rinterface.NULL # [-1, 1]
+DEFAULT_CORRELATION_NULL_INTERVAL = rst.pyr.rinterface.NULL  # [-1, 1]
 
 
 class _PairwiseCorrelation(rst.base.AbstractClass):
@@ -66,21 +68,23 @@ class _PairwiseCorrelation(rst.base.AbstractClass):
         if self.data is None:
             if isinstance(self.x, str) and isinstance(self.y, str):
                 raise ValueError('Specify dataframe and enter `x` and `y`'
-                                 ' as strings.')
-            try:
-                _data = pd.DataFrame(columns=['x', 'y'],
-                                     data=np.array([self.x, self.y]).T)
-            except ValueError:
+                                 ' as strings')
+            if self.x.size == 0 or self.y.size == 0:
+                raise ValueError('`x` or ``y` are empty')
+            if self.x.size != self.y.size:
                 raise ValueError(
                     'Possibly `x` and ``y` are not of the same length')
 
-        elif isinstance(self.data, pd.DataFrame):
-            if isinstance(self.x, str) and isinstance(self.y, str):
-                try:
-                    _data = self.data[[self.x, self.y]].copy()
-                except KeyError:
-                    raise KeyError(f"Either `x` or ({self.x}),`y` ({self.y})"
-                                   f" are not columns in data")
+            _data = pd.DataFrame(columns=['x', 'y'],
+                                 data=np.array([self.x, self.y]).T)
+
+        elif (isinstance(self.data, pd.DataFrame)
+              and isinstance(self.x, str) and isinstance(self.y, str)):
+            if {self.x, self.y}.issubset(set(self.data.columns)):
+                _data = self.data[[self.x, self.y]].copy()
+            else:
+                raise KeyError(f"Either `x` or ({self.x}),`y` ({self.y})"
+                               f" are not columns in data")
 
         if _data is None:  # Failed to parse data from input
             raise ValueError('Either enter `data` as a pd.DataFrame'
@@ -189,7 +193,8 @@ class Correlation(_PairwiseCorrelation):
 
     """
 
-    def __init__(self, method: str = 'pearson', **kwargs):
+    def __init__(self, method: str = 'pearson', alternative: str = 'two.sided',
+                 **kwargs):
         self.method = method
         super().__init__(**kwargs)
 
@@ -202,8 +207,13 @@ class Correlation(_PairwiseCorrelation):
     def _analyze(self):
         self._r_results = rst.pyr.rpackages.stats.cor_test(
             *self._input_data.values.T,
-            method=self.method
+            method=self.method,
+            alternative=self.alternative,
         )
+
+    def _tidy_results(self):
+        self._results = rst.utils.convert_df(
+            rst.pyr.rpackages.generics.tidy(self._r_results))
 
 
 @custom_inherit.doc_inherit(Correlation, "numpy_with_merge")
@@ -359,5 +369,5 @@ class BayesCorrelation(_PairwiseCorrelation):
     def _tidy_results(self):
         self._results = rst.utils.convert_df(
             rst.pyr.rpackages.base.data_frame(self._r_results),
-                                              'model').drop(
+            'model').drop(
             columns=REDUNDANT_BAYES_RESULT_COLS)

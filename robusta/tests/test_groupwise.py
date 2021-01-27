@@ -226,5 +226,31 @@ class TestKruskalWallisTest(unittest.TestCase):
         pd.testing.assert_frame_equal(
             res, r_res)
 
+class FriedmanTest(unittest.TestCase):
+
+    def test_friedman_test(self):
+
+        with self.assertRaises(rst.pyr.rinterface.RRuntimeError):
+            # Until we get rstatix on the environment
+
+            r_res = rst.pyrio.r("""
+            # Example from https://www.datanovia.com/en/lessons/friedman-test-in-r/
+            library(rstatix)
+            library(broom)
+            library(datarium)
+            library(tidyr)
+            data_long <- gather(selfesteem, 'time', 'score', t1:t3, factor_key=TRUE)
+            data.frame(tidy(friedman_test(score ~ time |id, data=data_long)))
+            """)
+
+            df = rst.datasets.data('selfesteem').set_index(
+                ['id', 'group']).filter(
+                regex='^t[1-3]$').stack().reset_index().rename(
+                columns={0: 'score', 'level_2': 'time'})
+            res = rst.FriedmanTest(data=df, within='time', dependent='score',
+                                   subject='id')
+
+            pd.testing.assert_frame_equal(res, r_res)
+
 if __name__ == '__main__':
     unittest.main()

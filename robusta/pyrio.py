@@ -27,7 +27,7 @@ r_libraries_to_include = ['backports', 'tidyr', 'lme4', 'emmeans',
                           'datasets', 'broom', 'afex', 'utils',
                           'dplyr', 'datarium', 'tibble', 'generics',
                           'base', 'BayesFactor', 'stats', 'effsize', 'psych',
-                          'ppcor',
+                          'ppcor', # 'rstatix',
                           'Matrix']
 
 

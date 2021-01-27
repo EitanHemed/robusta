@@ -8,26 +8,49 @@ import robusta as rst
 
 class Test_PairwiseCorrelation(unittest.TestCase):
 
-    def test_two_str_and_empty_dataframe(self):
+    def test_faulty_input(self):
+
         with self.assertRaises(KeyError):
             rst.correlations._PairwiseCorrelation(
                 x='x', y='y', data=pd.DataFrame()
             )
+        with self.assertRaises(ValueError):
+            rst.correlations._PairwiseCorrelation(
+                x='x', y='y', data=None
+            )
+        with self.assertRaises(ValueError):
+            rst.correlations._PairwiseCorrelation(
+                x=np.random.randint(0, 10, 20),
+                y=np.random.randint(0, 10, 19), data=None
+            )
 
+        # X is string, y is an array
+        with self.assertRaises(ValueError):
+            rst.correlations._PairwiseCorrelation(
+                x='rating',
+                y=np.random.randint(0, 10, 19),
+                data=rst.datasets.data('attitude')
+            )
+
+        # Input strings but both are not in the data
+        with self.assertRaises(ValueError):
+            rst.correlations._PairwiseCorrelation(
+                X='SCORE',
+                y='SALES',
+                data=rst.datasets.data('attitude')
+            )
 
 class TestChiSquare(unittest.TestCase):
-    def test_chisquare_get_df(self):
+
+    def compare_output(self):
         res = rst.ChiSquare(x='am', y='vs', data=rst.datasets.data('mtcars'),
                     apply_correction=True).get_results()
         r_res = rst.pyrio.r(
-        """
-        library(broom) 
-        data.frame(tidy(chisq.test(table(mtcars[ , c('am', 'vs')]))))
-        """
+            """
+            library(broom) 
+            data.frame(tidy(chisq.test(table(mtcars[ , c('am', 'vs')]))))
+            """
         )
-
-        # TODO - find a way to avoid this ugly recasting ^
-
         pd.testing.assert_frame_equal(res, r_res)
 
     def test_chisquare_get_text(self):
@@ -54,15 +77,31 @@ class TestChiSquare(unittest.TestCase):
 
 class TestCorrelation(unittest.TestCase):
 
-    def test_correlation_method(self):
+    def test_faulty_input(self):
         data = rst.datasets.data('attitude')
 
-        # Test that when no
+        # Faulty method argument
         with self.assertRaises(ValueError):
             rst.Correlation(data=data, x='rating', y='advance',
                             method=None)
+
+            # Incorrect method specified
             rst.Correlation(data=data, x='rating', y='advance',
                             method='fisher')
+
+    def test_output(self):
+        res = rst.Correlation(data=rst.datasets.data('iris'),
+                              x='Sepal.Length', y='Sepal.Width',
+                        method='pearson').get_results()
+
+        r_res = rst.pyrio.r("""
+        library(broom)
+        data.frame(tidy(cor.test(x=iris$Sepal.Length, y=iris$Sepal.Width,
+            method='pearson'
+        ))) 
+        """)
+        pd.testing.assert_frame_equal(res, r_res)
+
 
 
 class Test_TriplewiseCorrelation(unittest.TestCase):
