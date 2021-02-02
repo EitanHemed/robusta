@@ -32,7 +32,7 @@ r_libraries_to_include = ['backports', 'tidyr', 'lme4', 'emmeans',
 
 
 class PyRIO:
-    #instances_count = 0  # This is a static counter
+    instances_count = 0  # This is a static counter
 
     def __init__(self,
                  required_packs=None, cran_mirror_idx=1):
@@ -43,12 +43,12 @@ class PyRIO:
         self.cran_mirror_idx = cran_mirror_idx
         if required_packs is None:
             required_packs = r_libraries_to_include
-        #if PyRIO.instances_count == 1:  # Check if the number of instances present are more than one.
-        #    del self
-        #    print(
-        #        "A PyRIO object has already been initialized. Please use existing")
-        #    return
-        #PyRIO.instances_count += 1
+        if PyRIO.instances_count == 1:  # Check if the number of instances present are more than one.
+           del self
+           print(
+               "A PyRIO object has already been initialized. Please use existing")
+           return
+        PyRIO.instances_count += 1
 
         self.rpackages = packages
         self.rinterface = rinterface

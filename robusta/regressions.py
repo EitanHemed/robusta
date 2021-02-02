@@ -1,11 +1,11 @@
 import re
 import typing
-import textwrap
-import pandas as pd
-import numpy as np
-from dataclasses import dataclass
-import robusta as rst
 import warnings
+from dataclasses import dataclass
+
+import pandas as pd
+
+import robusta as rst
 
 warnings.warn("Currently the regressions module is under development,"
               "nothing is promised to work correctly.")
@@ -65,7 +65,8 @@ class _BaseRegression(rst.base.AbstractClass):
         self.formula = frml
         # Else, just use the entered formula
         """
-        pattern = re.compile(r'\s*\+{1,1}\(*\s*1{1,1}\s*\|{1,1}\s*' + self.subject + r'\s*\)*')
+        pattern = re.compile(
+            r'\s*\+{1,1}\(*\s*1{1,1}\s*\|{1,1}\s*' + self.subject + r'\s*\)*')
         frml = re.sub(pattern, '', self.formula)
         self._r_formula = rst.pyr.rpackages.stats.formula(frml)
 
@@ -131,7 +132,6 @@ class _BaseRegression(rst.base.AbstractClass):
         """
         return rst.convert_df(rst.pyr.rpackages.stats.predict(
             self._r_results, new_data, type=self.default_predict_type))
-
 
 
 class LinearRegression(_BaseRegression):
@@ -206,10 +206,10 @@ class BayesianLinearRegression(LinearRegression):
         """
 
     def __init__(self,
-                 iterations : int=10000,
-                 exclude_subject: bool=True,
+                 iterations: int = 10000,
+                 exclude_subject: bool = True,
                  # TODO add type hints to the next argument
-                 never_exclude = rst.pyr.rinterface.NULL,
+                 never_exclude=rst.pyr.rinterface.NULL,
                  **kwargs):
         self.iterations = iterations
         self.exclude_subject = exclude_subject
@@ -217,7 +217,7 @@ class BayesianLinearRegression(LinearRegression):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        #raise NotImplementedError("Currently the formula tools just assumes all interactions rather than "
+        # raise NotImplementedError("Currently the formula tools just assumes all interactions rather than "
         #                          "going by the supplied formula. This has to be solved ASAP.")
         self._r_results = rst.pyr.rpackages.base.data_frame(
             rst.pyr.rpackages.bayesfactor.generalTestBF(
@@ -226,11 +226,18 @@ class BayesianLinearRegression(LinearRegression):
                 neverExclude=rst.pyr.rinterface.NULL,
                 iterations=self.iterations))
 
-
     def _tidy_results(self):
         self._results = rst.utils.convert_df(self._r_results,
                                              'model').drop(columns=['time',
                                                                     'code'])
+
+    def get_report(self, mode: str = 'df'):
+
+        if mode == 'df':
+            return rst.pyr.rpackages.report.as_data_frame_report(
+                self._r_results)
+        if mode == 'verbose':
+            return rst.pyr.rpackages.report.report(self._r_results)
 
 
 class LogisticRegression(_BaseRegression):

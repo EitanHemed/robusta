@@ -1,48 +1,113 @@
 """
 TODO: Lots of stuff
+     The main problem currently is deciding how to pass the statistics from
+     tests to the plots in cases where the test has to be re-run (e.g., on the
+     sequential sampling you'd have to recreate the test. One solution would be
+     to remove all the `self.foo` kwargs from the bar._analyze function call and
+     this way you can always update the data, formula etc.
+     The downside of this method is that (a) it nullifies the need in handling
+     all the input taken from bar.__init__, (b) we need to re-test arguments (or
+     let the user know that the validity of the arguments is not being re-tested).
+
 
 Many inferential plots.
 
 SequentialAnalyzer - A sequential plot.
 PairLevelPlotter - An inferential pairwise (Maybe for dosage, sessions, etc.).
 """
-
-from matplotlib import patches
-import matplotlib.pyplot as plt
-import seaborn as sns
+import typing
+import warnings
 from multiprocessing import Pool
-import pandas as pd
+
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib import patches
+
+import robusta as rst
 
 
-def plot_posterior_dist(posterior_vals, ax=None, ci_kws={},
-                        **kwargs):
-    if ax is None:
-        fig, ax = plt.subplots()
+class PosteriorPlot():
 
-    lower, upper = _get_credible_interval(posterior_vals)
+    # TODO - a cool thing to do here would be an option to select whether you
+    #  want to plot the distribution of mu, sigma or both (as a bivariate density
+    #  plot
 
-    ax = sns.distplot(a=posterior_vals, **kwargs)
+    def __init__(self, test_source: typing.Union[rst.BayesT1Sample,
+                                                 rst.BayesT2Samples],
+                 test_kw: dict = None,
+                 fig: plt.Figure = None,
+                 ax: plt.Axes = None,
+                 fig_kw: dict = None,
+                 ci: typing.Union[float, int, np.ndarray] = 95,
+                 hist_kws: dict = None,
+                 ci_kws: dict = None,
+                 ):
 
-    peak = _grab_peak_from_distplot(ax)
+        if test_source not in [rst.BayesT1Sample, rst.BayesT2Samples]:
+            raise ValueError
 
-    ax.plot(
-        [np.percentile(posterior_vals, lower),
-         np.percentile(posterior_vals, upper)],
-        [peak, peak], **ci_kws)
+        test_source = test_source
+        self.test_args = test_kw
+        if self.test_args.get('posterior', None) is not False:
+            warnings.warn("`posterior` should be set to True or None. Ignoring"
+                          "input!")
+        self.ci = np.array(ci)
 
-    return ax
+        if hist_kws is None: hist_kws = {}
+        if ci_kws is None: ci_kws = {}
 
-def _grab_peak_from_distplot(ax):
-    # grab the peak of the KDE by extracting the last drawn line
-    child = ax.get_lines()[-1]
-    _, y = child.get_data()
-    return y.max()
+        if test_source.sample_from_posterior is False:
+            # we need to run it from scratch... find a more elegant solution
 
+            self.credible_interval = self._get_credible_interval()
+            fig, ax = self._run_plot()
 
-def _get_credible_interval(posterior_vals):
-    return [np.percentile(posterior_vals, 2.5),
-            np.percentile(posterior_vals, 97.5)]
+        else:
+            self.credible_interval = self._get_credible_interval()
+            fig, ax = self._run_plot()
+
+        if ax is None:
+            fig, ax = plt.subplots()
+        self.fig, self.ax = fig, ax
+
+    def _get_credible_interval(self):
+        if not np.logical_and(self.ci >= 0, self.ci <= 100).all():
+            raise ValueError("Specify `ci` between 0 and 100")
+
+        if self.ci.size == 1:
+            lower, upper = (100 - self.ci.size) / 2, (100 + self.ci.size) / 2
+        elif self.ci.size == 2:
+            lower, upper = self.ci.size
+        else:
+            # TODO - Better error message
+            raise ValueError("Incorrect shape")
+
+        return np.percentile(self.test_source.posterior_values,
+                             [lower, upper])
+
+    def _plot(self):
+
+        self._plot_posterior_dist()
+
+        self._plot_credible_interval()
+
+    def _plot_posterior_dist(self):
+
+        sns.histplot(a=self.posterior_values, ax=self.ax, **self.hist_kws)
+
+        peak = self._grab_peak_from_distplot(self.ax)
+
+        self.ax.plot(
+            self.credible_interval,
+            [peak, peak], **self.ci_kws)
+
+    def _grab_peak_from_distplot(self, ax):
+        # grab the peak of the KDE by extracting the last drawn line
+        child = ax.get_lines()[-1]
+        _, y = child.get_data()
+        return y.max()
 
 
 class SequentialAnalysis():
@@ -85,7 +150,6 @@ class SequentialAnalysis():
         # TODO possibly there is a faster way. Find out what's the canonical.
         inst = self.bayes_ttest
         trimmed_input_data = inst.get_test_data().iloc[0: n, :]
-        pass
 
     def plot(self):
         if self.mark_inconclusiveness:

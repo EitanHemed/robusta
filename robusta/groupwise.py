@@ -27,13 +27,14 @@ import numpy as np
 import pandas as pd
 
 import robusta as rst
+from . import base
 
 __all__ = [
-    "Anova", "BayesAnova",
-    "T1Sample", "T2Samples",
-    "BayesT1Sample", "BayesT2Samples",
-    "Wilcoxon1Sample", "Wilcoxon2Sample",
-    "KruskalWallisTest", "FriedmanTest"
+    "AnovaModel", "BayesAnovaModel",
+    "T1SampleModel", "T2SamplesModel",
+    "BayesT1SampleModel", "BayesT2SamplesModel",
+    "Wilcoxon1SampleModel", "Wilcoxon2SamplesModel",
+    "KruskalWallisTestModel", "FriedmanTestModel"
 ]
 
 DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
@@ -43,7 +44,7 @@ DEFAULT_MU = 0
 
 
 @dataclass
-class _GroupwiseAnalysis(rst.base.AbstractClass):
+class GroupwiseModel(base.BaseModel):
     """
     A basic class to handle pre-requisites of T-Tests and ANOVAs.
 
@@ -55,7 +56,6 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
     dependent: typing.Union[str, None]
     formula: typing.Union[str, None]
     agg_func: typing.Union[str, typing.Callable]
-    _perform_aggregation: bool
     max_levels = None
     min_levels = None
 
@@ -85,9 +85,23 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
             max_levels=kwargs.get('max_levels', None)
         )
         self.data.dropna(inplace=True)
+
+        # TODO - on the new structure nothing is run on init, so do we really
+        #  need the call to super here?
         super().__init__()
 
+    def _pre_process(self):
+        self._set_controllers()
+        self._select_input_data()
+        self._validate_input_data()
+        self._transform_input_data()
+
     def _set_controllers(self):
+        """
+        This function set
+        @param: self
+        @return: None
+        """
         # Parse variables from formula or build formula from entered variables
         if self.formula is None:
             # Variables setting routine
@@ -130,7 +144,7 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
             if ind_vars == '':
                 return []
             return [ind_vars]
-        if isinstance(self, T1Sample):
+        if isinstance(self, T1SampleModel):
             return []
         raise TypeError
 
@@ -147,14 +161,15 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
             raise RuntimeError(f"Variables not in data: \n {','.join(vars)}")
         self._input_data = data
 
-    def _test_input_data(self):
+    def _validate_input_data(self):
         # To test whether DV can be coerced to float
         rst.utils.verify_float(self._input_data[self.dependent].values)
 
+
         # Verify ID variable uniqueness
         self._perform_aggregation = (
-            self._input_data.groupby(
-                [self.subject] + self.independent).size().any() > 1)
+                self._input_data.groupby(
+                    [self.subject] + self.independent).size().any() > 1)
 
         # Make sure that you have at least two levels on each independent
         # variable
@@ -163,6 +178,7 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
     def _transform_input_data(self):
         # Make sure we are handing R a DataFrame with factor variables,
         # as some packages do not coerce factor type.
+
         if self._perform_aggregation:
             self._input_data = self._aggregate_data()
 
@@ -182,8 +198,31 @@ class _GroupwiseAnalysis(rst.base.AbstractClass):
                 [self.subject] + self.independent)).agg(
             self.agg_func).reset_index()
 
+    def _analyze(self):
+        pass
 
-class T2Samples(_GroupwiseAnalysis):
+    def fit(self):
+        """
+        This method runs the model defined by the input.
+        @return:
+        """
+        self._pre_process()
+        # returns the results objects that is created with the (r) results object
+        return self._analyze()
+
+class GroupwiseResults(base.BaseResults):
+
+    def get_report(self, mode: str = 'df'):
+
+        if mode == 'df':
+            return rst.pyr.rpackages.report.as_data_frame_report(
+                self._r_results)
+        if mode == 'verbose':
+            raise NotImplementedError
+            return rst.pyr.rpackages.report.report(self._r_results)
+
+
+class T2SamplesModel(GroupwiseModel):
     """
     Run a frequentist dependent or independent samples t-test.
 
@@ -222,6 +261,8 @@ class T2Samples(_GroupwiseAnalysis):
         if False runs Welch two-sample test. Default is True.
     """
 
+    alternative : str
+
     def __init__(self,
                  paired: bool = None,
                  independent: bool = None,
@@ -257,10 +298,18 @@ class T2Samples(_GroupwiseAnalysis):
             lambda s: s.values)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.t_test(
-            **{'x': self.x, 'y': self.y, 'paired': self.paired,
-               'alternative': self.alternative, 'tail': self.tail,
-               'var.equal': self.assume_equal_variance})
+        return T2SamplesResults(
+            rst.pyr.rpackages.stats.t_test(
+                **{'x': self.x, 'y': self.y, 'paired': self.paired,
+                   'tail': self.tail,
+                   'var.equal': self.assume_equal_variance})
+        )
+
+
+class T2SamplesResults(GroupwiseResults):
+
+    def __init__(self, r_results):
+        self.r_results = r_results
 
     def _tidy_results(self):
         self._results = rst.utils.convert_df(
@@ -271,9 +320,9 @@ class T2Samples(_GroupwiseAnalysis):
         t_clause = self.results['t']
 
 
-class BayesT2Samples(T2Samples):
+class BayesT2SamplesModel(T2SamplesModel):
     """
-    Run a frequentist independent-samples t-test.
+    Run a Bayesian independent-samples t-test.
 
     To run a model either specify the dependent, independent and subject
     variables, or enter a formula (SPECIFY FORM HERE).
@@ -341,25 +390,48 @@ class BayesT2Samples(T2Samples):
         self.mu = mu
         super().__init__(**kwargs)
 
+    # def re_analyze(self, x=np.nan, y=np.nan, paired=np.nan,
+    #                sample_from_posterior=np.nan):
+    #     kwargs = {
+    #         'x': self.x if x is np.nan else x,
+    #         'y': self.y if y is np.nan else y,
+    #         'paired': self.paired if paired is np.nan else paired,
+    #         'nullInterval': self.null_interval,
+    #         'iterations': self.iterations,
+    #         'posterior': self.sample_from_posterior if sample_from_posterior is np.nan else sample_from_posterior,
+    #         'rscale': self.prior_r_scale,
+    #         'mu': self.mu
+    #     }
+    #
+    #     rst.pyr.rpackages.base.data_frame(
+    #         rst.pyr.rpackages.bayesfactor.ttestBF(
+    #             **kwargs
+    #         ))
+
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.base.data_frame(
-            rst.pyr.rpackages.bayesfactor.ttestBF(
-                x=self.x,
-                y=self.y,
-                paired=self.paired,
-                nullInterval=self.null_interval,
-                iterations=self.iterations,
-                posterior=self.sample_from_posterior,
-                rscalse=self.prior_r_scale,
-                simple=True,
-                mu=self.mu
-            ))
+        return BayesT2SamplesResults(
+            rst.pyr.rpackages.base.data_frame(
+                rst.pyr.rpackages.bayesfactor.ttestBF(
+                    x=self.x,
+                    y=self.y,
+                    paired=self.paired,
+                    nullInterval=self.null_interval,
+                    iterations=self.iterations,
+                    posterior=self.sample_from_posterior,
+                    rscalse=self.prior_r_scale,
+                    mu=self.mu
+                ))
+        )
+
+
+class BayesT2SamplesResults(T2SamplesResults):
+    # TODO Validate if correctly inherits init from parent
 
     def _tidy_results(self):
         self._results = rst.utils.convert_df(self._r_results)
 
 
-class T1Sample(T2Samples):
+class T1SampleModel(T2SamplesModel):
     """
     Run a frequentist one-sample t-test.
 
@@ -402,18 +474,23 @@ class T1Sample(T2Samples):
 
     def _select_input_data(self):
         # Skip the method implemented by parent (T2Samples)
-        _GroupwiseAnalysis._select_input_data(self)
+        GroupwiseModel._select_input_data(self)
         self.x = self._input_data[getattr(self, 'dependent')].values
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.t_test(
+        return T1SampleResults(rst.pyr.rpackages.stats.t_test(
             x=self.x,
             mu=self.mu,
             alternative=self.tail
         )
+        )
 
 
-class BayesT1Sample(T1Sample):
+class T1SampleResults(T2SamplesResults):
+    pass
+
+
+class BayesT1SampleModel(T1SampleModel):
     """
     Run a frequentist independent-samples t-test.
 
@@ -495,11 +572,14 @@ class BayesT1Sample(T1Sample):
                 mu=self.mu
             ))
 
+
+class BayesT1SampleResults(T1SampleResults):
+
     def _tidy_results(self):
         self._results = rst.utils.convert_df(self._r_results)
 
 
-class Anova(_GroupwiseAnalysis):
+class AnovaModel(GroupwiseModel):
     """
     Run a mixed (between + within) frequentist ANOVA.
 
@@ -548,7 +628,6 @@ class Anova(_GroupwiseAnalysis):
             self.get_margins()
 
     def _analyze(self):
-
         self._r_results = rst.pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
             data=self._r_input_data,
@@ -558,6 +637,8 @@ class Anova(_GroupwiseAnalysis):
         # TODO: Add this functionality - sig_symbols=
         # rst.pyr.vectors.StrVector(["", "", "", ""]))
 
+
+class AnovaResults(GroupwiseResults):
     def _tidy_results(self):
         self._results = rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(
@@ -650,7 +731,7 @@ class Anova(_GroupwiseAnalysis):
             self.margins_results[margins_term]['r_margins']))
 
 
-class BayesAnova(Anova):
+class BayesAnovaModel(AnovaModel):
     # TODO - Formula specification will be using the lme4 syntax and variables
     #  will be parsed from it
     """
@@ -779,6 +860,9 @@ class BayesAnova(Anova):
             # noSample=self.no_sample
         )
 
+
+class BayesAnovaResults(AnovaResults):
+
     def _tidy_results(self):
         self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(
             self._r_results)
@@ -789,39 +873,48 @@ class BayesAnova(Anova):
         raise NotImplementedError
 
 
-class Wilcoxon1Sample(T1Sample):
+class Wilcoxon1SampleModel(T1SampleModel):
 
     def __init__(self, **kwargs):
         super().__init__(paired=True, **kwargs)
 
     """Mann-Whitney"""
+
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.wilcox_test(
+        return Wilcoxon1SampleResults(rst.pyr.rpackages.stats.wilcox_test(
             x=self.x, mu=self.mu, alternative=self.tail,
             exact=True, correct=True
-        )
+        ))
 
 
-class Wilcoxon2Sample(T2Samples):
+class Wilcoxon1SampleResults(T1SampleResults):
+    pass
 
-    #def __init__(self, **kwargs):
+
+class Wilcoxon2SamplesModel(T2SamplesModel):
+
+    # def __init__(self, **kwargs):
     #    super().__init__(**kwargs)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.wilcox_test(
+        return Wilcoxon2SamplesResults(rst.pyr.rpackages.stats.wilcox_test(
             x=self.x, y=self.y, paired=self.paired,
             alternative=self.tail,
             exact=True, correct=True
-        )
+        ))
 
 
-class KruskalWallisTest(Anova):
+class Wilcoxon2SamplesResults(T2SamplesResults):
+    pass
+
+
+class KruskalWallisTestModel(AnovaModel):
     """Runs a Kruskal-Wallis test, similar to a non-parametric between
     subject anova.
     """
 
-    def _test_input_data(self):
-        super()._test_input_data()
+    def _validate_input_data(self):
+        super()._validate_input_data()
         if len(self.between) != 1:
             raise RuntimeError('More than one between subject factors defined')
         if self.within != []:
@@ -833,21 +926,23 @@ class KruskalWallisTest(Anova):
         self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.kruskal_test(
+        return KruskalWallisTestResults(rst.pyr.rpackages.stats.kruskal_test(
             self._r_formula, data=self._r_input_data
-        )
+        ))
 
+
+class KruskalWallisTestResults(AnovaResults):
     def _tidy_results(self):
         self._results = rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(self._r_results))
 
 
-class FriedmanTest(Anova):
+class FriedmanTestModel(AnovaModel):
     """Runs a Friedman test, similar to a non-parametric within-subject anova.
     """
 
-    def _test_input_data(self):
-        super()._test_input_data()
+    def _validate_input_data(self):
+        super()._validate_input_data()
         if len(self.within) != 1:
             raise RuntimeError('More than one within subject factors defined')
         if self.between != []:
@@ -859,9 +954,13 @@ class FriedmanTest(Anova):
         self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.friedman_test(
+        return FriedmanTestResults(rst.pyr.rpackages.stats.friedman_test(
             self._r_formula, data=self._r_input_data
-        )
+        ))
+
+
+class FriedmanTestResults(AnovaResults):
+    pass
 
 
 class PairwiseComparisons:

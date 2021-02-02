@@ -13,7 +13,7 @@ __author_email__ = 'Eitan.Hemed@gmail.com'
 from .pyrio import PyRIO
 
 pyr = PyRIO()
-
+from .api import *
 from . import base
 from . import formula_tools
 from . import utils
@@ -22,5 +22,5 @@ from . import examples
 
 
 from .groupwise import *
-from .regressions import *
-from .correlations import *
+# from .regressions import *
+# from .correlations import *

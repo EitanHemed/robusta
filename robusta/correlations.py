@@ -215,6 +215,14 @@ class Correlation(_PairwiseCorrelation):
         self._results = rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(self._r_results))
 
+    def get_report(self, mode: str = 'df'):
+
+        if mode == 'df':
+            return rst.pyr.rpackages.report.as_data_frame_report(
+                self._r_results)
+        if mode == 'verbose':
+            return rst.pyr.rpackages.report.report(self._r_results)
+
 
 @custom_inherit.doc_inherit(Correlation, "numpy_with_merge")
 class _TriplewiseCorrelation(Correlation):
