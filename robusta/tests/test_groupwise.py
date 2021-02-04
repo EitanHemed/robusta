@@ -3,11 +3,37 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import pytest
 
 import robusta as rst
 
 sys.path.append('./')
 
+class TestT2Samples(unittest.TestCase):
+
+    @pytest.mark.integtest
+    def test_t2_sample(self):
+
+        data = rst.datasets.data('sleep')
+        m = rst.t2samples(data=data,
+                         independent='group',
+                         dependent='extra',
+                         subject='ID',
+                         paired=True)
+        res = m.fit()
+
+        r_res = rst.pyrio.r(
+            """
+            library(broom)
+            data.frame(tidy(t.test(extra~group, data=sleep, paired=TRUE)))
+            """
+        )
+        pd.testing.assert_frame_equal(r_res, res.get_df())
+
+        m = rst.t2samples(data=data, formula='extra~group+1|ID',
+                          paired=True)
+
+        pd.testing.assert_frame_equal(r_res, res.get_df())
 
 class TestT1Sample(unittest.TestCase):
 

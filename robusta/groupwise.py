@@ -1,3 +1,5 @@
+# TODO - define __repr__ and __str__ for all classes
+
 """
 ttest_and_anova contains classes used to run statistical tests in which a
 central tendency measure of groups is compared:
@@ -212,14 +214,25 @@ class GroupwiseModel(base.BaseModel):
 
 class GroupwiseResults(base.BaseResults):
 
-    def get_report(self, mode: str = 'df'):
 
+    def __init__(self, r_results):
+        self.r_results = r_results
+        super().__init__()
+
+    def get_text(self, mode: str = 'df'):
+        raise NotImplementedError
         if mode == 'df':
             return rst.pyr.rpackages.report.as_data_frame_report(
                 self._r_results)
         if mode == 'verbose':
-            raise NotImplementedError
             return rst.pyr.rpackages.report.report(self._r_results)
+
+    def get_df(self):
+        return self._tidy_results()
+
+    def _tidy_results(self):
+        return rst.utils.convert_df(
+            rst.pyr.rpackages.generics.tidy(self.r_results))
 
 
 class T2SamplesModel(GroupwiseModel):
@@ -277,17 +290,18 @@ class T2SamplesModel(GroupwiseModel):
         kwargs['max_levels'] = 2
         kwargs['min_levels'] = 2
 
-        if independent is None:
-            try:
-                independent = kwargs[{
-                    False: 'between', True: 'within'}[paired]]
-            except KeyError as e:
-                if paired:
-                    raise TypeError(f'Specify `independent` or `within`: {e}')
-                else:
-                    raise TypeError(f'Specify `independent` or `between`: {e}')
-        else:
-            kwargs[{False: 'between', True: 'within'}[paired]] = independent
+        if kwargs.get('formula') is None:
+            if independent is None:
+                try:
+                    independent = kwargs[{
+                        False: 'between', True: 'within'}[paired]]
+                except KeyError as e:
+                    if paired:
+                        raise TypeError(f'Specify `independent` or `within`: {e}')
+                    else:
+                        raise TypeError(f'Specify `independent` or `between`: {e}')
+            else:
+                kwargs[{False: 'between', True: 'within'}[paired]] = independent
 
         super().__init__(**kwargs)
 
@@ -308,15 +322,8 @@ class T2SamplesModel(GroupwiseModel):
 
 class T2SamplesResults(GroupwiseResults):
 
-    def __init__(self, r_results):
-        self.r_results = r_results
-
-    def _tidy_results(self):
-        self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self._r_results))
-
     def get_text_report(self):
-        params = self._r_results
+        params = self.r_results
         t_clause = self.results['t']
 
 
@@ -428,7 +435,7 @@ class BayesT2SamplesResults(T2SamplesResults):
     # TODO Validate if correctly inherits init from parent
 
     def _tidy_results(self):
-        self._results = rst.utils.convert_df(self._r_results)
+        self._results = rst.utils.convert_df(self.r_results)
 
 
 class T1SampleModel(T2SamplesModel):
@@ -576,7 +583,7 @@ class BayesT1SampleModel(T1SampleModel):
 class BayesT1SampleResults(T1SampleResults):
 
     def _tidy_results(self):
-        self._results = rst.utils.convert_df(self._r_results)
+        self._results = rst.utils.convert_df(self.r_results)
 
 
 class AnovaModel(GroupwiseModel):
@@ -642,7 +649,7 @@ class AnovaResults(GroupwiseResults):
     def _tidy_results(self):
         self._results = rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(
-                rst.pyr.rpackages.stats.anova(self._r_results)))
+                rst.pyr.rpackages.stats.anova(self.r_results)))
 
     def get_margins(
             self,
@@ -689,7 +696,7 @@ class AnovaResults(GroupwiseResults):
                 'not included in model')
 
         _r_margins = rst.pyr.rpackages.emmeans.emmeans(
-            self._r_results,
+            self.r_results,
             specs=margins_term,
             type='response',
             level=ci,
@@ -934,7 +941,7 @@ class KruskalWallisTestModel(AnovaModel):
 class KruskalWallisTestResults(AnovaResults):
     def _tidy_results(self):
         self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self._r_results))
+            rst.pyr.rpackages.generics.tidy(self.r_results))
 
 
 class FriedmanTestModel(AnovaModel):
