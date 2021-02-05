@@ -167,7 +167,6 @@ class GroupwiseModel(base.BaseModel):
         # To test whether DV can be coerced to float
         rst.utils.verify_float(self._input_data[self.dependent].values)
 
-
         # Verify ID variable uniqueness
         self._perform_aggregation = (
                 self._input_data.groupby(
@@ -212,12 +211,8 @@ class GroupwiseModel(base.BaseModel):
         # returns the results objects that is created with the (r) results object
         return self._analyze()
 
+
 class GroupwiseResults(base.BaseResults):
-
-
-    def __init__(self, r_results):
-        self.r_results = r_results
-        super().__init__()
 
     def get_text(self, mode: str = 'df'):
         raise NotImplementedError
@@ -227,12 +222,12 @@ class GroupwiseResults(base.BaseResults):
         if mode == 'verbose':
             return rst.pyr.rpackages.report.report(self._r_results)
 
-    def get_df(self):
-        return self._tidy_results()
+    # def get_df(self):
+    #    return self._tidy_results()
 
-    def _tidy_results(self):
-        return rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self.r_results))
+    # def _tidy_results(self):
+    #    return rst.utils.convert_df(
+    #        rst.pyr.rpackages.generics.tidy(self.r_results))
 
 
 class T2SamplesModel(GroupwiseModel):
@@ -274,7 +269,7 @@ class T2SamplesModel(GroupwiseModel):
         if False runs Welch two-sample test. Default is True.
     """
 
-    alternative : str
+    alternative: str
 
     def __init__(self,
                  paired: bool = None,
@@ -283,6 +278,7 @@ class T2SamplesModel(GroupwiseModel):
                  assume_equal_variance: bool = True,
                  x=None,
                  y=None,
+                 correct=False,
                  **kwargs):
         self.paired = paired
         self.tail = tail
@@ -297,9 +293,11 @@ class T2SamplesModel(GroupwiseModel):
                         False: 'between', True: 'within'}[paired]]
                 except KeyError as e:
                     if paired:
-                        raise TypeError(f'Specify `independent` or `within`: {e}')
+                        raise TypeError(
+                            f'Specify `independent` or `within`: {e}')
                     else:
-                        raise TypeError(f'Specify `independent` or `between`: {e}')
+                        raise TypeError(
+                            f'Specify `independent` or `between`: {e}')
             else:
                 kwargs[{False: 'between', True: 'within'}[paired]] = independent
 
@@ -314,9 +312,11 @@ class T2SamplesModel(GroupwiseModel):
     def _analyze(self):
         return T2SamplesResults(
             rst.pyr.rpackages.stats.t_test(
-                **{'x': self.x, 'y': self.y, 'paired': self.paired,
-                   'tail': self.tail,
-                   'var.equal': self.assume_equal_variance})
+                **{'x': self.x, 'y': self.y,
+                   'paired': self.paired,
+                   'alternative': self.tail,
+                   'var.equal': self.assume_equal_variance,
+                   })
         )
 
 
@@ -433,9 +433,7 @@ class BayesT2SamplesModel(T2SamplesModel):
 
 class BayesT2SamplesResults(T2SamplesResults):
     # TODO Validate if correctly inherits init from parent
-
-    def _tidy_results(self):
-        self._results = rst.utils.convert_df(self.r_results)
+    pass
 
 
 class T1SampleModel(T2SamplesModel):
@@ -473,8 +471,9 @@ class T1SampleModel(T2SamplesModel):
                  tail='two.sided',
                  mu=DEFAULT_MU,
                  **kwargs):
-        self.mu = mu
         kwargs['paired'] = True
+        kwargs['tail'] = tail
+        self.mu = mu
         self.max_levels = 1
         self.min_levels = 1
         super().__init__(**kwargs)
@@ -581,9 +580,7 @@ class BayesT1SampleModel(T1SampleModel):
 
 
 class BayesT1SampleResults(T1SampleResults):
-
-    def _tidy_results(self):
-        self._results = rst.utils.convert_df(self.r_results)
+    pass
 
 
 class AnovaModel(GroupwiseModel):
@@ -646,8 +643,9 @@ class AnovaModel(GroupwiseModel):
 
 
 class AnovaResults(GroupwiseResults):
+
     def _tidy_results(self):
-        self._results = rst.utils.convert_df(
+        return rst.utils.convert_df(
             rst.pyr.rpackages.generics.tidy(
                 rst.pyr.rpackages.stats.anova(self.r_results)))
 
@@ -871,10 +869,10 @@ class BayesAnovaModel(AnovaModel):
 class BayesAnovaResults(AnovaResults):
 
     def _tidy_results(self):
-        self._r_results = rst.pyr.rpackages.bayesfactor.extractBF(
+        results = rst.pyr.rpackages.bayesfactor.extractBF(
             self._r_results)
-        self._results = rst.utils.convert_df(self._r_results,
-                                             'model')[['model', 'bf', 'error']]
+        return rst.utils.convert_df(
+            results, 'model')[['model', 'bf', 'error']]
 
     def get_margins(self):
         raise NotImplementedError
@@ -939,9 +937,10 @@ class KruskalWallisTestModel(AnovaModel):
 
 
 class KruskalWallisTestResults(AnovaResults):
-    def _tidy_results(self):
-        self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self.r_results))
+    pass
+    # def _tidy_results(self):
+    #     self._results = rst.utils.convert_df(
+    #         rst.pyr.rpackages.generics.tidy(self.r_results))
 
 
 class FriedmanTestModel(AnovaModel):
