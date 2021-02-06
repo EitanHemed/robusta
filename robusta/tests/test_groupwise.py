@@ -1,5 +1,6 @@
 import sys
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -8,6 +9,14 @@ import robusta as rst
 sys.path.append('./')
 
 TAILS = ["two.sided", "less", "greater"]
+
+
+class FauxInf:
+    def __init__(self, sign=''):
+        self.sign = sign
+
+    def __repr__(self):
+        return f'{self.sign}Inf'
 
 
 @pytest.mark.integtest
@@ -67,27 +76,66 @@ def test_t1sample(mu, alternative):
 
     pd.testing.assert_frame_equal(res, r_res)
 
-    # m = rst.t1sample(data=sleep.loc[sleep['group'] == '2'],
-    #                  formula='extra~group+1|ID', mu=mu)
-    # res = m.fit().get_df()
-    # pd.testing.assert_frame_equal(res, r_res)
+    m = rst.t1sample(data=sleep.loc[sleep['group'] == '1'],
+                     formula='extra~group+1|ID', mu=mu,
+                     tail=alternative)
+    res = m.fit().get_df()
+    pd.testing.assert_frame_equal(res, r_res)
 
-# class TestT1Sample(unittest.TestCase):
-#
-#     def test_t1sample_get_results(self):
-#         sleep = rst.datasets.data('sleep')
-#         res = rst.T1Sample(data=sleep.loc[sleep['group'] == '1'],
-#                            dependent='extra', subject='ID',
-#                            independent='group').get_results()
-#         r_res = rst.pyrio.r(
-#             """
-#             library(broom)
-#             data.frame(tidy(t.test(x=sleep[sleep$group == 1, 'extra'])))
-#             """
-#         )
-#         pd.testing.assert_frame_equal(res, r_res)
-#
-#
+
+@pytest.mark.integtest
+@pytest.mark.parametrize('iterations', [1e4, 1e5])
+@pytest.mark.parametrize('prior_scale', [0.5, 0.707])
+@pytest.mark.parametrize('null_interval',
+                         [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
+@pytest.mark.parametrize('sample_from_posterior', [True, False])
+def test_bayes_t2_samples_independent(
+        null_interval,
+        prior_scale,
+        sample_from_posterior,
+        iterations):
+    data = rst.datasets.data('mtcars')
+
+    m = rst.bayes_t1sample(
+        data=data, subject='dataset_rownames',
+        dependent='mpg', independent='am',
+        null_interval=null_interval,
+        prior_scale=prior_scale,
+        sample_from_posterior=sample_from_posterior,
+        iterations=iterations)
+
+    r_res = rst.pyrio.r("""
+    library(BayesFactor)
+    library(tibble)
+    dat = split.data.frame(mtcars, mtcars$am)
+    x = dat[[1]]$mpg
+    y = dat[[2]]$mpg
+    r = data.frame(
+        ttestBF(
+            x=x,
+            y=y,
+            nullInterval=c{},
+            rscale={},
+            posterior={},
+            iterations={}
+                    )) #[, c('bf', 'error')]
+    #rownames_to_column(r, 'model')
+                """.format(
+        tuple([{-np.inf: FauxInf('-'), np.inf: FauxInf()}.get(i, 0) for i in
+               null_interval]),
+        prior_scale,
+        'TRUE' if sample_from_posterior else 'FALSE',
+        iterations
+    ))
+
+    print(r_res.head())
+
+    pd.testing.assert_frame_equal(
+        m.fit().get_df(),
+        r_res,
+        check_exact=(not sample_from_posterior),
+        check_less_precise=5)
+
 # class TestBayesT1Sample(unittest.TestCase):
 #
 #     def test_bayes1sample(self):

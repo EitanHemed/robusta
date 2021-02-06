@@ -31,6 +31,10 @@ import pandas as pd
 import robusta as rst
 from . import base
 
+BF_COLUMNS = ['model', 'bf', 'error']
+
+
+
 __all__ = [
     "AnovaModel", "BayesAnovaModel",
     "T1SampleModel", "T2SamplesModel",
@@ -384,14 +388,14 @@ class BayesT2SamplesModel(T2SamplesModel):
     def __init__(
             self,
             null_interval=DEFAULT_GROUPWISE_NULL_INTERVAL,
-            prior_r_scale: str = 'medium',
+            prior_scale: str = 'medium',
             sample_from_posterior: bool = False,
             iterations: int = DEFAULT_ITERATIONS,
             mu: float = 0,
             **kwargs
     ):
         self.null_interval = np.array(null_interval)
-        self.prior_r_scale = prior_r_scale
+        self.prior_scale = prior_scale
         self.sample_from_posterior = sample_from_posterior
         self.iterations = iterations
         self.mu = mu
@@ -406,7 +410,7 @@ class BayesT2SamplesModel(T2SamplesModel):
     #         'nullInterval': self.null_interval,
     #         'iterations': self.iterations,
     #         'posterior': self.sample_from_posterior if sample_from_posterior is np.nan else sample_from_posterior,
-    #         'rscale': self.prior_r_scale,
+    #         'rscale': self.prior_scale,
     #         'mu': self.mu
     #     }
     #
@@ -425,15 +429,28 @@ class BayesT2SamplesModel(T2SamplesModel):
                     nullInterval=self.null_interval,
                     iterations=self.iterations,
                     posterior=self.sample_from_posterior,
-                    rscalse=self.prior_r_scale,
+                    rscale=self.prior_scale,
                     mu=self.mu
-                ))
+                )),
+            # TODO - refactor
+            mode='posterior' if self.sample_from_posterior else 'bf'
         )
 
 
 class BayesT2SamplesResults(T2SamplesResults):
     # TODO Validate if correctly inherits init from parent
-    pass
+
+    def __init__(self, r_results, mode='bf'):
+        self.mode = mode
+
+        super().__init__(r_results)
+
+    def _tidy_results(self):
+        if self.mode == 'bf':
+            return rst.utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
+        else:
+            return rst.utils.convert_df(self.r_results, 'iteration')
+
 
 
 class T1SampleModel(T2SamplesModel):
@@ -555,32 +572,47 @@ class BayesT1SampleModel(T1SampleModel):
     def __init__(
             self,
             null_interval=(-np.inf, np.inf),
-            prior_r_scale: str = 'medium',
+            prior_scale: typing.Union[str, float] = 1 / np.sqrt(2),
             sample_from_posterior: bool = False,
             iterations: int = 10000,
             mu: float = 0.0,
             **kwargs):
         self.null_interval = np.array(null_interval)
-        self.prior_r_scale = prior_r_scale
+        self.prior_scale = prior_scale
         self.sample_from_posterior = sample_from_posterior
         self.iterations = iterations
         kwargs['mu'] = mu
         super().__init__(**kwargs)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.base.data_frame(
-            rst.pyr.rpackages.bayesfactor.ttestBF(
+        return BayesT1SampleResults(
+            rst.pyr.rpackages.base.data_frame(
+                rst.pyr.rpackages.bayesfactor.ttestBF(
                 x=self.x,
                 nullInterval=self.null_interval,
                 iterations=self.iterations,
                 posterior=self.sample_from_posterior,
-                rscalse=self.prior_r_scale,
+                rscale=self.prior_scale,
                 mu=self.mu
-            ))
+            )),
+            mode='posterior' if self.sample_from_posterior else 'bf')
 
 
+
+# TODO - this is fairly similar to the two-sample bayesian t-test, so consider
+#  merging them
 class BayesT1SampleResults(T1SampleResults):
-    pass
+
+    def __init__(self, r_results, mode='bf'):
+        self.mode = mode
+
+        super().__init__(r_results)
+
+    def _tidy_results(self):
+        if self.mode == 'bf':
+            return rst.utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
+        else:
+            return rst.utils.convert_df(self.r_results, 'iteration')
 
 
 class AnovaModel(GroupwiseModel):
@@ -869,10 +901,12 @@ class BayesAnovaModel(AnovaModel):
 class BayesAnovaResults(AnovaResults):
 
     def _tidy_results(self):
-        results = rst.pyr.rpackages.bayesfactor.extractBF(
-            self._r_results)
-        return rst.utils.convert_df(
-            results, 'model')[['model', 'bf', 'error']]
+        raise NotImplementedError
+        #return rst.utils.tidy_bayes_factor_object(self.r_results)
+        #results = rst.pyr.rpackages.bayesfactor.extractBF(
+        #    self._r_results)
+        #return rst.utils.convert_df(
+        #    results, 'model')[['model', 'bf', 'error']]
 
     def get_margins(self):
         raise NotImplementedError
