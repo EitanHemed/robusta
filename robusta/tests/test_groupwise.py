@@ -83,12 +83,15 @@ def test_t1sample(mu, alternative):
     pd.testing.assert_frame_equal(res, r_res)
 
 
+# TODO - the main problem remaining is that you have different column names
+#  in the returned dataframe when you sample_from_posterior vs. not.
+
 @pytest.mark.integtest
 @pytest.mark.parametrize('iterations', [1e4, 1e5])
 @pytest.mark.parametrize('prior_scale', [0.5, 0.707])
 @pytest.mark.parametrize('null_interval',
                          [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
-@pytest.mark.parametrize('sample_from_posterior', [True, False])
+@pytest.mark.parametrize('sample_from_posterior', [False, True])
 def test_bayes_t2_samples_independent(
         null_interval,
         prior_scale,
@@ -96,43 +99,144 @@ def test_bayes_t2_samples_independent(
         iterations):
     data = rst.datasets.data('mtcars')
 
-    m = rst.bayes_t1sample(
+    m = rst.bayes_t2samples(
         data=data, subject='dataset_rownames',
         dependent='mpg', independent='am',
         null_interval=null_interval,
         prior_scale=prior_scale,
         sample_from_posterior=sample_from_posterior,
-        iterations=iterations)
+        iterations=iterations, paired=False)
 
-    r_res = rst.pyrio.r("""
+    res = m.fit().get_df()
+
+    r_res = rst.pyrio.r("""   
     library(BayesFactor)
     library(tibble)
+    
+    # test data
     dat = split.data.frame(mtcars, mtcars$am)
     x = dat[[1]]$mpg
     y = dat[[2]]$mpg
+    
+    # test parameters
+    
+    nullInterval = c{}
+    rscale = {}
+    posterior = {}
+    iterations = {}
+
+    
+    # additional_col = ifelse(posterior, 'iteration', 'model')
+    # return_cols = ifelse(posterior, 
+    #     c('mu', 'beta..x...y', 'sig2', 'delta', 'g'), 
+    #     c('model', 'bf', 'error'))
+    
     r = data.frame(
-        ttestBF(
-            x=x,
-            y=y,
-            nullInterval=c{},
-            rscale={},
-            posterior={},
-            iterations={}
-                    )) #[, c('bf', 'error')]
-    #rownames_to_column(r, 'model')
-                """.format(
+        ttestBF(x=x, y=y, nullInterval=nullInterval,
+            rscale=rscale,
+            posterior=posterior,
+            iterations=iterations))
+            
+    if (!posterior){{
+        r = data.frame(rownames_to_column(r, 'model'))
+    }}
+    r
+    """.format(
         tuple([{-np.inf: FauxInf('-'), np.inf: FauxInf()}.get(i, 0) for i in
                null_interval]),
         prior_scale,
         'TRUE' if sample_from_posterior else 'FALSE',
-        iterations
+        iterations,
     ))
 
-    print(r_res.head())
+    # TODO - we need a better solution to compare the sampled values
+    if sample_from_posterior:
+        res = res.describe()
+        r_res = r_res.describe()
 
     pd.testing.assert_frame_equal(
-        m.fit().get_df(),
-        r_res,
+        res,
+        r_res[res.columns.tolist()],
+        # test only the columns that we are intrested in
+        check_exact=(not sample_from_posterior),
+        check_less_precise=5)
+
+
+@pytest.mark.integtest
+@pytest.mark.parametrize('iterations', [1e4, 1e5])
+@pytest.mark.parametrize('prior_scale', [0.5, 0.707])
+@pytest.mark.parametrize('null_interval',
+                         [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
+@pytest.mark.parametrize('sample_from_posterior', [False, True])
+@pytest.mark.parametrize('mu', [0, -2, 3.5])
+def test_bayes_t2_samples_dependent(
+        iterations,
+        prior_scale,
+        null_interval,
+        sample_from_posterior,
+        mu):
+    data = rst.datasets.data('sleep')
+
+    m = rst.bayes_t2samples(
+        data=data, subject='ID',
+        dependent='extra', independent='group',
+        null_interval=null_interval,
+        prior_scale=prior_scale,
+        sample_from_posterior=sample_from_posterior,
+        iterations=iterations, paired=True, mu=mu)
+
+    res = m.fit().get_df()
+
+    r_res = rst.pyrio.r("""
+    library(BayesFactor)
+    library(tibble)
+
+    # test data
+    dat = split.data.frame(sleep, sleep$group)
+    x = dat[[1]]$extra
+    y = dat[[2]]$extra
+
+    # test parameters
+
+    nullInterval = c{}
+    rscale = {}
+    posterior = {}
+    iterations = {}
+    mu = {}
+
+    # additional_col = ifelse(posterior, 'iteration', 'model')
+    # return_cols = ifelse(posterior,
+    #     c('mu', 'beta..x...y', 'sig2', 'delta', 'g'),
+    #     c('model', 'bf', 'error'))
+
+    r = data.frame(
+        ttestBF(x=x, y=y, nullInterval=nullInterval,
+            rscale=rscale,
+            posterior=posterior,
+            iterations=iterations, mu=mu, paired=T))
+
+    if (!posterior){{
+        r = data.frame(rownames_to_column(r, 'model'))
+    }}
+    r
+    """.format(
+        tuple([{-np.inf: FauxInf('-'), np.inf: FauxInf()}.get(i, 0) for i in
+               null_interval]),
+        prior_scale,
+        'TRUE' if sample_from_posterior else 'FALSE',
+        iterations,
+        mu
+    ))
+
+    # TODO - we need a better solution to compare the sampled values
+    if sample_from_posterior:
+        res = res.describe()
+        r_res = r_res.describe()
+
+    pd.testing.assert_frame_equal(
+        res,
+        r_res[res.columns.tolist()],
+        # test only the columns that we are intrested in
         check_exact=(not sample_from_posterior),
         check_less_precise=5)
 

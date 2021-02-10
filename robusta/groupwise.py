@@ -399,6 +399,8 @@ class BayesT2SamplesModel(T2SamplesModel):
         self.sample_from_posterior = sample_from_posterior
         self.iterations = iterations
         self.mu = mu
+        if kwargs['paired'] is False:
+            if mu != 0: raise ValueError
         super().__init__(**kwargs)
 
     # def re_analyze(self, x=np.nan, y=np.nan, paired=np.nan,
@@ -449,7 +451,7 @@ class BayesT2SamplesResults(T2SamplesResults):
         if self.mode == 'bf':
             return rst.utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
         else:
-            return rst.utils.convert_df(self.r_results, 'iteration')
+            return rst.utils.convert_df(self.r_results)
 
 
 
