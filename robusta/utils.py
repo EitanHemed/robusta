@@ -1,6 +1,6 @@
 import re
 from itertools import chain
-
+from collections.abc import Iterable
 import numpy as np
 import pandas as pd
 import typing
@@ -11,8 +11,12 @@ import robusta as rst  # So we can get the PyR singleton
 
 # TODO - change this to return a list of strings instead of a generator
 def to_list(values):
+    # TODO - refactor this. e.g., what happens on a dict?
+
     """Return a list of string from a list which may have lists, strings or
      None objects"""
+    if isinstance(values, str) or not isinstance(values, Iterable):
+        return [values]
     return list(
         chain.from_iterable(
             item if isinstance(

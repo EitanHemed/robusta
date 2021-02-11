@@ -20,16 +20,19 @@ class FauxInf:
 
 
 @pytest.mark.integtest
+# TODO - this is messy, seperate into two tests
+# @pytest.mark.parametrize('assume_equal_variance', [True, False])
 @pytest.mark.parametrize('paired', [True, False])
 @pytest.mark.parametrize('alternative', TAILS)
-def test_t2_sample(paired, alternative):
+def test_t2samples(paired, alternative):
     data = rst.datasets.data('sleep')
     m = rst.t2samples(data=data,
                       independent='group',
                       dependent='extra',
                       subject='ID',
                       paired=paired,
-                      tail=alternative
+                      tail=alternative,
+                      assume_equal_variance=False
                       )
     res = m.fit()
 
@@ -39,18 +42,13 @@ def test_t2_sample(paired, alternative):
         data.frame(tidy(t.test(
             extra~group, data=sleep, paired={'TRUE' if paired else 'FALSE'}, 
             alternative='{alternative}',
-            var.equal=FALSE
-        )))
+            var.equal=FALSE)
+        ))
         """)
-
-    if paired is False:
-        print(res.get_df())
-        print(r_res)
-
     pd.testing.assert_frame_equal(r_res, res.get_df())
 
-    m = rst.t2samples(data=data, formula='extra~group+1|ID',
-                      paired=paired, tail=alternative)
+    m.reset(formula='extra~group+1|ID')
+    res = m.fit()
 
     pd.testing.assert_frame_equal(r_res, res.get_df())
 
@@ -73,12 +71,10 @@ def test_t1sample(mu, alternative):
             alternative='{alternative}')))
         """
     )
-
     pd.testing.assert_frame_equal(res, r_res)
 
-    m = rst.t1sample(data=sleep.loc[sleep['group'] == '1'],
-                     formula='extra~group+1|ID', mu=mu,
-                     tail=alternative)
+    m.reset(formula='extra~group+1|ID')
+
     res = m.fit().get_df()
     pd.testing.assert_frame_equal(res, r_res)
 
@@ -91,8 +87,8 @@ def test_t1sample(mu, alternative):
 @pytest.mark.parametrize('prior_scale', [0.5, 0.707])
 @pytest.mark.parametrize('null_interval',
                          [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
-@pytest.mark.parametrize('sample_from_posterior', [False, True])
-def test_bayes_t2_samples_independent(
+@pytest.mark.parametrize('sample_from_posterior', [False])  # , True])
+def test_bayes_t2samples_independent(
         null_interval,
         prior_scale,
         sample_from_posterior,
@@ -167,9 +163,9 @@ def test_bayes_t2_samples_independent(
 @pytest.mark.parametrize('prior_scale', [0.5, 0.707])
 @pytest.mark.parametrize('null_interval',
                          [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
-@pytest.mark.parametrize('sample_from_posterior', [False, True])
+@pytest.mark.parametrize('sample_from_posterior', [False])  # , True])
 @pytest.mark.parametrize('mu', [0, -2, 3.5])
-def test_bayes_t2_samples_dependent(
+def test_bayes_t2samples_dependent(
         iterations,
         prior_scale,
         null_interval,
@@ -240,56 +236,129 @@ def test_bayes_t2_samples_dependent(
         check_exact=(not sample_from_posterior),
         check_less_precise=5)
 
-# class TestBayesT1Sample(unittest.TestCase):
-#
-#     def test_bayes1sample(self):
-#         sleep = rst.datasets.data('sleep')
-#         data = sleep.loc[sleep['group'] == '1'].assign(
-#             diff_scores=sleep.groupby('ID')['extra'].apply(
-#                 lambda s: s.diff(-1).max()).values)
-#         res = rst.BayesT1Sample(data=data,
-#                                 dependent='diff_scores', subject='ID',
-#                                 independent='group',
-#                                 null_interval=[-np.inf, 0]).get_results()
-#         r_res = rst.pyrio.r(
-#             """
-#             library(BayesFactor)
-#             diff = (sleep[sleep$group == 1, 'extra']
-#                 - sleep[sleep$group == 2, 'extra'])
-#             res = data.frame(
-#                 ttestBF(
-#                     diff, nullInterval=c(-Inf, 0)))[, c('bf', 'error')]
-#             """
-#         )
-#         pd.testing.assert_frame_equal(
-#             res[['bf', 'error']],
-#             r_res
-#         )
-#
-#
+
+@pytest.mark.integtest
+@pytest.mark.parametrize('iterations', [1e4, 1e5])
+@pytest.mark.parametrize('prior_scale', [0.5, 0.707])
+@pytest.mark.parametrize('null_interval',
+                         [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
+@pytest.mark.parametrize('sample_from_posterior', [False])  # , True])
+@pytest.mark.parametrize('mu', [0, -2, 3.5])
+def test_bayes_t1sample(
+        iterations,
+        prior_scale,
+        null_interval,
+        sample_from_posterior,
+        mu):
+    data = rst.datasets.data('iris')
+    data = data.loc[data['Species'] == 'setosa']
+
+    m = rst.bayes_t1sample(
+        data=data, subject='dataset_rownames',
+        dependent='Sepal.Width', independent='Species',
+        null_interval=null_interval,
+        prior_scale=prior_scale,
+        sample_from_posterior=sample_from_posterior,
+        iterations=iterations, mu=mu)
+
+    res = m.fit().get_df()
+
+    r_res = rst.pyrio.r("""
+    library(BayesFactor)
+    library(tibble)
+
+    # test data
+    data = iris
+    data = data[data$Species == 'setosa', ]
+
+    # test parameters
+    nullInterval = c{}
+    rscale = {}
+    posterior = {}
+    iterations = {}
+    mu = {}
+
+    r = data.frame(
+        ttestBF(x=data$Sepal.Width,
+            nullInterval=nullInterval,
+            rscale=rscale,
+            posterior=posterior,
+            iterations=iterations, mu=mu))
+
+    if (!posterior){{
+        r = data.frame(rownames_to_column(r, 'model'))
+    }}
+    r
+    """.format(
+        tuple([{-np.inf: FauxInf('-'), np.inf: FauxInf()}.get(i, 0) for i in
+               null_interval]),
+        prior_scale,
+        'TRUE' if sample_from_posterior else 'FALSE',
+        iterations,
+        mu
+    ))
+
+    # TODO - we need a better solution to compare the sampled values
+    if sample_from_posterior:
+        res = res.describe()
+        r_res = r_res.describe()
+
+    pd.testing.assert_frame_equal(
+        res,
+        r_res[res.columns.tolist()],
+        # test only the columns that we are intrested in
+        check_exact=(not sample_from_posterior),
+        check_less_precise=5)
+
+
+@pytest.mark.parametrize('between_vars', [
+    ['supp', "'supp'"],
+    [['supp', 'dose'], "c('supp', 'dose')"],
+    [['dose'], "c('dose')"]
+])
+def test_anova_between(between_vars):
+    m = rst.anova(
+        data=rst.datasets.data('ToothGrowth'),
+        dependent='len', subject='dataset_rownames',
+        between=between_vars[0])
+
+    r_res = rst.pyrio.r(
+        f"""
+        library(broom)
+        library(afex)
+        library(tibble)
+        data.frame(
+            tidy(
+                anova(
+                    aov_ez(rownames_to_column(ToothGrowth, 'dataset_rownames'),
+                            id='dataset_rownames', between={between_vars[1]},
+                            dv='len', es='pes')
+                    )
+                )
+        )
+        """)
+
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+    # m.reset(
+    #    formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + 1|dataset_rownames")
+
+    m = rst.anova(
+        data=rst.datasets.data('ToothGrowth'),
+        formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + 1|dataset_rownames")
+
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+
+def test_anova_within():
+    pass
+
+
+def test_anova_mixed():
+    pass
+
 # class TestAnova(unittest.TestCase):
-#
-#     def test_between_anova(self):
-#         anova = rst.Anova(data=rst.datasets.data('ToothGrowth'),
-#                           dependent='len', subject='dataset_rownames',
-#                           between=['supp', 'dose']).get_results()
-#         r_res = rst.pyrio.r(
-#             """library(broom)
-#             library(afex)
-#             library(tibble)
-#             data.frame(
-#                 tidy(
-#                     anova(
-#                         aov_ez(rownames_to_column(ToothGrowth, 'dataset_rownames'),
-#                                 id='dataset_rownames', between=c('supp', 'dose'),
-#                                 dv='len', es='pes')
-#                         )
-#                     )
-#             )
-#             """)
-#
-#         pd.testing.assert_frame_equal(anova, r_res)
-#
+
 #     def test_margins(self):
 #         df = rst.datasets.data('anxiety').set_index(
 #             ['id', 'group']).filter(

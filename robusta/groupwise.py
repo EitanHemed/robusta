@@ -20,7 +20,7 @@ All classes have at least these postestimation methods:
 - get_results(): Returns a pandas dataframe with the results of the analysis.
 - get_text_report(): Returns a textual report of the analysis.
 """
-
+import re
 import typing
 import warnings
 from dataclasses import dataclass
@@ -32,8 +32,6 @@ import robusta as rst
 from . import base
 
 BF_COLUMNS = ['model', 'bf', 'error']
-
-
 
 __all__ = [
     "AnovaModel", "BayesAnovaModel",
@@ -90,11 +88,14 @@ class GroupwiseModel(base.BaseModel):
             na_action=na_action,
             max_levels=kwargs.get('max_levels', None)
         )
+
         self.data.dropna(inplace=True)
+
+        self._fitted = False
 
         # TODO - on the new structure nothing is run on init, so do we really
         #  need the call to super here?
-        super().__init__()
+        # super().__init__()
 
     def _pre_process(self):
         self._set_controllers()
@@ -116,7 +117,7 @@ class GroupwiseModel(base.BaseModel):
             self._set_formula_from_vars()
         elif self.formula is not None:
             # Parse models from entered formula
-            self._r_formula = self.formula, rst.pyr.rpackages.stats.formula(
+            self._r_formula = rst.pyr.rpackages.stats.formula(
                 self.formula)
             self._set_vars_from_formula()
             # Variables setting routine
@@ -144,6 +145,8 @@ class GroupwiseModel(base.BaseModel):
         """Make sure that the you have a list of independent variables"""
         if isinstance(ind_vars, list):
             return ind_vars
+        if isinstance(ind_vars, (tuple, set)):
+            return list(ind_vars)
         if ind_vars is None:
             return []
         if isinstance(ind_vars, str):
@@ -189,6 +192,7 @@ class GroupwiseModel(base.BaseModel):
 
         self._input_data.loc[:, self.independent] = self._input_data[
             self.independent].astype('category')
+
         self._r_input_data = rst.utils.convert_df(self._input_data.copy())
 
     def _verify_independent_vars(self):
@@ -211,9 +215,22 @@ class GroupwiseModel(base.BaseModel):
         This method runs the model defined by the input.
         @return:
         """
+        if self._fitted is True:
+            raise RuntimeError("Model was already run. Use `reset()` method"
+                               " prior to calling `fit()` again!")
+        self._fitted = True
         self._pre_process()
         # returns the results objects that is created with the (r) results object
         return self._analyze()
+
+    def reset(self, **kwargs):
+        self._fitted = False
+
+        # We need to reset this.
+        self.formula = re.sub('[()]', '', self.formula)
+
+        # What else?
+        vars(self).update(**kwargs)
 
 
 class GroupwiseResults(base.BaseResults):
@@ -279,7 +296,7 @@ class T2SamplesModel(GroupwiseModel):
                  paired: bool = None,
                  independent: bool = None,
                  tail: str = 'two.sided',
-                 assume_equal_variance: bool = True,
+                 assume_equal_variance: bool = None,
                  x=None,
                  y=None,
                  correct=False,
@@ -454,7 +471,6 @@ class BayesT2SamplesResults(T2SamplesResults):
             return rst.utils.convert_df(self.r_results)
 
 
-
 class T1SampleModel(T2SamplesModel):
     """
     Run a frequentist one-sample t-test.
@@ -590,15 +606,15 @@ class BayesT1SampleModel(T1SampleModel):
         return BayesT1SampleResults(
             rst.pyr.rpackages.base.data_frame(
                 rst.pyr.rpackages.bayesfactor.ttestBF(
-                x=self.x,
-                nullInterval=self.null_interval,
-                iterations=self.iterations,
-                posterior=self.sample_from_posterior,
-                rscale=self.prior_scale,
-                mu=self.mu
-            )),
+                    x=self.x,
+                    y=rst.pyr.rinterface.NULL,
+                    nullInterval=self.null_interval,
+                    iterations=self.iterations,
+                    posterior=self.sample_from_posterior,
+                    rscale=self.prior_scale,
+                    mu=self.mu
+                )),
             mode='posterior' if self.sample_from_posterior else 'bf')
-
 
 
 # TODO - this is fairly similar to the two-sample bayesian t-test, so consider
@@ -666,11 +682,12 @@ class AnovaModel(GroupwiseModel):
             self.get_margins()
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.afex.aov_4(
+
+        return AnovaResults(rst.pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
             data=self._r_input_data,
             es=self.effect_size,
-            correction=self.sphericity_correction)
+            correction=self.sphericity_correction))
         # TODO: Add reliance on aov_ez aggregation functionality.
         # TODO: Add this functionality - sig_symbols=
         # rst.pyr.vectors.StrVector(["", "", "", ""]))
@@ -904,10 +921,10 @@ class BayesAnovaResults(AnovaResults):
 
     def _tidy_results(self):
         raise NotImplementedError
-        #return rst.utils.tidy_bayes_factor_object(self.r_results)
-        #results = rst.pyr.rpackages.bayesfactor.extractBF(
+        # return rst.utils.tidy_bayes_factor_object(self.r_results)
+        # results = rst.pyr.rpackages.bayesfactor.extractBF(
         #    self._r_results)
-        #return rst.utils.convert_df(
+        # return rst.utils.convert_df(
         #    results, 'model')[['model', 'bf', 'error']]
 
     def get_margins(self):

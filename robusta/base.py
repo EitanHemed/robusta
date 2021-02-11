@@ -4,7 +4,8 @@ import robusta as rst
 class BaseModel(metaclass=abc.ABCMeta):
 
     def __init__(self, **kwargs):
-        self.reset(**kwargs)
+        pass
+        #self.reset(**kwargs)
 
     def reset(self, **kwargs):
         """
