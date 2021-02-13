@@ -6,7 +6,7 @@ import pyparsing
 from patsy.desc import ModelDesc
 
 
-class VariablesParser():
+class VariablesParser:
 
     def __init__(self, formula):
         self.formula = formula
@@ -33,59 +33,59 @@ class VariablesParser():
         if self.within == ['1']:
             self.within = []
 
-        return
-
-        # This one is the easiest
-        between = []
-        within = []
-        subject = None
-
-        for t in self.patsy_parsed.rhs_termlist:
-            # We expect something along the lines of (1|subject) or
-            # even (within_variable1|within_variable_2|id_variable)
-            # so a pipe symbol gives us the id and within subject factor(s)
-            # clause.
-            if '|' in t.name():
-                pipe_count = t.name().count('|')
-                # Number of within subject factors is <= 1
-                if pipe_count == 1:
-                    # Last one should be subject
-                    _ws, subject = t.name().split('|')
-                    # Drop leading whitespace
-                    subject = subject.strip()
-                    # No within subject factor
-                    if _ws.strip() == '1':  # bool(re.match('\s*1\s*', _)):
-                        pass
-                    # One within subject factor
-                    else:
-                        within.append(_ws.strip())
-                # More than one within-subject factor:
-                else:
-                    within.extend([i.strip() for i in _ws.split('|')])
-            # A between subject term
-            else:
-                # An interaction, skip it
-                if len(t.factors) > 1 and ':' in t.name():
-                    pass
-                # A valid between subject term
-                else:
-                    between.append(t.name())
-
-        # Patsy automatically adds this one, which we don't need
-        between.remove('Intercept')
-
-        # Now we can test the parsed variables
-        try:
-            dependent = self.patsy_parsed.lhs_termlist[0].name()
-        except IndexError:
-            raise RuntimeError('No dependent variable defined. Use a formula'
-                               'similar to y~x')
-        if within + between == []:  #
-            raise RuntimeError('No independent variables defined')
-        if subject is None:
-            raise RuntimeError('No subject term defined')
-
-        return dependent, between, within, subject
+        # return
+        #
+        # # This one is the easiest
+        # between = []
+        # within = []
+        # subject = None
+        #
+        # for t in self.patsy_parsed.rhs_termlist:
+        #     # We expect something along the lines of (1|subject) or
+        #     # even (within_variable1|within_variable_2|id_variable)
+        #     # so a pipe symbol gives us the id and within subject factor(s)
+        #     # clause.
+        #     if '|' in t.name():
+        #         pipe_count = t.name().count('|')
+        #         # Number of within subject factors is <= 1
+        #         if pipe_count == 1:
+        #             # Last one should be subject
+        #             _ws, subject = t.name().split('|')
+        #             # Drop leading whitespace
+        #             subject = subject.strip()
+        #             # No within subject factor
+        #             if _ws.strip() == '1':  # bool(re.match('\s*1\s*', _)):
+        #                 pass
+        #             # One within subject factor
+        #             else:
+        #                 within.append(_ws.strip())
+        #         # More than one within-subject factor:
+        #         else:
+        #             within.extend([i.strip() for i in _ws.split('|')])
+        #     # A between subject term
+        #     else:
+        #         # An interaction, skip it
+        #         if len(t.factors) > 1 and ':' in t.name():
+        #             pass
+        #         # A valid between subject term
+        #         else:
+        #             between.append(t.name())
+        #
+        # # Patsy automatically adds this one, which we don't need
+        # between.remove('Intercept')
+        #
+        # # Now we can test the parsed variables
+        # try:
+        #     dependent = self.patsy_parsed.lhs_termlist[0].name()
+        # except IndexError:
+        #     raise RuntimeError('No dependent variable defined. Use a formula'
+        #                        'similar to y~x')
+        # if within + between == []:  #
+        #     raise RuntimeError('No independent variables defined')
+        # if subject is None:
+        #     raise RuntimeError('No subject term defined')
+        #
+        # return dependent, between, within, subject
 
     def get_variables(self):
         return self.dependent, self.between, self.within, self.subject
@@ -115,13 +115,17 @@ class VariablesParser():
         # 1. Only subject variable (e.g., 1|ID), no within-term
         # 2. Within and subject (such as condition|order|ID)
         within_and_subject_terms = (
-                (pyparsing.OneOrMore(
+                (pyparsing.ZeroOrMore(pyparsing.Suppress('(')))
+                + (pyparsing.OneOrMore(
                     pyparsing.OneOrMore(
                         varname + pyparsing.Suppress('|'))
                     | pyparsing.Suppress('1'))).setResultsName('within')
-                + varname.setResultsName('subject'))
+                + varname.setResultsName('subject')
+                + (pyparsing.ZeroOrMore(pyparsing.Suppress(')')))
 
-        prsr = (dependent + between_terms + within_and_subject_terms)
+        )
+
+        prsr = (dependent + between_terms + within_and_subject_terms )
         return prsr.parseString(self.formula)
 
 

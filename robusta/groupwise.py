@@ -89,7 +89,8 @@ class GroupwiseModel(base.BaseModel):
             max_levels=kwargs.get('max_levels', None)
         )
 
-        self.data.dropna(inplace=True)
+        #print(pd.isna(self.data).sum())
+        #self.data = self.data.dropna()
 
         self._fitted = False
 
@@ -682,9 +683,18 @@ class AnovaModel(GroupwiseModel):
             self.get_margins()
 
     def _analyze(self):
-
+        print(self._r_formula)
+        print(self._r_input_data)
+        print(self.effect_size)
+        print(self.sphericity_correction)
+        # TODO - if we want to use aov_4 than the error term needs to be
+        #  encapsulated in parentheses
         return AnovaResults(rst.pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
+            #dependent=self.dependent,
+            #id=self.subject,
+            #within=self.within,
+            #between=self.between,
             data=self._r_input_data,
             es=self.effect_size,
             correction=self.sphericity_correction))

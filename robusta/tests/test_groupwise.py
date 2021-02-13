@@ -330,8 +330,9 @@ def test_anova_between(between_vars):
         data.frame(
             tidy(
                 anova(
-                    aov_ez(rownames_to_column(ToothGrowth, 'dataset_rownames'),
-                            id='dataset_rownames', between={between_vars[1]},
+                    aov_ez(
+                    data=rownames_to_column(ToothGrowth, 'dataset_rownames'),
+                    id='dataset_rownames', between={between_vars[1]},
                             dv='len', es='pes')
                     )
                 )
@@ -340,12 +341,12 @@ def test_anova_between(between_vars):
 
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
-    # m.reset(
-    #    formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + 1|dataset_rownames")
+    m.reset(
+        formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + (1|dataset_rownames)")
 
-    m = rst.anova(
-        data=rst.datasets.data('ToothGrowth'),
-        formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + 1|dataset_rownames")
+    #m = rst.anova(
+    #    data=rst.datasets.data('ToothGrowth'),
+    #    formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + 1|dataset_rownames")
 
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
