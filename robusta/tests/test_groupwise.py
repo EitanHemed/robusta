@@ -342,9 +342,9 @@ def test_anova_between(between_vars):
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
     m.reset(
-        formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + (1|dataset_rownames)")
+        formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + 1|dataset_rownames")
 
-    #m = rst.anova(
+    # m = rst.anova(
     #    data=rst.datasets.data('ToothGrowth'),
     #    formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + 1|dataset_rownames")
 
@@ -352,11 +352,127 @@ def test_anova_between(between_vars):
 
 
 def test_anova_within():
-    pass
+    df = rst.datasets.data('anxiety').set_index(
+        ['id', 'group']).filter(
+        regex='^t[1-3]$').stack().reset_index().rename(
+        columns={0: 'score',
+                 'level_2': 'time'})
+    m = rst.anova(data=df, within='time',
+                  dependent='score', subject='id')
+    r_res = rst.pyrio.r(
+        """
+        library(afex)
+        library(broom)
+        library(tidyr)
+        library(datarium)
+        data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
+
+        data.frame(tidy(anova(aov_4(score ~ (time|id), data=data_long,
+                ))))
+        """
+    )
+
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+    m.reset(formula='score~time|id')
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
 
 def test_anova_mixed():
-    pass
+    df = rst.datasets.data('anxiety').set_index(
+        ['id', 'group']).filter(
+        regex='^t[1-3]$').stack().reset_index().rename(
+        columns={0: 'score',
+                 'level_2': 'time'})
+    m = rst.anova(data=df, within='time', between='group',
+                  dependent='score', subject='id')
+
+    r_res = rst.pyrio.r(
+        """
+        library(afex)
+        library(broom)
+        library(tidyr)
+        library(datarium)
+        data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
+
+        data.frame(tidy(anova(aov_4(score~(time|id) + group,
+            data=data_long))))
+        """
+    )
+
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+    m.reset(formula='group + score~time|id')
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+
+
+# TODO - we need to fix the R code for testing the model with and without the
+#  the subject term
+@pytest.mark.parametrize('between_vars',
+                         [['supp', "len ~ supp"],
+                          [['supp', 'dose'], "len ~ supp*dose"],
+                          [['dose'], "len ~ dose"]]
+                         )
+@pytest.mark.parametrize('include_subject',
+                         [False]  # , True]
+                         )
+def test_bayes_anova_between(between_vars, include_subject):
+    m = rst.bayes_anova(
+        data=rst.datasets.data('ToothGrowth'),
+        dependent='len', subject='dataset_rownames',
+        between=between_vars[0], iterations=1e4,
+        include_subject=include_subject)
+
+    formula = between_vars[1]
+    if include_subject:
+        formula += ' + dataset_rownames'
+
+    r_res = rst.pyrio.r(
+        f"""
+        library(BayesFactor)
+        library(tibble)
+
+        data = rownames_to_column(ToothGrowth, 'dataset_rownames')
+        cols = c('dose', 'dataset_rownames')
+        data[cols] <- lapply(data[cols], factor)  
+        
+        if (grepl('dataset_rownames', {formula}, fixed = TRUE)){{
+            whichRandom = NULL
+        }} else {{
+            whichRandom = 'dataset_rownames'
+        }}       
+        
+
+        data.frame(
+            rownames_to_column(
+                    data.frame(
+                        anovaBF(formula={formula}, data=data,
+                        whichRandom=whichRandom,
+                        iterations=1e4))[ , c('bf', 'error')],
+            'model'
+            )
+        )
+        """)
+
+    # TODO - as we would upgrade the project to a more recent pandas version we
+    #  can provide better testing of the dataframe's values, now it would
+    #   be too cumbersome as some values may be too large/small to simply use
+    #   `check_less_exact' (e.g., see below)
+
+    # E[left]: [1.198756782290705, 4983636409073.187, 287711229722084.75,
+    #           776685585093109.9]
+    # E[right]: [1.198756782290705, 4983636409073.187, 285885307062654.3,
+    #            784100477177213.6]
+
+    pd.testing.assert_frame_equal(
+        m.fit().get_df().head(2), r_res.head(2))
+
+    m.reset(
+        formula=f"{between_vars[1]} + (1|dataset_rownames)",
+        include_subject=include_subject)
+
+    pd.testing.assert_frame_equal(m.fit().get_df().head(2), r_res.head(2))
 
 # class TestAnova(unittest.TestCase):
 

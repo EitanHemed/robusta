@@ -114,7 +114,7 @@ def convert_df(df, rownames_to_column_name: typing.Union[None, str]=None):
         raise RuntimeError("Input can only be R/Python DataFrame object")
 
 
-def bayes_style_formula(dependent, between, within, subject=None):
+def bayes_style_formula_from_vars(dependent, between, within, subject=None):
     independent = "*".join(to_list([between, within]))
     if subject is None:
         return f'{dependent} ~ {independent}'

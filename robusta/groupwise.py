@@ -89,8 +89,8 @@ class GroupwiseModel(base.BaseModel):
             max_levels=kwargs.get('max_levels', None)
         )
 
-        #print(pd.isna(self.data).sum())
-        #self.data = self.data.dropna()
+        # print(pd.isna(self.data).sum())
+        # self.data = self.data.dropna()
 
         self._fitted = False
 
@@ -240,9 +240,9 @@ class GroupwiseResults(base.BaseResults):
         raise NotImplementedError
         if mode == 'df':
             return rst.pyr.rpackages.report.as_data_frame_report(
-                self._r_results)
+                self.r_results)
         if mode == 'verbose':
-            return rst.pyr.rpackages.report.report(self._r_results)
+            return rst.pyr.rpackages.report.report(self.r_results)
 
     # def get_df(self):
     #    return self._tidy_results()
@@ -683,18 +683,15 @@ class AnovaModel(GroupwiseModel):
             self.get_margins()
 
     def _analyze(self):
-        print(self._r_formula)
-        print(self._r_input_data)
-        print(self.effect_size)
-        print(self.sphericity_correction)
         # TODO - if we want to use aov_4 than the error term needs to be
-        #  encapsulated in parentheses
+        #  encapsulated in parentheses. Maybe write something that will add the
+        #  parantheses automatically.
         return AnovaResults(rst.pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
-            #dependent=self.dependent,
-            #id=self.subject,
-            #within=self.within,
-            #between=self.between,
+            # dependent=self.dependent,
+            # id=self.subject,
+            # within=self.within,
+            # between=self.between,
             data=self._r_input_data,
             es=self.effect_size,
             correction=self.sphericity_correction))
@@ -901,17 +898,22 @@ class BayesAnovaModel(AnovaModel):
         super().__init__(**kwargs)
 
     def _set_formula_from_vars(self):
-        frml = rst.utils.bayes_style_formula(self.dependent, self.between,
-                                             self.within,
-                                             subject={
-                                                 False: None,
-                                                 True: self.subject
-                                             }[self.include_subject])
-        self.formula = frml
-        self._r_formula = rst.pyr.rpackages.stats.formula(frml)
+        self.formula = rst.utils.bayes_style_formula_from_vars(
+            self.dependent, self.between, self.within,
+            subject={False: None, True: self.subject}[self.include_subject])
+        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+
+    def _set_controllers(self):
+        super()._set_controllers()
+
+        # The formula needs to comply with BayesFactor formulas, which might
+        #  leave out the participant term. Therefor we need to re-set the
+        #  formula based on the entered/parsed variables
+        # TODO - consider leaving this or writing a more sophisticated solution.
+        self._set_formula_from_vars()
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.bayesfactor.anovaBF(
+        return BayesAnovaResults(rst.pyr.rpackages.bayesfactor.anovaBF(
             self._r_formula,
             self._r_input_data,
             whichRandom=self.subject,
@@ -924,13 +926,16 @@ class BayesAnovaModel(AnovaModel):
             method=self.method,
             progress=False
             # noSample=self.no_sample
-        )
+        ))
 
 
 class BayesAnovaResults(AnovaResults):
 
     def _tidy_results(self):
-        raise NotImplementedError
+        return rst.utils.convert_df(
+            rst.pyr.rpackages.base.data_frame(
+                self.r_results), 'model')[['model', 'bf', 'error']]
+
         # return rst.utils.tidy_bayes_factor_object(self.r_results)
         # results = rst.pyr.rpackages.bayesfactor.extractBF(
         #    self._r_results)
