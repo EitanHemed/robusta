@@ -6,7 +6,9 @@ __all__ = [
     "t2samples",
     "bayes_t2samples",
     "anova",
-    "bayes_anova"
+    "bayes_anova",
+    "wilcoxon_1sample",
+    "wilcoxon_2samples"
 ]
 
 
@@ -32,3 +34,9 @@ def anova(**kwargs):
 
 def bayes_anova(**kwargs):
     return groupwise.BayesAnovaModel(**kwargs)
+
+def wilcoxon_1sample(**kwargs):
+    return groupwise.Wilcoxon1SampleModel(**kwargs)
+
+def wilcoxon_2samples(**kwargs):
+    return groupwise.Wilcoxon2SamplesModel(**kwargs)

@@ -406,7 +406,6 @@ def test_anova_mixed():
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
 
-
 # TODO - we need to fix the R code for testing the model with and without the
 #  the subject term
 @pytest.mark.parametrize('between_vars',
@@ -474,123 +473,197 @@ def test_bayes_anova_between(between_vars, include_subject):
 
     pd.testing.assert_frame_equal(m.fit().get_df().head(2), r_res.head(2))
 
-# class TestAnova(unittest.TestCase):
 
-#     def test_margins(self):
-#         df = rst.datasets.data('anxiety').set_index(
-#             ['id', 'group']).filter(
-#             regex='^t[1-3]$').stack().reset_index().rename(columns={0: 'score',
-#                                                                     'level_2': 'time'})
-#         anova_time = rst.Anova(data=df, within='time',
-#                                dependent='score', subject='id')
-#         margins_time = anova_time.get_margins('time')
-#
-#         anova_time_by_group = rst.Anova(
-#             data=df, between='group', within='time',
-#             dependent='score', subject='id')
-#         margins_time_by_group = anova_time_by_group.get_margins(
-#             ('time', 'group'))
-#
-#         # TODO - do this in one call to r (i.e., return a vector
-#         #  of two dataframes).
-#         r_res_time = rst.pyrio.r(
-#             """
-#             library(afex)
-#             library(emmeans)
-#             library(tidyr)
-#             library(datarium)
-#             data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
-#
-#             r_res_time = data.frame(emmeans(aov_ez(data=data_long,
-#                     within='time', dv='score', id='id'), 'time', type='response'))
-#             """
-#         )
-#         r_res_time_by_group = rst.pyrio.r(
-#             """
-#             r_res_time_by_group = data.frame(emmeans(aov_ez(data=data_long, between='group',
-#                 within='time', id='id', dv='score'), c('time', 'group'),
-#                 type='response'))
-#             """
-#         )
-#
-#         pd.testing.assert_frame_equal(
-#             margins_time, r_res_time)
-#         pd.testing.assert_frame_equal(
-#             margins_time_by_group, r_res_time_by_group)
-#
-#
-# class TestBayesAnova(unittest.TestCase):
-#
-#     def test_bayes_anova(self):
-#         # TODO write a better test case - as Bayes factors can get obscenely
-#         #  large or small rounding errors can fail the test.
-#         #  also the fact that
-#
-#         anova = rst.BayesAnova(data=rst.datasets.data('ToothGrowth'),
-#                                dependent='len', subject='dataset_rownames',
-#                                between=['supp', 'dose'], iterations=100000
-#                                ).get_results()  # .round(4)
-#         r_res = rst.pyrio.r(
-#             """
-#             ToothGrowth$dose = as.factor(ToothGrowth$dose)
-#             rownames_to_column(
-#                 data.frame(
-#                     anovaBF(len ~ supp*dose, data=ToothGrowth),
-#                     iterations=10000)[ , c('bf', 'error')], 'model')
-#             """
-#         )
-#
-#         # TODO - currently there is very partial testing of the values magnitude
-#         #    as they are either very large or very small.
-#
-#         # The partial testing is because of the great/small magnitude of
-#         # Bayes factors and their error terms.
-#         pd.testing.assert_frame_equal(anova.iloc[:2], r_res.iloc[:2])
-#
-#
-# class TestWilcoxon1Sample(unittest.TestCase):
-#
-#     def test_wilcox1sample(self):
-#         x = (38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
-#         y = (67.8, 60, 63.4, 76, 89.4, 73.3, 67.3, 61.3, 62.4)
-#         weight_diff = np.array(x) - np.array(y)
-#         group = np.repeat(0, len(weight_diff))
-#
-#         df = pd.DataFrame(data=np.array([weight_diff, group]).T,
-#                           columns=['weight', 'group']).reset_index()
-#         res = rst.Wilcoxon1Sample(data=df, independent='group',
-#                                   subject='index',
-#                                   dependent='weight', mu=-10).get_results()
-#
-#         r_res = rst.pyrio.r(f"""
-#         # Example from http://www.sthda.com/english/wiki/unpaired-two-samples-wilcoxon-test-in-r
-#         library(broom)
-#         x <- c(38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
-#         y <- c(67.8, 60, 63.4, 76, 89.4, 73.3, 67.3, 61.3, 62.4)
-#         weight_diff <- x - y
-#         data.frame(tidy(wilcox.test(weight_diff,
-#             exact = TRUE, correct=TRUE, mu=-10)))
-#         """)
-#
-#         pd.testing.assert_frame_equal(
-#             res, r_res)
-#
+@pytest.mark.parametrize('within_vars',
+                         [['time', "score ~ time"]]
+                         )
+@pytest.mark.parametrize('include_subject', [False])
+def test_bayes_anova_within(within_vars, include_subject):
+    df = rst.datasets.data('anxiety').set_index(
+        ['id', 'group']).filter(
+        regex='^t[1-3]$').stack().reset_index().rename(
+        columns={0: 'score',
+                 'level_2': 'time'})
+    m = rst.bayes_anova(data=df, within='time',
+                        dependent='score', subject='id')
+
+    formula = within_vars[1]
+    if include_subject:
+        formula += ' + id'
+
+    r_res = rst.pyrio.r(
+        f"""
+        library(BayesFactor)
+        library(tibble)
+        library(tidyr)
+        library(datarium)
+        data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
+
+        if (grepl('id', {formula}, fixed = TRUE)){{
+            whichRandom = NULL
+        }} else {{
+            whichRandom = 'id'
+        }}       
+
+        data.frame(
+            rownames_to_column(
+            data.frame(anovaBF({formula}, data=data_long,
+                iterations=1e4,
+                ))[ , c('bf', 'error')],
+            'model'
+            )
+        )
+        """)
+
+    # TODO - as we would upgrade the project to a more recent pandas version we
+    #  can provide better testing of the dataframe's values, now it would
+    #   be too cumbersome as some values may be too large/small to simply use
+    #   `check_less_exact' (e.g., see below)
+
+    # E[left]: [1.198756782290705, 4983636409073.187, 287711229722084.75,
+    #           776685585093109.9]
+    # E[right]: [1.198756782290705, 4983636409073.187, 285885307062654.3,
+    #            784100477177213.6]
+
+    pd.testing.assert_frame_equal(
+        m.fit().get_df(), r_res)
+
+    m.reset(
+        formula=f"{within_vars[1]} + (1|id)",
+        include_subject=include_subject)
+
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+
+@pytest.mark.parametrize('include_subject', [False])
+def test_bayes_anova_mixed(include_subject):
+    df = rst.datasets.data('anxiety').set_index(
+        ['id', 'group']).filter(
+        regex='^t[1-3]$').stack().reset_index().rename(
+        columns={0: 'score',
+                 'level_2': 'time'})
+    m = rst.bayes_anova(data=df, within='time', between='group',
+                        dependent='score', subject='id')
+
+    formula = f"{m.dependent} ~ {m.between} + {'*'.join(m.within)} | {m.subject}"
+
+    r_res = rst.pyrio.r(
+        f"""
+        library(BayesFactor)
+        library(tibble)
+        library(tidyr)
+        library(datarium)
+        data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
+
+        if (grepl('id', {formula}, fixed = TRUE)){{
+            whichRandom = NULL
+        }} else {{
+            whichRandom = 'id'
+        }}       
+
+        data.frame(
+            rownames_to_column(
+            data.frame(anovaBF(score ~ group + time, data=data_long,
+                iterations=1e4,
+                ))[ , c('bf', 'error')],
+            'model'
+            )
+        )
+        """)
+
+    # TODO - as we would upgrade the project to a more recent pandas version we
+    #  can provide better testing of the dataframe's values, now it would
+    #   be too cumbersome as some values may be too large/small to simply use
+    #   `check_less_exact' (e.g., see below)
+
+    res = m.fit().get_df()
+    pd.testing.assert_frame_equal(res.head(2), r_res.head(2))
+
+    m.reset(
+        formula=formula,
+        include_subject=include_subject)
+    res = m.fit().get_df()
+    pd.testing.assert_frame_equal(res.head(2), r_res.head(2))
+
+
+@pytest.mark.parametrize('mu', [-10, -3])
+@pytest.mark.parametrize('alternative', TAILS)
+def test_wilcoxon_1sample(mu, alternative):
+    r_res = rst.pyrio.r(
+        f"""
+        # Example from http://www.sthda.com/english/wiki/unpaired-two-samples-wilcoxon-test-in-r
+        library(broom)
+        x <- c(38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
+        y <- c(67.8, 60, 63.4, 76, 89.4, 73.3, 67.3, 61.3, 62.4)
+        weight_diff <- x - y
+        data.frame(tidy(wilcox.test(weight_diff,
+            exact = TRUE, correct=TRUE, mu={mu}, alternative='{alternative}')))
+        """)
+
+    x = (38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
+    y = (67.8, 60, 63.4, 76, 89.4, 73.3, 67.3, 61.3, 62.4)
+    weight_diff = np.array(x) - np.array(y)
+    group = np.repeat(0, len(weight_diff))
+    df = pd.DataFrame(data=np.array([weight_diff, group]).T,
+                      columns=['weight', 'group']).reset_index()
+    m = rst.wilcoxon_1sample(data=df, independent='group',
+                             subject='index',
+                             dependent='weight', mu=mu, tail=alternative)
+    res = m.fit().get_df()
+    pd.testing.assert_frame_equal(res, r_res)
+
+    m.reset(formula='weight ~ group + 1|index')
+    res = m.fit().get_df()
+    pd.testing.assert_frame_equal(res, r_res)
+
+
+@pytest.mark.parametrize('alternative', TAILS)
+def test_wilcoxon_2sample(alternative):
+    r_res = rst.pyrio.r(f"""
+        # Example from http://www.sthda.com/english/wiki/paired-samples-wilcoxon-test-in-r
+        library(broom)
+        before = c(200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
+                    193.7)
+        after = c(392.9, 393.2, 345.1, 393, 434, 427.9, 422, 383.9, 392.3,
+                   352.2)
+        # Create a data frame
+        my_data <- data.frame(
+                group = as.factor(rep(c("before", "after"), each = 10)),
+                weight = c(before,  after)
+                )
+        data.frame(tidy(
+            wilcox.test(before, after, paired = TRUE,
+            alternative='{alternative}',
+            exact=TRUE, correct=TRUE)))
+        """)
+
+    before = (200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
+              193.7)
+    after = (392.9, 393.2, 345.1, 393, 434, 427.9, 422, 383.9, 392.3,
+             352.2)
+    weight = np.concatenate([before, after])
+    group = np.repeat([0, 1], 10)
+    id = np.repeat(range(len(before)), 2)
+
+    df = pd.DataFrame(data=np.array([weight, group, id]).T,
+                      columns=['weight', 'group', 'id'])
+
+    m = rst.wilcoxon_2samples(
+        data=df, independent='group', paired=True,
+        dependent='weight', subject='id',
+        tail=alternative
+    )
+    res = m.fit().get_df()
+    pd.testing.assert_frame_equal(res, r_res)
+
+    m.reset(formula='weight ~ group|id')
+    res = m.fit().get_df()
+    pd.testing.assert_frame_equal(res, r_res)
+
 # class TestWilcoxon2Sample(unittest.TestCase):
 #
 #     def test_wilcox2sample_dependent(self):
-#         before = (200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
-#                     193.7)
-#         after = (392.9, 393.2, 345.1, 393, 434, 427.9, 422, 383.9, 392.3,
-#                    352.2)
-#         weight = np.concatenate([before, after])
-#         group = np.repeat([0, 1], 10)
-#         id = np.repeat(range(len(before)), 2)
 #
-#         df = pd.DataFrame(data=np.array([weight, group, id]).T,
-#                           columns=['weight', 'group', 'id'])
-#
-#         res = rst.Wilcoxon2Sample(data=df, independent='group', paired=True,
-#                                   dependent='weight', subject='id').get_results()
 #
 #         r_res = rst.pyrio.r(f"""
 #         # Example from http://www.sthda.com/english/wiki/paired-samples-wilcoxon-test-in-r
