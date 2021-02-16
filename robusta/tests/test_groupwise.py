@@ -1,12 +1,19 @@
-import sys
 
 import numpy as np
 import pandas as pd
 import pytest
-
 import robusta as rst
 
-sys.path.append('./')
+from rpy2.robjects import r
+
+# TODO - when robusta is installed as a package, remove the following line
+# sys.path.append('./')
+
+ANXIETY_DATASET = rst.datasets.data('anxiety').set_index(
+    ['id', 'group']).filter(
+    regex='^t[1-3]$').stack().reset_index().rename(
+    columns={0: 'score',
+             'level_2': 'time'})
 
 TAILS = ["two.sided", "less", "greater"]
 
@@ -36,7 +43,7 @@ def test_t2samples(paired, alternative):
                       )
     res = m.fit()
 
-    r_res = rst.pyrio.r(
+    r_res = r(
         f"""
         library(broom)
         data.frame(tidy(t.test(
@@ -62,7 +69,7 @@ def test_t1sample(mu, alternative):
                      dependent='extra', subject='ID',
                      independent='group', mu=mu, tail=alternative)
     res = m.fit().get_df()
-    r_res = rst.pyrio.r(
+    r_res = r(
         f"""
         library(broom)
         data.frame(tidy(t.test(
@@ -105,7 +112,7 @@ def test_bayes_t2samples_independent(
 
     res = m.fit().get_df()
 
-    r_res = rst.pyrio.r("""   
+    r_res = r("""   
     library(BayesFactor)
     library(tibble)
     
@@ -183,7 +190,7 @@ def test_bayes_t2samples_dependent(
 
     res = m.fit().get_df()
 
-    r_res = rst.pyrio.r("""
+    r_res = r("""
     library(BayesFactor)
     library(tibble)
 
@@ -263,7 +270,7 @@ def test_bayes_t1sample(
 
     res = m.fit().get_df()
 
-    r_res = rst.pyrio.r("""
+    r_res = r("""
     library(BayesFactor)
     library(tibble)
 
@@ -312,9 +319,9 @@ def test_bayes_t1sample(
 
 
 @pytest.mark.parametrize('between_vars', [
-    ['supp', "'supp'"],
-    [['supp', 'dose'], "c('supp', 'dose')"],
-    [['dose'], "c('dose')"]
+    ['supp', "supp"],
+    [['supp', 'dose'], "supp*dose"],
+    [['dose'], "dose"]
 ])
 def test_anova_between(between_vars):
     m = rst.anova(
@@ -322,18 +329,22 @@ def test_anova_between(between_vars):
         dependent='len', subject='dataset_rownames',
         between=between_vars[0])
 
-    r_res = rst.pyrio.r(
+    r_res = r(
         f"""
         library(broom)
         library(afex)
         library(tibble)
+        rownames_to_column(ToothGrowth, 'dataset_rownames')
+    
         data.frame(
             tidy(
                 anova(
-                    aov_ez(
+                    aov_4(
                     data=rownames_to_column(ToothGrowth, 'dataset_rownames'),
-                    id='dataset_rownames', between={between_vars[1]},
-                            dv='len', es='pes')
+                    formula=len ~ {between_vars[1]} + (1|dataset_rownames),
+                    es='pes')
+                    #id='dataset_rownames', between=,
+                    #        dv='len'
                     )
                 )
         )
@@ -342,7 +353,7 @@ def test_anova_between(between_vars):
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
     m.reset(
-        formula=f"len ~ {'*'.join(rst.utils.to_list(between_vars[0]))} + 1|dataset_rownames")
+        formula=f"len ~ {between_vars[1]} + (1|dataset_rownames)")
 
     # m = rst.anova(
     #    data=rst.datasets.data('ToothGrowth'),
@@ -352,14 +363,9 @@ def test_anova_between(between_vars):
 
 
 def test_anova_within():
-    df = rst.datasets.data('anxiety').set_index(
-        ['id', 'group']).filter(
-        regex='^t[1-3]$').stack().reset_index().rename(
-        columns={0: 'score',
-                 'level_2': 'time'})
-    m = rst.anova(data=df, within='time',
+    m = rst.anova(data=ANXIETY_DATASET, within='time',
                   dependent='score', subject='id')
-    r_res = rst.pyrio.r(
+    r_res = r(
         """
         library(afex)
         library(broom)
@@ -379,31 +385,52 @@ def test_anova_within():
 
 
 def test_anova_mixed():
-    df = rst.datasets.data('anxiety').set_index(
-        ['id', 'group']).filter(
-        regex='^t[1-3]$').stack().reset_index().rename(
-        columns={0: 'score',
-                 'level_2': 'time'})
-    m = rst.anova(data=df, within='time', between='group',
-                  dependent='score', subject='id')
-
-    r_res = rst.pyrio.r(
+    # Initialize r objects to be tested
+    r(
         """
+        library(emmeans)
         library(afex)
         library(broom)
         library(tidyr)
         library(datarium)
         data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
 
-        data.frame(tidy(anova(aov_4(score~(time|id) + group,
-            data=data_long))))
+        a1 = aov_4(score~(time|id) + group, data=data_long)
+        anova_table = data.frame(tidy(anova(a1)))
+        interaction_margins = data.frame(emmeans(a1, specs=c('group', 'time'),
+         type='response'))
+        time_margins = data.frame(emmeans(a1, specs=c('time'),
+         type='response'))
+        group_margins = data.frame(emmeans(a1, specs=c('group'),
+         type='response'))
         """
     )
 
-    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+    m = rst.anova(data=ANXIETY_DATASET, within='time', between='group',
+                  dependent='score', subject='id')
 
-    m.reset(formula='group + score~time|id')
-    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+    pd.testing.assert_frame_equal(m.fit().get_df(), r('anova_table'))
+
+    m.reset(formula='score ~ group + (time|id)')
+    res = m.fit()
+    pd.testing.assert_frame_equal(res.get_df(), r('anova_table'))
+
+    pd.testing.assert_frame_equal(
+        res.get_margins(['group', 'time']),
+        r('interaction_margins')
+    )
+    pd.testing.assert_frame_equal(
+        res.get_margins(margins_terms='group', by_terms='time'),
+        r('interaction_margins')
+    )
+    pd.testing.assert_frame_equal(
+        res.get_margins(margins_terms='time'),
+        r('time_margins')
+    )
+    pd.testing.assert_frame_equal(
+        res.get_margins(margins_terms='group'),
+        r('group_margins')
+    )
 
 
 # TODO - we need to fix the R code for testing the model with and without the
@@ -427,7 +454,7 @@ def test_bayes_anova_between(between_vars, include_subject):
     if include_subject:
         formula += ' + dataset_rownames'
 
-    r_res = rst.pyrio.r(
+    r_res = r(
         f"""
         library(BayesFactor)
         library(tibble)
@@ -479,19 +506,14 @@ def test_bayes_anova_between(between_vars, include_subject):
                          )
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_within(within_vars, include_subject):
-    df = rst.datasets.data('anxiety').set_index(
-        ['id', 'group']).filter(
-        regex='^t[1-3]$').stack().reset_index().rename(
-        columns={0: 'score',
-                 'level_2': 'time'})
-    m = rst.bayes_anova(data=df, within='time',
+    m = rst.bayes_anova(data=ANXIETY_DATASET, within='time',
                         dependent='score', subject='id')
 
     formula = within_vars[1]
     if include_subject:
         formula += ' + id'
 
-    r_res = rst.pyrio.r(
+    r_res = r(
         f"""
         library(BayesFactor)
         library(tibble)
@@ -537,17 +559,12 @@ def test_bayes_anova_within(within_vars, include_subject):
 
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_mixed(include_subject):
-    df = rst.datasets.data('anxiety').set_index(
-        ['id', 'group']).filter(
-        regex='^t[1-3]$').stack().reset_index().rename(
-        columns={0: 'score',
-                 'level_2': 'time'})
-    m = rst.bayes_anova(data=df, within='time', between='group',
+    m = rst.bayes_anova(data=ANXIETY_DATASET, within='time', between='group',
                         dependent='score', subject='id')
 
-    formula = f"{m.dependent} ~ {m.between} + {'*'.join(m.within)} | {m.subject}"
+    formula = "score ~ group + time | id"
 
-    r_res = rst.pyrio.r(
+    r_res = r(
         f"""
         library(BayesFactor)
         library(tibble)
@@ -586,10 +603,12 @@ def test_bayes_anova_mixed(include_subject):
     pd.testing.assert_frame_equal(res.head(2), r_res.head(2))
 
 
+@pytest.mark.parametrize('p_exact', [False, True])
+@pytest.mark.parametrize('p_correction', [False, True])
 @pytest.mark.parametrize('mu', [-10, -3])
 @pytest.mark.parametrize('alternative', TAILS)
-def test_wilcoxon_1sample(mu, alternative):
-    r_res = rst.pyrio.r(
+def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
+    r_res = r(
         f"""
         # Example from http://www.sthda.com/english/wiki/unpaired-two-samples-wilcoxon-test-in-r
         library(broom)
@@ -597,7 +616,8 @@ def test_wilcoxon_1sample(mu, alternative):
         y <- c(67.8, 60, 63.4, 76, 89.4, 73.3, 67.3, 61.3, 62.4)
         weight_diff <- x - y
         data.frame(tidy(wilcox.test(weight_diff,
-            exact = TRUE, correct=TRUE, mu={mu}, alternative='{alternative}')))
+            exact={str(p_exact)[0]}, 
+            correct={str(p_correction)[0]}, mu={mu}, alternative='{alternative}')))
         """)
 
     x = (38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
@@ -608,7 +628,8 @@ def test_wilcoxon_1sample(mu, alternative):
                       columns=['weight', 'group']).reset_index()
     m = rst.wilcoxon_1sample(data=df, independent='group',
                              subject='index',
-                             dependent='weight', mu=mu, tail=alternative)
+                             dependent='weight', mu=mu, tail=alternative,
+                             p_exact=p_exact, p_correction=p_correction)
     res = m.fit().get_df()
     pd.testing.assert_frame_equal(res, r_res)
 
@@ -617,9 +638,12 @@ def test_wilcoxon_1sample(mu, alternative):
     pd.testing.assert_frame_equal(res, r_res)
 
 
+@pytest.mark.parametrize('p_exact', [False, True])
+@pytest.mark.parametrize('p_correction', [False, True])
 @pytest.mark.parametrize('alternative', TAILS)
-def test_wilcoxon_2sample(alternative):
-    r_res = rst.pyrio.r(f"""
+@pytest.mark.parametrize('paired', [True, False])
+def test_wilcoxon_2samples(p_exact, p_correction, alternative, paired):
+    r_res = r(f"""
         # Example from http://www.sthda.com/english/wiki/paired-samples-wilcoxon-test-in-r
         library(broom)
         before = c(200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
@@ -632,9 +656,9 @@ def test_wilcoxon_2sample(alternative):
                 weight = c(before,  after)
                 )
         data.frame(tidy(
-            wilcox.test(before, after, paired = TRUE,
+            wilcox.test(before, after, paired = {str(paired)[0]},
             alternative='{alternative}',
-            exact=TRUE, correct=TRUE)))
+            exact={str(p_exact)[0]}, correct={str(p_correction)[0]})))
         """)
 
     before = (200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
@@ -649,9 +673,9 @@ def test_wilcoxon_2sample(alternative):
                       columns=['weight', 'group', 'id'])
 
     m = rst.wilcoxon_2samples(
-        data=df, independent='group', paired=True,
+        data=df, independent='group', paired=paired,
         dependent='weight', subject='id',
-        tail=alternative
+        tail=alternative, p_correction=p_correction, p_exact=p_exact
     )
     res = m.fit().get_df()
     pd.testing.assert_frame_equal(res, r_res)
@@ -660,71 +684,66 @@ def test_wilcoxon_2sample(alternative):
     res = m.fit().get_df()
     pd.testing.assert_frame_equal(res, r_res)
 
-# class TestWilcoxon2Sample(unittest.TestCase):
-#
-#     def test_wilcox2sample_dependent(self):
-#
-#
-#         r_res = rst.pyrio.r(f"""
-#         # Example from http://www.sthda.com/english/wiki/paired-samples-wilcoxon-test-in-r
-#         library(broom)
-#         before = c(200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
-#                     193.7)
-#         after = c(392.9, 393.2, 345.1, 393, 434, 427.9, 422, 383.9, 392.3,
-#                    352.2)
-#         # Create a data frame
-#         my_data <- data.frame(
-#                 group = as.factor(rep(c("before", "after"), each = 10)),
-#                 weight = c(before,  after)
-#                 )
-#         data.frame(tidy(
-#             wilcox.test(before, after, paired = TRUE,
-#             exact=TRUE, correct=TRUE)))
-#         """)
-#         pd.testing.assert_frame_equal(
-#             res, r_res)
-#
-# class TestKruskalWallisTest(unittest.TestCase):
-#
-#     def test_kruskalwallistest(self):
-#
-#         res = rst.KruskalWallisTest(
-#             data=rst.datasets.data('PlantGrowth'),
-#             between='group', paired=True,
-#             dependent='weight', subject='dataset_rownames').get_results()
-#         r_res = rst.pyrio.r("""
-#         # Example from http://www.sthda.com/english/wiki/kruskal-wallis-test-in-r
-#         library(broom)
-#         data.frame(tidy(kruskal.test(weight ~ group, data = PlantGrowth)))
-#         """)
-#         pd.testing.assert_frame_equal(
-#             res, r_res)
-#
-# class FriedmanTest(unittest.TestCase):
-#
-#     def test_friedman_test(self):
-#
-#         with self.assertRaises(rst.pyr.rinterface.RRuntimeError):
-#             # Until we get rstatix on the environment
-#
-#             r_res = rst.pyrio.r("""
-#             # Example from https://www.datanovia.com/en/lessons/friedman-test-in-r/
-#             library(rstatix)
-#             library(broom)
-#             library(datarium)
-#             library(tidyr)
-#             data_long <- gather(selfesteem, 'time', 'score', t1:t3, factor_key=TRUE)
-#             data.frame(tidy(friedman_test(score ~ time |id, data=data_long)))
-#             """)
-#
-#             df = rst.datasets.data('selfesteem').set_index(
-#                 ['id', 'group']).filter(
-#                 regex='^t[1-3]$').stack().reset_index().rename(
-#                 columns={0: 'score', 'level_2': 'time'})
-#             res = rst.FriedmanTest(data=df, within='time', dependent='score',
-#                                    subject='id')
-#
-#             pd.testing.assert_frame_equal(res, r_res)
-#
-# if __name__ == '__main__':
-#     unittest.main()
+
+def test_kruskal_wallis_test():
+    r_res = r("""
+    # Example from http://www.sthda.com/english/wiki/kruskal-wallis-test-in-r
+    library(broom)
+    data.frame(tidy(kruskal.test(weight ~ group, data = PlantGrowth)))
+    """)
+    m = rst.kruskal_wallis_test(
+        data=rst.datasets.data('PlantGrowth'),
+        between='group',
+        dependent='weight', subject='dataset_rownames')
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+    m.reset(formula='weight~group+1|dataset_rownames')
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+
+def test_friedman_test():
+    with pytest.raises(rst.pyr.rinterface.RRuntimeError):
+        # Until we get rstatix on the environment
+        r_res = r("""
+        # Example from https://www.datanovia.com/en/lessons/friedman-test-in-r/
+        library(rstatix)
+        library(broom)
+        library(datarium)
+        library(tidyr)
+        data_long <- gather(selfesteem, 'time', 'score', t1:t3, factor_key=TRUE)
+        data.frame(tidy(friedman_test(score ~ time |id, data=data_long)))
+        """)
+
+        df = rst.datasets.data('selfesteem').set_index(
+            ['id', 'group']).filter(
+            regex='^t[1-3]$').stack().reset_index().rename(
+            columns={0: 'score', 'level_2': 'time'})
+        m = rst.friedman_test(data=df, within='time', dependent='score',
+                              subject='id')
+        pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+        m.reset(formula='score ~ time|id')
+        pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+
+
+def test_aligned_ranks_test():
+    # initialize r
+    r("""
+        library(ARTool)
+        data(Higgins1990Table5)
+        res = anova(
+            art(DryMatter ~ Moisture*Fertilizer + (1|Tray), 
+            data=Higgins1990Table5))
+        """)
+    m = rst.aligned_ranks_test(
+        data=rst.datasets.data('Higgins1990Table5'),
+        formula='DryMatter ~ Moisture*Fertilizer + (1|Tray)')
+    pd.testing.assert_frame_equal(
+        m.fit().get_df(), r("res")
+    )
+
+    m.reset(between=['Moisture', 'Fertilizer'], dependent='DryMatter',
+            subject='Tray')
+    pd.testing.assert_frame_equal(
+            m.fit().get_df(), r("res")
+        )

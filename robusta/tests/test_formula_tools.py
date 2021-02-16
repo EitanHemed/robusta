@@ -1,7 +1,7 @@
 import unittest
 import robusta as rst
 
-
+# TODO - move from testing with unittest to testing with pytest
 class TestVariableParser(unittest.TestCase):
 
     def test_many_spaces(self):
@@ -20,7 +20,6 @@ class TestVariableParser(unittest.TestCase):
 
     def test_missing_terms(self):
         # Todo - rewrite all testing of incorrect specification of formula
-        return
         with self.assertRaises(RuntimeError):
             # No subject term
             rst.formula_tools.VariablesParser('score ~ group'

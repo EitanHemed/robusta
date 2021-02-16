@@ -8,7 +8,10 @@ __all__ = [
     "anova",
     "bayes_anova",
     "wilcoxon_1sample",
-    "wilcoxon_2samples"
+    "wilcoxon_2samples",
+    "kruskal_wallis_test",
+    "friedman_test",
+    "aligned_ranks_test"
 ]
 
 
@@ -40,3 +43,12 @@ def wilcoxon_1sample(**kwargs):
 
 def wilcoxon_2samples(**kwargs):
     return groupwise.Wilcoxon2SamplesModel(**kwargs)
+
+def kruskal_wallis_test(**kwargs):
+    return groupwise.KruskalWallisTestModel(**kwargs)
+
+def friedman_test(**kwargs):
+    return groupwise.FriedmanTestModel(**kwargs)
+
+def aligned_ranks_test(**kwargs):
+    return groupwise.AlignedRanksTestModel(**kwargs)

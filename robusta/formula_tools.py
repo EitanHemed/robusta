@@ -122,7 +122,6 @@ class VariablesParser:
                     | pyparsing.Suppress('1'))).setResultsName('within')
                 + varname.setResultsName('subject')
                 + (pyparsing.ZeroOrMore(pyparsing.Suppress(')')))
-
         )
 
         prsr = (dependent + between_terms + within_and_subject_terms )
@@ -151,54 +150,4 @@ class FormulaParser:
 
     def get_formula(self):
         return self.formula
-
-# '''
-# # A helpful example
-# # https://www.accelebrate.com/blog/pyparseltongue-parsing-text-with-pyparsing
-#
-# URL grammar
-#   url ::= scheme '://' [userinfo] host [port] [path] [query] [fragment]
-#   scheme ::= http | https | ftp | file
-#   userinfo ::= url_chars+ ':' url_chars+ '@'
-#   host ::= alphanums | host (. + alphanums)
-#   port ::= ':' nums
-#   path ::= url_chars+
-#   query ::= '?' + query_pairs
-#   query_pairs ::= query_pairs | (query_pairs '&' query_pair)
-#   query_pair = url_chars+ '=' url_chars+
-#   fragment = '#' + url_chars
-#   url_chars = alphanums + '-_.~%+'
-#
-# Formula grammer
-#     formula ::= varname '~' indepdendent_vars
-#     varname = alphanums + re.sub('[~+$|()]', '', string.punctuation)
-#
-#     only_subject = pyparsing.Suppress(pyparsing.Literal('1')
-#                                       + pyparsing.Literal('|')) + varname
-#     both_subject_and_within = (
-#             varname
-#             + pyparsing.Suppress(pyparsing.Literal('|'))
-#             + varname
-#             + pyparsing.ZeroOrMore(
-#         pyparsing.Suppress(pyparsing.Literal('|')) + pyparsing.delimitedList(
-#             varname, '|')))
-#     subject_and_within_options = (only_subject | both_subject_and_within)
-#     # Between subject variables
-#     rhs_between = pyparsing.delimitedList(varname, pyparsing.oneOf(['+', '*']))
-#
-#
-#     subject_and_no_within_vars = (
-#             pyparsing.Suppress(pyparsing.Literal('1') + pyparsing.Literal('|'))
-#             + varname)
-#     subject_and_within_vars = (
-#             varname
-#             + pyparsing.Suppress(pyparsing.Literal('|'))
-#             + pyparsing.OneOrMore(pyparsing.delimitedList(varname, '|')))
-#     rhs_within_and_subject = (
-#             subject_and_no_within_vars | subject_and_within_vars)
-#     rhs = (pyparsing.Optional(rhs_between) + rhs_within_and_subject)
-#     formula_parsing = (lhs
-#                        + pyparsing.Suppress(pyparsing.Literal('~'))
-#                        + rhs)
-# """
 
