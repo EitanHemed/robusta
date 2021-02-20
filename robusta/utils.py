@@ -7,7 +7,7 @@ import typing
 from rpy2 import robjects
 
 import robusta as rst  # So we can get the PyR singleton
-
+from . import pyr
 
 # TODO - change this to return a list of strings instead of a generator
 def to_list(values):
@@ -39,11 +39,11 @@ def tidy(df, result_type) -> pd.DataFrame:
 
 
 def _tidy_anova(df):
-    return rst.pyr.rpackages.broom.tidy_anova(df)
+    return pyr.rpackages.broom.tidy_anova(df)
 
 
 def _tidy_ttest(df):
-    return rst.pyr.rpackages.broom.tidy_htest(df)
+    return pyr.rpackages.broom.tidy_htest(df)
 
 
 def verify_float(a):
@@ -94,7 +94,7 @@ def convert_df(df, rownames_to_column_name: typing.Union[None, str]=None):
             _cat_cols[0] == 'category', 'index'].values.tolist()
         _df = robjects.pandas2ri.py2ri(df)
         for cn in filter(lambda s: s in _cat_cols, _df.names):
-            _df[_df.names.index(cn)] = rst.pyr.rpackages.base.factor(
+            _df[_df.names.index(cn)] = pyr.rpackages.base.factor(
                 _df[_df.names.index(cn)])
         return _df
     elif type(df) == robjects.vectors.DataFrame:
@@ -103,7 +103,7 @@ def convert_df(df, rownames_to_column_name: typing.Union[None, str]=None):
         else:
             if not isinstance(rownames_to_column_name, str):
                 raise ValueError("Column name of previous row names must be a str")
-            df = rst.pyr.rpackages.tibble.rownames_to_column(
+            df = pyr.rpackages.tibble.rownames_to_column(
                     df, var=rownames_to_column_name)
             df = pd.DataFrame(robjects.pandas2ri.ri2py(df))
             cols = df.columns.tolist()
@@ -156,7 +156,7 @@ def build_lm4_style_formula(
     else:
         within = f'(1|{subject})'
     frml = f'{dependent} ~ {between} + {within}'
-    return frml, rst.pyr.rpackages.stats.formula(frml)
+    return frml, pyr.rpackages.stats.formula(frml)
 
 
 def parse_variables_from_lm4_style_formula(frml):

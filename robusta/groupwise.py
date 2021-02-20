@@ -27,8 +27,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-import robusta as rst
-from . import base
+from . import base, formula_tools, utils, pyr
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
@@ -117,21 +116,21 @@ class GroupwiseModel(base.BaseModel):
             self._set_formula_from_vars()
         elif self.formula is not None:
             # Parse models from entered formula
-            self._r_formula = rst.pyr.rpackages.stats.formula(
+            self._r_formula = pyr.rpackages.stats.formula(
                 self.formula)
             self._set_vars_from_formula()
             # Variables setting routine
             self._set_variables()
 
     def _set_formula_from_vars(self):
-        fp = rst.formula_tools.FormulaParser(
+        fp = formula_tools.FormulaParser(
             self.dependent, self.between, self.within, self.subject
         )
         self.formula = fp.get_formula()
-        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+        self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_vars_from_formula(self):
-        vp = rst.formula_tools.VariablesParser(self.formula)
+        vp = formula_tools.VariablesParser(self.formula)
         (self.dependent, self.between, self.within,
          self.subject) = vp.get_variables()
 
@@ -161,10 +160,10 @@ class GroupwiseModel(base.BaseModel):
     def _select_input_data(self):
         try:
             data = self.data[
-                rst.utils.to_list([self.independent, self.subject,
+                utils.to_list([self.independent, self.subject,
                                    self.dependent])].copy()
         except KeyError:
-            _ = [i for i in rst.utils.to_list(
+            _ = [i for i in utils.to_list(
                 [self.independent, self.subject, self.dependent])
                  if i not in self.data.columns]
             raise KeyError(f"Variables not in data: \n{','.join(_)}")
@@ -172,7 +171,7 @@ class GroupwiseModel(base.BaseModel):
 
     def _validate_input_data(self):
         # To test whether DV can be coerced to float
-        rst.utils.verify_float(self._input_data[self.dependent].values)
+        utils.verify_float(self._input_data[self.dependent].values)
 
         # Verify ID variable uniqueness
         self._perform_aggregation = (
@@ -210,17 +209,17 @@ class GroupwiseModel(base.BaseModel):
         self._input_data.loc[:, self.independent] = self._input_data[
             self.independent].astype('category')
 
-        self._r_input_data = rst.utils.convert_df(self._input_data.copy())
+        self._r_input_data = utils.convert_df(self._input_data.copy())
 
     # def _verify_independent_vars(self):
     #
     #     for i in self.independent:
-    #         rst.utils.verify_levels(self._input_data[self.independent],
+    #         utils.verify_levels(self._input_data[self.independent],
     #                                 self.min_levels, self.max_levels)
 
     def _aggregate_data(self):
         return self._input_data.groupby(
-            rst.utils.to_list(
+            utils.to_list(
                 [self.subject] + self.independent)).agg(
             self.agg_func).reset_index()
 
@@ -258,17 +257,17 @@ class GroupwiseResults(base.BaseResults):
     def get_text(self, mode: str = 'df'):
         raise NotImplementedError
         # if mode == 'df':
-        #     return rst.pyr.rpackages.report.as_data_frame_report(
+        #     return pyr.rpackages.report.as_data_frame_report(
         #         self.r_results)
         # if mode == 'verbose':
-        #     return rst.pyr.rpackages.report.report(self.r_results)
+        #     return pyr.rpackages.report.report(self.r_results)
 
     # def get_df(self):
     #    return self._tidy_results()
 
     # def _tidy_results(self):
-    #    return rst.utils.convert_df(
-    #        rst.pyr.rpackages.generics.tidy(self.r_results))
+    #    return utils.convert_df(
+    #        pyr.rpackages.generics.tidy(self.r_results))
 
 
 class T2SamplesModel(GroupwiseModel):
@@ -352,7 +351,7 @@ class T2SamplesModel(GroupwiseModel):
 
     def _analyze(self):
         return T2SamplesResults(
-            rst.pyr.rpackages.stats.t_test(
+            pyr.rpackages.stats.t_test(
                 **{'x': self.x, 'y': self.y,
                    'paired': self.paired,
                    'alternative': self.tail,
@@ -453,15 +452,15 @@ class BayesT2SamplesModel(T2SamplesModel):
     #         'mu': self.mu
     #     }
     #
-    #     rst.pyr.rpackages.base.data_frame(
-    #         rst.pyr.rpackages.BayesFactor.ttestBF(
+    #     pyr.rpackages.base.data_frame(
+    #         pyr.rpackages.BayesFactor.ttestBF(
     #             **kwargs
     #         ))
 
     def _analyze(self):
         return BayesT2SamplesResults(
-            rst.pyr.rpackages.base.data_frame(
-                rst.pyr.rpackages.BayesFactor.ttestBF(
+            pyr.rpackages.base.data_frame(
+                pyr.rpackages.BayesFactor.ttestBF(
                     x=self.x,
                     y=self.y,
                     paired=self.paired,
@@ -486,9 +485,9 @@ class BayesT2SamplesResults(T2SamplesResults):
 
     def _tidy_results(self):
         if self.mode == 'bf':
-            return rst.utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
+            return utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
         else:
-            return rst.utils.convert_df(self.r_results)
+            return utils.convert_df(self.r_results)
 
 
 class T1SampleModel(T2SamplesModel):
@@ -541,7 +540,7 @@ class T1SampleModel(T2SamplesModel):
         self.x = self._input_data[getattr(self, 'dependent')].values
 
     def _analyze(self):
-        return T1SampleResults(rst.pyr.rpackages.stats.t_test(
+        return T1SampleResults(pyr.rpackages.stats.t_test(
             x=self.x,
             mu=self.mu,
             alternative=self.tail
@@ -626,10 +625,10 @@ class BayesT1SampleModel(T1SampleModel):
 
     def _analyze(self):
         return BayesT1SampleResults(
-            rst.pyr.rpackages.base.data_frame(
-                rst.pyr.rpackages.BayesFactor.ttestBF(
+            pyr.rpackages.base.data_frame(
+                pyr.rpackages.BayesFactor.ttestBF(
                     x=self.x,
-                    y=rst.pyr.rinterface.NULL,
+                    y=pyr.rinterface.NULL,
                     nullInterval=self.null_interval,
                     iterations=self.iterations,
                     posterior=self.sample_from_posterior,
@@ -650,9 +649,9 @@ class BayesT1SampleResults(T1SampleResults):
 
     def _tidy_results(self):
         if self.mode == 'bf':
-            return rst.utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
+            return utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
         else:
-            return rst.utils.convert_df(self.r_results, 'iteration')
+            return utils.convert_df(self.r_results, 'iteration')
 
 
 class AnovaModel(GroupwiseModel):
@@ -701,7 +700,7 @@ class AnovaModel(GroupwiseModel):
         # TODO - if we want to use aov_4 than the error term needs to be
         #  encapsulated in parentheses. Maybe write something that will add the
         #  parantheses automatically.
-        return AnovaResults(rst.pyr.rpackages.afex.aov_4(
+        return AnovaResults(pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
             # dependent=self.dependent,
             # id=self.subject,
@@ -712,15 +711,15 @@ class AnovaModel(GroupwiseModel):
             correction=self.sphericity_correction))
         # TODO: Add reliance on aov_ez aggregation functionality.
         # TODO: Add this functionality - sig_symbols=
-        # rst.pyr.vectors.StrVector(["", "", "", ""]))
+        # pyr.vectors.StrVector(["", "", "", ""]))
 
 
 class AnovaResults(GroupwiseResults):
 
     def _tidy_results(self):
-        return rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(
-                rst.pyr.rpackages.stats.anova(self.r_results)))
+        return utils.convert_df(
+            pyr.rpackages.generics.tidy(
+                pyr.rpackages.stats.anova(self.r_results)))
 
     def get_margins(
             self,
@@ -736,7 +735,7 @@ class AnovaResults(GroupwiseResults):
         # TODO - implement between and within CI calculation
 
         _terms_to_test = np.array(
-            rst.utils.to_list([margins_terms,
+            utils.to_list([margins_terms,
                                [] if by_terms is None else by_terms])
         )
 
@@ -747,14 +746,14 @@ class AnovaResults(GroupwiseResults):
                 f'Margins term: {[i for i in _terms_to_test]}'
                 'not included in model')
 
-        margins_terms = np.array(rst.utils.to_list(margins_terms))
+        margins_terms = np.array(utils.to_list(margins_terms))
 
         if by_terms is None:
-            by_terms = rst.pyr.rinterface.NULL
+            by_terms = pyr.rinterface.NULL
         else:
-            by_terms = np.array(rst.utils.to_list(by_terms))
+            by_terms = np.array(utils.to_list(by_terms))
 
-        _r_margins = rst.pyr.rpackages.emmeans.emmeans(
+        _r_margins = pyr.rpackages.emmeans.emmeans(
             self.r_results,
             specs=margins_terms,
             type='response',
@@ -762,8 +761,8 @@ class AnovaResults(GroupwiseResults):
             by=by_terms
         )
 
-        margins = rst.utils.convert_df(
-            rst.pyr.rpackages.emmeans.as_data_frame_emmGrid(
+        margins = utils.convert_df(
+            pyr.rpackages.emmeans.as_data_frame_emmGrid(
                 _r_margins))
 
         return margins
@@ -798,14 +797,14 @@ class AnovaResults(GroupwiseResults):
         #         f'Margins term: {[i for i in margins_term]}'
         #         'not included in model')
         #
-        # _r_margins = rst.pyr.rpackages.emmeans.emmeans(
+        # _r_margins = pyr.rpackages.emmeans.emmeans(
         #     self.r_results,
         #     specs=margins_term,
         #     type='response',
         #     level=ci,
         # )
-        # margins = rst.utils.convert_df(
-        #     rst.pyr.rpackages.emmeans.as_data_frame_emmGrid(
+        # margins = utils.convert_df(
+        #     pyr.rpackages.emmeans.as_data_frame_emmGrid(
         #         _r_margins))
         #
         # self.margins_results[tuple(margins_term)] = {
@@ -836,7 +835,7 @@ class AnovaResults(GroupwiseResults):
                     'Margins already defined. To re-run, get_margins'
                     'with `overwrite_margins_results` kwarg set '
                     'to True')
-        return rst.utils.convert_df(rst.pyr.rpackages.emmeans.pairs(
+        return utils.convert_df(pyr.rpackages.emmeans.pairs(
             self.margins_results[margins_term]['r_margins']))
 
 
@@ -893,7 +892,7 @@ class BayesAnovaModel(AnovaModel):
         except all values specified above and also 'nuisance' - variance
         in the data that may stem from variables which are irrelevant to the
         model, such as participants. Default value is 'nuisance'.
-        r_scale_effects=rst.pyr.rinterface.NULL,
+        r_scale_effects=pyr.rinterface.NULL,
     mutli_core : bool, optional
         Whether to use multiple cores for estimation. Not available on
         Windows. Default value is False.
@@ -924,7 +923,7 @@ class BayesAnovaModel(AnovaModel):
             iterations=DEFAULT_ITERATIONS,
             scale_prior_fixed="medium",
             scale_prior_random="nuisance",
-            r_scale_effects=rst.pyr.rinterface.NULL,
+            r_scale_effects=pyr.rinterface.NULL,
             multi_core=False,
             method="auto",
             no_sample=False,
@@ -944,10 +943,10 @@ class BayesAnovaModel(AnovaModel):
         super().__init__(**kwargs)
 
     def _set_formula_from_vars(self):
-        self.formula = rst.utils.bayes_style_formula_from_vars(
+        self.formula = utils.bayes_style_formula_from_vars(
             self.dependent, self.between, self.within,
             subject={False: None, True: self.subject}[self.include_subject])
-        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+        self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_controllers(self):
         super()._set_controllers()
@@ -959,7 +958,7 @@ class BayesAnovaModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _analyze(self):
-        return BayesAnovaResults(rst.pyr.rpackages.BayesFactor.anovaBF(
+        return BayesAnovaResults(pyr.rpackages.BayesFactor.anovaBF(
             self._r_formula,
             self._r_input_data,
             whichRandom=self.subject,
@@ -978,14 +977,14 @@ class BayesAnovaModel(AnovaModel):
 class BayesAnovaResults(AnovaResults):
 
     def _tidy_results(self):
-        return rst.utils.convert_df(
-            rst.pyr.rpackages.base.data_frame(
+        return utils.convert_df(
+            pyr.rpackages.base.data_frame(
                 self.r_results), 'model')[['model', 'bf', 'error']]
 
-        # return rst.utils.tidy_bayes_factor_object(self.r_results)
-        # results = rst.pyr.rpackages.BayesFactor.extractBF(
+        # return utils.tidy_bayes_factor_object(self.r_results)
+        # results = pyr.rpackages.BayesFactor.extractBF(
         #    self._r_results)
-        # return rst.utils.convert_df(
+        # return utils.convert_df(
         #    results, 'model')[['model', 'bf', 'error']]
 
     def get_margins(self):
@@ -1008,7 +1007,7 @@ class Wilcoxon1SampleModel(T1SampleModel):
     """Mann-Whitney"""
 
     def _analyze(self):
-        return Wilcoxon1SampleResults(rst.pyr.rpackages.stats.wilcox_test(
+        return Wilcoxon1SampleResults(pyr.rpackages.stats.wilcox_test(
             x=self.x, mu=self.mu, alternative=self.tail,
             exact=self.p_exact, correct=self.p_correction,
             conf_int=self.ci
@@ -1030,7 +1029,7 @@ class Wilcoxon2SamplesModel(T2SamplesModel):
         super().__init__(paired=self.paired, **kwargs)
 
     def _analyze(self):
-        return Wilcoxon2SamplesResults(rst.pyr.rpackages.stats.wilcox_test(
+        return Wilcoxon2SamplesResults(pyr.rpackages.stats.wilcox_test(
             x=self.x, y=self.y, paired=self.paired,
             alternative=self.tail,
             exact=self.p_exact, correct=self.p_correction,
@@ -1057,13 +1056,13 @@ class KruskalWallisTestModel(AnovaModel):
     # def _set_formula_from_vars(self):
     #     super()._set_formula_from_vars()
     #     self.formula = f"{self.dependent} ~ {''.join(self.between)}"
-    #     self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+    #     self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_formula_from_vars(self):
-        self.formula = rst.utils.bayes_style_formula_from_vars(
+        self.formula = utils.bayes_style_formula_from_vars(
             self.dependent, self.between, self.within,
             subject=None)
-        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+        self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_controllers(self):
         super()._set_controllers()
@@ -1075,7 +1074,7 @@ class KruskalWallisTestModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _analyze(self):
-        return KruskalWallisTestResults(rst.pyr.rpackages.stats.kruskal_test(
+        return KruskalWallisTestResults(pyr.rpackages.stats.kruskal_test(
             self._r_formula, data=self._r_input_data
         ))
 
@@ -1083,8 +1082,8 @@ class KruskalWallisTestModel(AnovaModel):
 class KruskalWallisTestResults(AnovaResults):
 
     def _tidy_results(self):
-        return (rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self.r_results)))
+        return (utils.convert_df(
+            pyr.rpackages.generics.tidy(self.r_results)))
 
     def get_margins(self):
         raise NotImplementedError("Not applicable to non-parametric ANOVA")
@@ -1104,13 +1103,13 @@ class FriedmanTestModel(AnovaModel):
     # def _set_formula_from_vars(self):
     #     super()._set_formula_from_vars()
     #     self.formula = f"{self.dependent} ~ {''.join(self.within)}"
-    #     self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+    #     self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_formula_from_vars(self):
-        self.formula = rst.utils.bayes_style_formula_from_vars(
+        self.formula = utils.bayes_style_formula_from_vars(
             self.dependent, self.between, self.within,
             subject=None)
-        self._r_formula = rst.pyr.rpackages.stats.formula(self.formula)
+        self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_controllers(self):
         super()._set_controllers()
@@ -1122,7 +1121,7 @@ class FriedmanTestModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _analyze(self):
-        return FriedmanTestResults(rst.pyr.rpackages.stats.friedman_test(
+        return FriedmanTestResults(pyr.rpackages.stats.friedman_test(
             self._r_formula, data=self._r_input_data
         ))
 
@@ -1138,7 +1137,7 @@ class AlignedRanksTestModel(AnovaModel):
 
     def _analyze(self):
         return AlignedRanksTestResults(
-            rst.pyr.rpackages.ARTool.art(
+            pyr.rpackages.ARTool.art(
                 data=self._r_input_data,
                 formula=self._r_formula
             )
@@ -1151,7 +1150,7 @@ class AlignedRanksTestResults(AnovaResults):
         raise NotImplementedError("Not applicable to non-parametric ANOVA")
 
     def _tidy_results(self):
-        return rst.utils.convert_df(rst.pyr.rpackages.stats.anova(
+        return utils.convert_df(pyr.rpackages.stats.anova(
             self.r_results
         ))
 
