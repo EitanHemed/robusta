@@ -37,13 +37,14 @@ __all__ = [
     "T1SampleModel", "T2SamplesModel",
     "BayesT1SampleModel", "BayesT2SamplesModel",
     "Wilcoxon1SampleModel", "Wilcoxon2SamplesModel",
-    "KruskalWallisTestModel", "FriedmanTestModel"
+    "KruskalWallisTestModel", "FriedmanTestModel",
+    "AlignedRanksTestModel"
 ]
 
 DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
 PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
-DEFAULT_ITERATIONS = 10000
-DEFAULT_MU = 0
+DEFAULT_ITERATIONS: int = 10000
+DEFAULT_MU: float = 0.0
 
 
 @dataclass
@@ -60,7 +61,7 @@ class GroupwiseModel(base.BaseModel):
     formula: typing.Union[str, None]
     agg_func: typing.Union[str, typing.Callable]
     max_levels = None
-    min_levels = None
+    min_levels = 2
 
     def __init__(
             self,
@@ -85,7 +86,8 @@ class GroupwiseModel(base.BaseModel):
             subject=subject,
             agg_func=agg_func,
             na_action=na_action,
-            max_levels=kwargs.get('max_levels', None)
+            max_levels=kwargs.get('max_levels', None),
+           min_levels=kwargs.get('min_levels', 2)
         )
 
         self._fitted = False
@@ -135,7 +137,6 @@ class GroupwiseModel(base.BaseModel):
 
     def _set_variables(self):
 
-
         # Verify independent variables integrity
         self.between = self._convert_independent_vars_to_list(self.between)
         self.within = self._convert_independent_vars_to_list(self.within)
@@ -161,13 +162,12 @@ class GroupwiseModel(base.BaseModel):
         try:
             data = self.data[
                 rst.utils.to_list([self.independent, self.subject,
-                                  self.dependent])].copy()
+                                   self.dependent])].copy()
         except KeyError:
-            cols = self.data.columns
-            _vars = [i for i in rst.utils.to_list([
-                self.independent, self.subject, self.dependent]) if
-                    i not in cols]
-            raise RuntimeError(f"Variables not in data: \n {','.join(_vars)}")
+            _ = [i for i in rst.utils.to_list(
+                [self.independent, self.subject, self.dependent])
+                 if i not in self.data.columns]
+            raise KeyError(f"Variables not in data: \n{','.join(_)}")
         self._input_data = data
 
     def _validate_input_data(self):
@@ -179,9 +179,26 @@ class GroupwiseModel(base.BaseModel):
                 self._input_data.groupby(
                     [self.subject] + self.independent).size().any() > 1)
 
-        # Make sure that you have at least two levels on each independent
-        # variable
-        self._verify_independent_vars()
+        # Make sure that the independent variables have enough levels, but
+        # not too many
+        _n_levels = (
+            self._input_data[self.independent].apply(
+                lambda s: s.unique().size))
+        low = _n_levels.loc[_n_levels.values < self.min_levels]
+        # It is likely that there will be a max_levels argument
+        high =(_n_levels.loc[self.max_levels < _n_levels]
+               if self.max_levels is not None else pd.Series())
+        _s = ''
+        if not low.empty:
+            _s += ("The following variable:levels pairs have"
+                   f" less than {self.min_levels} levels: {low.to_dict()}.\n")
+        if not high.empty:
+            _s += (
+                "The following {variable:levels} pairs have more"
+                f" than {self.max_levels} levels: {high.to_dict()}.")
+        if _s:
+            # TODO - this should be a ValueError
+            warnings.warn(_s)
 
     def _transform_input_data(self):
         # Make sure we are handing R a DataFrame with factor variables,
@@ -195,11 +212,11 @@ class GroupwiseModel(base.BaseModel):
 
         self._r_input_data = rst.utils.convert_df(self._input_data.copy())
 
-    def _verify_independent_vars(self):
-
-        for i in self.independent:
-            rst.utils.verify_levels(self._input_data[self.independent],
-                                    self.min_levels, self.max_levels)
+    # def _verify_independent_vars(self):
+    #
+    #     for i in self.independent:
+    #         rst.utils.verify_levels(self._input_data[self.independent],
+    #                                 self.min_levels, self.max_levels)
 
     def _aggregate_data(self):
         return self._input_data.groupby(
@@ -229,13 +246,6 @@ class GroupwiseModel(base.BaseModel):
             # We assume that the user aimed to specify the model using variables
             # so we need to remove a pre-existing formula so it would be updated
             self.formula = None  # re.sub('[()]', '', self.formula)
-        # else:
-        #     # We assume that the user aimed to specify the model using a formula
-        #     self.subject = None
-        #     self.dependent = None
-        #     self.independent = None
-        #     self.within = None
-        #     self.between = None
 
         # What else?
         vars(self).update(**kwargs)
@@ -243,16 +253,15 @@ class GroupwiseModel(base.BaseModel):
         self._fitted = False
 
 
-
 class GroupwiseResults(base.BaseResults):
 
     def get_text(self, mode: str = 'df'):
         raise NotImplementedError
-        if mode == 'df':
-            return rst.pyr.rpackages.report.as_data_frame_report(
-                self.r_results)
-        if mode == 'verbose':
-            return rst.pyr.rpackages.report.report(self.r_results)
+        # if mode == 'df':
+        #     return rst.pyr.rpackages.report.as_data_frame_report(
+        #         self.r_results)
+        # if mode == 'verbose':
+        #     return rst.pyr.rpackages.report.report(self.r_results)
 
     # def get_df(self):
     #    return self._tidy_results()
@@ -519,9 +528,11 @@ class T1SampleModel(T2SamplesModel):
                  **kwargs):
         kwargs['paired'] = True
         kwargs['tail'] = tail
+        kwargs['max_levels'] = 1
+        kwargs['min_levels'] = 1
         self.mu = mu
-        self.max_levels = 1
-        self.min_levels = 1
+        #self.max_levels = 1
+        #self.min_levels = 1
         super().__init__(**kwargs)
 
     def _select_input_data(self):
@@ -1039,9 +1050,9 @@ class KruskalWallisTestModel(AnovaModel):
     def _validate_input_data(self):
         super()._validate_input_data()
         if len(self.between) != 1:
-            raise RuntimeError('More than one between subject factors defined')
+            raise ValueError('More than one between subject factors defined')
         if self.within != []:
-            raise RuntimeError('A within subject factor has been defined')
+            raise ValueError('A within subject factor has been defined')
 
     # def _set_formula_from_vars(self):
     #     super()._set_formula_from_vars()
@@ -1126,7 +1137,6 @@ class AlignedRanksTestModel(AnovaModel):
     """Multi-way non-parametric Anova"""
 
     def _analyze(self):
-
         return AlignedRanksTestResults(
             rst.pyr.rpackages.ARTool.art(
                 data=self._r_input_data,

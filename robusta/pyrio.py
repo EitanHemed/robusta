@@ -28,7 +28,7 @@ r_libraries_to_include = ['ARTool', 'BayesFactor', 'Matrix', 'afex',
                           'dplyr', 'effsize', 'emmeans', 'generics', 'lme4',
                           'ppcor', 'psych', 'stats', 'tibble', 'tidyr', 'utils']
 
-
+# TODO - find out if we can use an existing singelton implementation
 class PyRIO:
     instances_count = 0  # This is a static counter
 

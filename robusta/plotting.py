@@ -28,7 +28,7 @@ from matplotlib import patches
 import robusta as rst
 
 
-class PosteriorPlot():
+class PosteriorPlot:
 
     # TODO - a cool thing to do here would be an option to select whether you
     #  want to plot the distribution of mu, sigma or both (as a bivariate density
@@ -37,13 +37,14 @@ class PosteriorPlot():
     def __init__(self, test_source: typing.Union[rst.BayesT1Sample,
                                                  rst.BayesT2Samples],
                  test_kw: dict = None,
-                 fig: plt.Figure = None,
                  ax: plt.Axes = None,
-                 fig_kw: dict = None,
                  ci: typing.Union[float, int, np.ndarray] = 95,
                  hist_kws: dict = None,
                  ci_kws: dict = None,
                  ):
+
+        if ax is None:
+            ax = plt.gca()
 
         if test_source not in [rst.BayesT1Sample, rst.BayesT2Samples]:
             raise ValueError
@@ -68,8 +69,7 @@ class PosteriorPlot():
             self.credible_interval = self._get_credible_interval()
             fig, ax = self._run_plot()
 
-        if ax is None:
-            fig, ax = plt.subplots()
+
         self.fig, self.ax = fig, ax
 
     def _get_credible_interval(self):

@@ -1,10 +1,9 @@
-
 import numpy as np
 import pandas as pd
 import pytest
-import robusta as rst
-
 from rpy2.robjects import r
+
+import robusta as rst
 
 # TODO - when robusta is installed as a package, remove the following line
 # sys.path.append('./')
@@ -19,7 +18,13 @@ TAILS = ["two.sided", "less", "greater"]
 
 
 class FauxInf:
-    def __init__(self, sign=''):
+    """The sole purpose of this class is to have an object that it's __repr__
+    return Inf (or -Inf) when you format the R string (in case you need an
+    Inf value when specifying prior distribution)."""
+
+    def __init__(self, sign: str = ''):
+        if sign not in ['-', '']:
+            raise ValueError
         self.sign = sign
 
     def __repr__(self):
@@ -745,5 +750,5 @@ def test_aligned_ranks_test():
     m.reset(between=['Moisture', 'Fertilizer'], dependent='DryMatter',
             subject='Tray')
     pd.testing.assert_frame_equal(
-            m.fit().get_df(), r("res")
-        )
+        m.fit().get_df(), r("res")
+    )
