@@ -51,7 +51,7 @@ class _BaseRegression(rst.base.AbstractClass):
 
         vp = rst.formula_tools.VariablesParser(self.formula)
         self.dependent, self.between, self.within, self.subject = vp.get_variables()
-        self._vars = rst.utils.to_list(vp.get_variables())
+        self._vars = rst.utils.coerce_to_list(vp.get_variables())
 
     def _set_formula(self):
         """
@@ -79,7 +79,7 @@ class _BaseRegression(rst.base.AbstractClass):
         self._input_data = _data
 
     def _test_input_data(self):
-        for v in rst.utils.to_list(self._vars):
+        for v in rst.utils.coerce_to_list(self._vars):
             if v not in self._input_data.columns:
                 raise KeyError(f'Variable {v} from formula not found in data!')
 

@@ -18,10 +18,8 @@ from . import base
 from . import formula_tools
 from . import utils
 from . import datasets
-from . import examples
 
-
-from .groupwise import *
+# from .groupwise import *
 # from .regressions import *
 # from .correlations import *
 

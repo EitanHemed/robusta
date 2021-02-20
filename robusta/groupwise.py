@@ -160,10 +160,10 @@ class GroupwiseModel(base.BaseModel):
     def _select_input_data(self):
         try:
             data = self.data[
-                utils.to_list([self.independent, self.subject,
-                                   self.dependent])].copy()
+                utils.coerce_to_list([self.independent, self.subject,
+                                      self.dependent])].copy()
         except KeyError:
-            _ = [i for i in utils.to_list(
+            _ = [i for i in utils.coerce_to_list(
                 [self.independent, self.subject, self.dependent])
                  if i not in self.data.columns]
             raise KeyError(f"Variables not in data: \n{','.join(_)}")
@@ -219,7 +219,7 @@ class GroupwiseModel(base.BaseModel):
 
     def _aggregate_data(self):
         return self._input_data.groupby(
-            utils.to_list(
+            utils.coerce_to_list(
                 [self.subject] + self.independent)).agg(
             self.agg_func).reset_index()
 
@@ -735,8 +735,8 @@ class AnovaResults(GroupwiseResults):
         # TODO - implement between and within CI calculation
 
         _terms_to_test = np.array(
-            utils.to_list([margins_terms,
-                               [] if by_terms is None else by_terms])
+            utils.coerce_to_list([margins_terms,
+                                  [] if by_terms is None else by_terms])
         )
 
         if not all(
@@ -746,12 +746,12 @@ class AnovaResults(GroupwiseResults):
                 f'Margins term: {[i for i in _terms_to_test]}'
                 'not included in model')
 
-        margins_terms = np.array(utils.to_list(margins_terms))
+        margins_terms = np.array(utils.coerce_to_list(margins_terms))
 
         if by_terms is None:
             by_terms = pyr.rinterface.NULL
         else:
-            by_terms = np.array(utils.to_list(by_terms))
+            by_terms = np.array(utils.coerce_to_list(by_terms))
 
         _r_margins = pyr.rpackages.emmeans.emmeans(
             self.r_results,
@@ -943,7 +943,7 @@ class BayesAnovaModel(AnovaModel):
         super().__init__(**kwargs)
 
     def _set_formula_from_vars(self):
-        self.formula = utils.bayes_style_formula_from_vars(
+        self.formula = utils.gen_bayes_style_formula_from_vars(
             self.dependent, self.between, self.within,
             subject={False: None, True: self.subject}[self.include_subject])
         self._r_formula = pyr.rpackages.stats.formula(self.formula)
@@ -1059,7 +1059,7 @@ class KruskalWallisTestModel(AnovaModel):
     #     self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_formula_from_vars(self):
-        self.formula = utils.bayes_style_formula_from_vars(
+        self.formula = utils.gen_bayes_style_formula_from_vars(
             self.dependent, self.between, self.within,
             subject=None)
         self._r_formula = pyr.rpackages.stats.formula(self.formula)
@@ -1106,7 +1106,7 @@ class FriedmanTestModel(AnovaModel):
     #     self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_formula_from_vars(self):
-        self.formula = utils.bayes_style_formula_from_vars(
+        self.formula = utils.gen_bayes_style_formula_from_vars(
             self.dependent, self.between, self.within,
             subject=None)
         self._r_formula = pyr.rpackages.stats.formula(self.formula)
