@@ -27,7 +27,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from . import groupwise_reports
+import groupwise_reports
 from .. import base, formula_tools, utils, pyr
 
 BF_COLUMNS = ['model', 'bf', 'error']

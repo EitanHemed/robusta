@@ -1,5 +1,6 @@
 import numpy as np
-from . import groupwise_models
+
+import groupwise_models
 
 P_VALUE_CLAUSE = 'p {pvalue_operator} {p.value:.3f}'
 
