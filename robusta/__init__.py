@@ -13,16 +13,15 @@ __author_email__ = 'Eitan.Hemed@gmail.com'
 from .pyrio import PyRIO
 
 pyr = PyRIO()
-from .api import *
+# from groupwise import *
+from . import groupwise
 from . import base
 from . import formula_tools
 from . import utils
 from . import datasets
 from . import examples
 
+from .api import *
 
-from .groupwise import *
 # from .regressions import *
 # from .correlations import *
-
-

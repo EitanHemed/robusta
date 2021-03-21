@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-import robusta as rst
+from .. import base, formula_tools, utils, pyr
 
 warnings.warn("Currently the regressions module is under development,"
               "nothing is promised to work correctly.")
@@ -18,7 +18,7 @@ __all__ = [
 
 
 @dataclass
-class _BaseRegression(rst.base.AbstractClass):
+class _BaseRegression(base.AbstractClass):
     formula: typing.Union[str, None]
 
     """
@@ -49,13 +49,13 @@ class _BaseRegression(rst.base.AbstractClass):
 
     def _set_variables_from_formula(self):
 
-        vp = rst.formula_tools.VariablesParser(self.formula)
+        vp = formula_tools.VariablesParser(self.formula)
         self.dependent, self.between, self.within, self.subject = vp.get_variables()
-        self._vars = rst.utils.to_list(vp.get_variables())
+        self._vars = utils.to_list(vp.get_variables())
 
     def _set_formula(self):
         """
-        fp = rst.formula_tools.FormulaParser(
+        fp = formula_tools.FormulaParser(
              self.dependent, self.between, self.within, self.subject)
         frml = fp.get_formula()
         print(frml)
@@ -68,7 +68,7 @@ class _BaseRegression(rst.base.AbstractClass):
         pattern = re.compile(
             r'\s*\+{1,1}\(*\s*1{1,1}\s*\|{1,1}\s*' + self.subject + r'\s*\)*')
         frml = re.sub(pattern, '', self.formula)
-        self._r_formula = rst.pyr.rpackages.stats.formula(frml)
+        self._r_formula = pyr.rpackages.stats.formula(frml)
 
     def _select_input_data(self):
         _data = None
@@ -79,7 +79,7 @@ class _BaseRegression(rst.base.AbstractClass):
         self._input_data = _data
 
     def _test_input_data(self):
-        for v in rst.utils.to_list(self._vars):
+        for v in utils.to_list(self._vars):
             if v not in self._input_data.columns:
                 raise KeyError(f'Variable {v} from formula not found in data!')
 
@@ -113,9 +113,9 @@ class _BaseRegression(rst.base.AbstractClass):
         pass
 
     def _tidy_results(self):
-        self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.base.data_frame(
-                rst.pyr.rpackages.generics.tidy(
+        self._results = utils.convert_df(
+            pyr.rpackages.base.data_frame(
+                pyr.rpackages.generics.tidy(
                     self._r_results)))
 
     def get_results(self):
@@ -130,7 +130,7 @@ class _BaseRegression(rst.base.AbstractClass):
             Options are 'response' and 'type'. Default is 'response'.
         @return:
         """
-        return rst.convert_df(rst.pyr.rpackages.stats.predict(
+        return convert_df(pyr.rpackages.stats.predict(
             self._r_results, new_data, type=self.default_predict_type))
 
 
@@ -156,7 +156,7 @@ class LinearRegression(_BaseRegression):
     """
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.lm(
+        self._r_results = pyr.rpackages.stats.lm(
             **{
                 'formula': self._r_formula,
                 'data': self.data,
@@ -179,7 +179,7 @@ class LinearRegression(_BaseRegression):
                 raise ValueError("interval type must be one of None, "
                                  "'confidence' or 'prediction'")
 
-        rst.convert_df(rst.pyr.rpackages.stats.predict(
+        convert_df(pyr.rpackages.stats.predict(
             self._r_results,
             new_data,
             interval_type=interval_type
@@ -209,7 +209,7 @@ class BayesianLinearRegression(LinearRegression):
                  iterations: int = 10000,
                  exclude_subject: bool = True,
                  # TODO add type hints to the next argument
-                 never_exclude=rst.pyr.rinterface.NULL,
+                 never_exclude=pyr.rinterface.NULL,
                  **kwargs):
         self.iterations = iterations
         self.exclude_subject = exclude_subject
@@ -219,25 +219,25 @@ class BayesianLinearRegression(LinearRegression):
     def _analyze(self):
         # raise NotImplementedError("Currently the formula tools just assumes all interactions rather than "
         #                          "going by the supplied formula. This has to be solved ASAP.")
-        self._r_results = rst.pyr.rpackages.base.data_frame(
-            rst.pyr.rpackages.bayesfactor.generalTestBF(
+        self._r_results = pyr.rpackages.base.data_frame(
+            pyr.rpackages.bayesfactor.generalTestBF(
                 formula=self._r_formula, data=self._input_data, progress=False,
-                whichRandom=rst.pyr.rinterface.NULL if self.exclude_subject else self.subject,
-                neverExclude=rst.pyr.rinterface.NULL,
+                whichRandom=pyr.rinterface.NULL if self.exclude_subject else self.subject,
+                neverExclude=pyr.rinterface.NULL,
                 iterations=self.iterations))
 
     def _tidy_results(self):
-        self._results = rst.utils.convert_df(self._r_results,
+        self._results = utils.convert_df(self._r_results,
                                              'model').drop(columns=['time',
                                                                     'code'])
 
     def get_report(self, mode: str = 'df'):
 
         if mode == 'df':
-            return rst.pyr.rpackages.report.as_data_frame_report(
+            return pyr.rpackages.report.as_data_frame_report(
                 self._r_results)
         if mode == 'verbose':
-            return rst.pyr.rpackages.report.report(self._r_results)
+            return pyr.rpackages.report.report(self._r_results)
 
 
 class LogisticRegression(_BaseRegression):
@@ -247,7 +247,7 @@ class LogisticRegression(_BaseRegression):
         self._validate_binary_variables(self.dependent)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.glm(
+        self._r_results = pyr.rpackages.stats.glm(
             formula=self._r_formula, data=self.data,
             family='binomial'
         )
@@ -259,10 +259,10 @@ class BayesianLogisticRegression(LogisticRegression):
         raise NotImplementedError
 
     def _analyze(self):
-        return rst.pyr.rpackages.brms.brm(
+        return pyr.rpackages.brms.brm(
             formula=self.formula,
             data=self._data,
-            family=rst.pyr.rpackages.brms.bernoulli(link='logit')
+            family=pyr.rpackages.brms.bernoulli(link='logit')
         )
 
 
@@ -276,11 +276,11 @@ class MixedModel:
         super().__init__(**kwargs)
 
     def _set_variables(self):
-        self._vars = rst.utils.parse_variables_from_lm4_style_formula(
+        self._vars = utils.parse_variables_from_lm4_style_formula(
             self.formula)
 
     def _run_analysis(self):
-        return rst.pyr.rpackages.lme4.lmer(
+        return pyr.rpackages.lme4.lmer(
             **{
                 'formula': self._r_formula,
                 'data': self.data,
@@ -291,12 +291,12 @@ class MixedModel:
         )
 
     def _finalize_results(self):
-        return rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self._r_results))
+        return utils.convert_df(
+            pyr.rpackages.generics.tidy(self._r_results))
 
     def get_df(self):
         return self.results.apply(
             pd.to_numeric, errors='ignore')
     # Here is a working example using the mtcars dataset.
-    #  m1 = rst.pyr.rpackages.afex.mixed('qsec ~ mpg + (mpg|am)', data=data.reset_index(drop=False))
-    # rst.utils.convert_df(rst.pyr.rpackages.afex.nice(m1))
+    #  m1 = pyr.rpackages.afex.mixed('qsec ~ mpg + (mpg|am)', data=data.reset_index(drop=False))
+    # utils.convert_df(pyr.rpackages.afex.nice(m1))

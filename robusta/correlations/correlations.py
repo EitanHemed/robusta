@@ -5,11 +5,11 @@ coefficients.
 import typing
 import warnings
 
-import custom_inherit
+# import custom_inherit # ?
 import numpy as np
 import pandas as pd
 
-import robusta as rst
+from .. import base, formula_tools, utils, pyr
 
 __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
            'PartialCorrelation', 'BayesCorrelation']
@@ -17,10 +17,10 @@ __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
 CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
 DEFAULT_CORRELATION_METHOD = 'pearson'
 REDUNDANT_BAYES_RESULT_COLS = ['time', 'code']
-DEFAULT_CORRELATION_NULL_INTERVAL = rst.pyr.rinterface.NULL  # [-1, 1]
+DEFAULT_CORRELATION_NULL_INTERVAL = pyr.rinterface.NULL  # [-1, 1]
 
 
-class _PairwiseCorrelation(rst.base.AbstractClass):
+class _PairwiseCorrelation(base.AbstractClass):
     """
     Parameters
     ----------
@@ -157,14 +157,14 @@ class ChiSquare(_PairwiseCorrelation):
 
     def _analyze(self):
         """Runs a Chi-Square test"""
-        self._r_results = rst.pyr.rpackages.stats.chisq_test(
+        self._r_results = pyr.rpackages.stats.chisq_test(
             self.crosstabulated_data,
             correct=self.apply_correction)
 
     def _tidy_results(self):
         """Tidy the test results and return as pd.DataFrame"""
-        self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self._r_results))
+        self._results = utils.convert_df(
+            pyr.rpackages.generics.tidy(self._r_results))
 
     def get_text(self, alpha=.05):
         raise NotImplementedError
@@ -205,23 +205,23 @@ class Correlation(_PairwiseCorrelation):
         super()._test_input_data()
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.stats.cor_test(
+        self._r_results = pyr.rpackages.stats.cor_test(
             *self._input_data.values.T,
             method=self.method,
             alternative=self.alternative,
         )
 
     def _tidy_results(self):
-        self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self._r_results))
+        self._results = utils.convert_df(
+            pyr.rpackages.generics.tidy(self._r_results))
 
     def get_report(self, mode: str = 'df'):
 
         if mode == 'df':
-            return rst.pyr.rpackages.report.as_data_frame_report(
+            return pyr.rpackages.report.as_data_frame_report(
                 self._r_results)
         if mode == 'verbose':
-            return rst.pyr.rpackages.report.report(self._r_results)
+            return pyr.rpackages.report.report(self._r_results)
 
 
 @custom_inherit.doc_inherit(Correlation, "numpy_with_merge")
@@ -277,7 +277,7 @@ class _TriplewiseCorrelation(Correlation):
         self._input_data = _data
 
     def _tidy_results(self):
-        self._results = rst.utils.convert_df(self._r_results)
+        self._results = utils.convert_df(self._r_results)
 
 
 @custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
@@ -295,7 +295,7 @@ class PartialCorrelation(_TriplewiseCorrelation):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.ppcor.pcor_test(
+        self._r_results = pyr.rpackages.ppcor.pcor_test(
             *self._input_data.values.T,
             method=self.method)
 
@@ -315,7 +315,7 @@ class PartCorrelation(_TriplewiseCorrelation):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.ppcor.spcor_test(
+        self._r_results = pyr.rpackages.ppcor.spcor_test(
             *self._input_data.values.T,
             method=self.method)
 
@@ -367,7 +367,7 @@ class BayesCorrelation(_PairwiseCorrelation):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        self._r_results = rst.pyr.rpackages.bayesfactor.correlationBF(
+        self._r_results = pyr.rpackages.bayesfactor.correlationBF(
             *self._input_data.values.T,
             nullInterval=self.null_interval,
             rscale_prior=self.rscale_prior,
@@ -375,7 +375,7 @@ class BayesCorrelation(_PairwiseCorrelation):
         )
 
     def _tidy_results(self):
-        self._results = rst.utils.convert_df(
-            rst.pyr.rpackages.base.data_frame(self._r_results),
+        self._results = utils.convert_df(
+            pyr.rpackages.base.data_frame(self._r_results),
             'model').drop(
             columns=REDUNDANT_BAYES_RESULT_COLS)
