@@ -32,7 +32,7 @@ class FauxInf:
 
 
 @pytest.mark.integtest
-# TODO - this is messy, seperate into two tests
+# TODO - this is messy, separate into two tests
 # @pytest.mark.parametrize('assume_equal_variance', [True, False])
 @pytest.mark.parametrize('paired', [True, False])
 @pytest.mark.parametrize('alternative', TAILS)
@@ -733,6 +733,7 @@ def test_friedman_test():
 
 def test_aligned_ranks_test():
     # initialize r
+
     r("""
         library(ARTool)
         data(Higgins1990Table5)

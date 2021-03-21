@@ -8,10 +8,8 @@ pyrio is in charge of the following:
     - Starting an R session.
     - Transferring objects into the R environment and back.
 """
-#import rpy2.robjects as ro
+
 from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface
-# packages, rinterface, r
-# from outdated import warn_if_outdated
 
 numpy2ri.activate()
 pandas2ri.activate()
@@ -20,23 +18,27 @@ pandas2ri.activate()
 # TODO - add functionality to list R envirnoment and select based on others.
 # TODO - add error handling of importing a missing library?
 # TODO - limit 'doMC' to non-windows OS
-# TODO - Write names of imported libraries alphabethically,
+# TODO - Write names of imported libraries alphabetically,
 #  Avoid re-imports (e.g., use a set).
 
-r_libraries_to_include = ['ARTool', 'BayesFactor', 'Matrix', 'afex',
+r_libraries_to_include = ['BayesFactor', 'Matrix', 'afex',
                           'backports', 'base', 'broom', 'datarium', 'datasets',
                           'dplyr', 'effsize', 'emmeans', 'generics', 'lme4',
-                          'ppcor', 'psych', 'stats', 'tibble', 'tidyr', 'utils']
+                          'ppcor', 'psych', 'stats', 'tibble', 'tidyr', 'utils',
+                         'ARTool'
+                          ]
 
-# TODO - find out if we can use an existing singelton implementation
+
 class PyRIO:
+    # TODO - find out if we can use an existing singelton implementation
     instances_count = 0  # This is a static counter
 
     def __init__(self,
                  required_packs=None, cran_mirror_idx=1):
         """
         @rtype: A singleton:
-        Python-R I/O. Used throughout robusta to pass objects to R/Python from Python/R.
+        Python-R I/O. Used throughout robusta to pass objects to R/Python
+        from Python/R.
         """
         self.cran_mirror_idx = cran_mirror_idx
         if required_packs is None:
@@ -55,7 +57,8 @@ class PyRIO:
         self.get_required_rpackages()
 
     def get_required_rpackages(self):
-        [setattr(self.rpackages, pack, self.import_r_package(pack)) for
+        [(print(pack),
+          setattr(self.rpackages, pack, self.import_r_package(pack))) for
          pack in self.required_rpacks]
 
     def import_r_package(self, pack):
@@ -68,7 +71,7 @@ class PyRIO:
             self._install_r_package(pack)
 
     def _install_r_package(self, pack):
-        self.rpackages.utils.install_packages(pack)
+        self.rpackages.utils.install_packages(pack, dependencies=True)
 
     def _get_r_utils(self):
         """It is important to get the utils package in order to to """

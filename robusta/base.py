@@ -1,11 +1,13 @@
 import abc
+
 import robusta as rst
+
 
 class BaseModel(metaclass=abc.ABCMeta):
 
     def __init__(self, **kwargs):
         pass
-        #self.reset(**kwargs)
+        # self.reset(**kwargs)
 
     def reset(self, **kwargs):
         """
@@ -58,7 +60,7 @@ class BaseModel(metaclass=abc.ABCMeta):
 # A problem with the model class and fit class would be that you'd have to
 # explicitly pass some information to the results objects (e.g., formula,
 # group vs. repeated variables, etc.).
-class BaseResults():
+class BaseResults:
 
     def __init__(self, r_results, **kwargs):
         self.r_results = r_results
@@ -69,10 +71,3 @@ class BaseResults():
 
     def get_df(self):
         return self._tidy_results()
-
-    # # TODO - do we need this?
-    # def accept(self, visitor):
-    #     visitor.visit(self)
-    #
-    # def re_analyze(self):
-    #     pass

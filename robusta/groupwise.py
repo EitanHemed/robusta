@@ -29,6 +29,7 @@ import pandas as pd
 
 import robusta as rst
 from . import base
+from .textual_reports import Reporter
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
@@ -87,7 +88,7 @@ class GroupwiseModel(base.BaseModel):
             agg_func=agg_func,
             na_action=na_action,
             max_levels=kwargs.get('max_levels', None),
-           min_levels=kwargs.get('min_levels', 2)
+            min_levels=kwargs.get('min_levels', 2)
         )
 
         self._fitted = False
@@ -186,8 +187,8 @@ class GroupwiseModel(base.BaseModel):
                 lambda s: s.unique().size))
         low = _n_levels.loc[_n_levels.values < self.min_levels]
         # It is likely that there will be a max_levels argument
-        high =(_n_levels.loc[self.max_levels < _n_levels]
-               if self.max_levels is not None else pd.Series())
+        high = (_n_levels.loc[self.max_levels < _n_levels]
+                if self.max_levels is not None else pd.Series())
         _s = ''
         if not low.empty:
             _s += ("The following variable:levels pairs have"
@@ -251,6 +252,13 @@ class GroupwiseModel(base.BaseModel):
         vars(self).update(**kwargs)
 
         self._fitted = False
+
+    def report(self):
+        visitor = Reporter()
+        self._accept(visitor)
+
+    def _accept(self, visitor):
+        visitor.visit(self)
 
 
 class GroupwiseResults(base.BaseResults):
@@ -362,10 +370,11 @@ class T2SamplesModel(GroupwiseModel):
 
 
 class T2SamplesResults(GroupwiseResults):
+    pass
 
-    def get_text_report(self):
-        params = self.r_results
-        t_clause = self.results['t']
+    # def get_text_report(self):
+    #     params = self.r_results
+    #     t_clause = self.results['t']
 
 
 class BayesT2SamplesModel(T2SamplesModel):
@@ -437,7 +446,8 @@ class BayesT2SamplesModel(T2SamplesModel):
         self.iterations = iterations
         self.mu = mu
         if kwargs['paired'] is False:
-            if mu != 0: raise ValueError
+            if mu != 0:
+                raise ValueError
         super().__init__(**kwargs)
 
     # def re_analyze(self, x=np.nan, y=np.nan, paired=np.nan,
@@ -531,8 +541,8 @@ class T1SampleModel(T2SamplesModel):
         kwargs['max_levels'] = 1
         kwargs['min_levels'] = 1
         self.mu = mu
-        #self.max_levels = 1
-        #self.min_levels = 1
+        # self.max_levels = 1
+        # self.min_levels = 1
         super().__init__(**kwargs)
 
     def _select_input_data(self):
@@ -653,6 +663,56 @@ class BayesT1SampleResults(T1SampleResults):
             return rst.utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
         else:
             return rst.utils.convert_df(self.r_results, 'iteration')
+
+
+class Wilcoxon1SampleModel(T1SampleModel):
+
+    def __init__(self,
+                 p_exact: bool = True,
+                 p_correction: bool = True,
+                 ci: int = 95,
+                 **kwargs):
+        self.p_exact = p_exact
+        self.p_correction = p_correction
+        self.ci = ci
+
+        super().__init__(paired=True, **kwargs)
+
+    """Mann-Whitney"""
+
+    def _analyze(self):
+        return Wilcoxon1SampleResults(rst.pyr.rpackages.stats.wilcox_test(
+            x=self.x, mu=self.mu, alternative=self.tail,
+            exact=self.p_exact, correct=self.p_correction,
+            conf_int=self.ci
+        ))
+
+
+class Wilcoxon1SampleResults(T1SampleResults):
+    pass
+
+
+class Wilcoxon2SamplesModel(T2SamplesModel):
+
+    def __init__(self, paired: bool = True, p_exact: bool = True,
+                 p_correction: bool = True, ci: int = 95, **kwargs):
+        self.paired = paired
+        self.p_exact = p_exact
+        self.p_correction = p_correction
+        self.ci = ci
+        super().__init__(paired=self.paired, **kwargs)
+
+    def _analyze(self):
+        return Wilcoxon2SamplesResults(rst.pyr.rpackages.stats.wilcox_test(
+            x=self.x, y=self.y, paired=self.paired,
+            alternative=self.tail,
+            exact=self.p_exact, correct=self.p_correction,
+            conf_int=self.ci
+        ))
+
+
+class Wilcoxon2SamplesResults(T2SamplesResults):
+    pass
 
 
 class AnovaModel(GroupwiseModel):
@@ -992,56 +1052,6 @@ class BayesAnovaResults(AnovaResults):
         raise NotImplementedError("Not applicable to Bayesian ANOVA")
 
 
-class Wilcoxon1SampleModel(T1SampleModel):
-
-    def __init__(self,
-                 p_exact: bool = True,
-                 p_correction: bool = True,
-                 ci: int = 95,
-                 **kwargs):
-        self.p_exact = p_exact
-        self.p_correction = p_correction
-        self.ci = ci
-
-        super().__init__(paired=True, **kwargs)
-
-    """Mann-Whitney"""
-
-    def _analyze(self):
-        return Wilcoxon1SampleResults(rst.pyr.rpackages.stats.wilcox_test(
-            x=self.x, mu=self.mu, alternative=self.tail,
-            exact=self.p_exact, correct=self.p_correction,
-            conf_int=self.ci
-        ))
-
-
-class Wilcoxon1SampleResults(T1SampleResults):
-    pass
-
-
-class Wilcoxon2SamplesModel(T2SamplesModel):
-
-    def __init__(self, paired: bool = True, p_exact: bool = True,
-                 p_correction: bool = True, ci: int = 95, **kwargs):
-        self.paired = paired
-        self.p_exact = p_exact
-        self.p_correction = p_correction
-        self.ci = ci
-        super().__init__(paired=self.paired, **kwargs)
-
-    def _analyze(self):
-        return Wilcoxon2SamplesResults(rst.pyr.rpackages.stats.wilcox_test(
-            x=self.x, y=self.y, paired=self.paired,
-            alternative=self.tail,
-            exact=self.p_exact, correct=self.p_correction,
-            conf_int=self.ci
-        ))
-
-
-class Wilcoxon2SamplesResults(T2SamplesResults):
-    pass
-
-
 class KruskalWallisTestModel(AnovaModel):
     """Runs a Kruskal-Wallis test, similar to a non-parametric between
     subject anova.
@@ -1116,7 +1126,7 @@ class FriedmanTestModel(AnovaModel):
         super()._set_controllers()
 
         # The formula needs to comply with BayesFactor formulas, which might
-        #  leave out the participant term. Therefor we need to re-set the
+        #  leave out the participant term. Therefore we need to re-set the
         #  formula based on the entered/parsed variables
         # TODO - consider leaving this or writing a more sophisticated solution.
         self._set_formula_from_vars()

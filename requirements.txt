@@ -5,3 +5,9 @@ seaborn==0.10.1
 rpy2==2.9.4
 patsy
 tzlocal
+pytest
+
+# conda create -n robusta r-essentials r-base python=3.7
+# conda install -n robusta -c r rpy2
+# conda install pandas=0.23 patsy
+# you might need to reboot after the packages installation
