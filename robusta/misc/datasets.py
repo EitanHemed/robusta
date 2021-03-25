@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import rpy2
 
-import robusta as rst
-
+from .. import pyr
+from ..misc import utils
 
 def data(dataset_name=None, package_name=None):
     """Returns either a dataset (if `dataset_name` is specieified)
@@ -34,7 +34,7 @@ def data(dataset_name=None, package_name=None):
 
 def _get_available_datasets():
     # Get a (x, 4) np.array of the
-    info = rst.pyr.rpackages.utils.data()
+    info = pyr.rpackages.utils.data()
     names = ['Package', 'LibPath', 'Item', 'Description']
     data = np.array(info[2]).reshape(4, len(info[2]) // 4)
     return pd.DataFrame(data=data.T, columns=names)
@@ -59,10 +59,10 @@ def _load_dataset(dataset_name: str, package_name: str = None):
         else:
             package_name = available.item()
 
-    df = rst.pyr.rpackages.data(
-        getattr(rst.pyr.rpackages, package_name)).fetch(
+    df = pyr.rpackages.data(
+        getattr(pyr.rpackages, package_name)).fetch(
         dataset_name)[dataset_name]
     if type(df) == rpy2.robjects.vectors.DataFrame:
-        return rst.utils.convert_df(df, 'dataset_rownames')
+        return utils.convert_df(df, 'dataset_rownames')
     raise NotImplementedError('Currently only supports datases imported to'
                               ' R as `data.frame` or `tibble`')

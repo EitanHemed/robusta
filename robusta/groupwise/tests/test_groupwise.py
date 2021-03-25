@@ -5,10 +5,10 @@ from rpy2.robjects import r
 
 import robusta as rst
 
-# TODO - when robusta is installed as a package, remove the following line
+# TODO - when rst is installed as a package, remove the following line
 # sys.path.append('./')
 
-ANXIETY_DATASET = rst.datasets.data('anxiety').set_index(
+ANXIETY_DATASET = rst.misc.datasets.data('anxiety').set_index(
     ['id', 'group']).filter(
     regex='^t[1-3]$').stack().reset_index().rename(
     columns={0: 'score',
@@ -37,8 +37,8 @@ class FauxInf:
 @pytest.mark.parametrize('paired', [True, False])
 @pytest.mark.parametrize('alternative', TAILS)
 def test_t2samples(paired, alternative):
-    data = rst.datasets.data('sleep')
-    m = rst.t2samples(data=data,
+    data = rst.misc.datasets.data('sleep')
+    m = rst.api.t2samples(data=data,
                       independent='group',
                       dependent='extra',
                       subject='ID',
@@ -69,8 +69,8 @@ def test_t2samples(paired, alternative):
 @pytest.mark.parametrize('mu', [0, 2.33, 4.66])
 @pytest.mark.parametrize('alternative', TAILS)
 def test_t1sample(mu, alternative):
-    sleep = rst.datasets.data('sleep')
-    m = rst.t1sample(data=sleep.loc[sleep['group'] == '1'],
+    sleep = rst.misc.datasets.data('sleep')
+    m = rst.api.t1sample(data=sleep.loc[sleep['group'] == '1'],
                      dependent='extra', subject='ID',
                      independent='group', mu=mu, tail=alternative)
     res = m.fit().get_df()
@@ -105,9 +105,9 @@ def test_bayes_t2samples_independent(
         prior_scale,
         sample_from_posterior,
         iterations):
-    data = rst.datasets.data('mtcars')
+    data = rst.misc.datasets.data('mtcars')
 
-    m = rst.bayes_t2samples(
+    m = rst.api.bayes_t2samples(
         data=data, subject='dataset_rownames',
         dependent='mpg', independent='am',
         null_interval=null_interval,
@@ -183,9 +183,9 @@ def test_bayes_t2samples_dependent(
         null_interval,
         sample_from_posterior,
         mu):
-    data = rst.datasets.data('sleep')
+    data = rst.misc.datasets.data('sleep')
 
-    m = rst.bayes_t2samples(
+    m = rst.api.bayes_t2samples(
         data=data, subject='ID',
         dependent='extra', independent='group',
         null_interval=null_interval,
@@ -262,10 +262,10 @@ def test_bayes_t1sample(
         null_interval,
         sample_from_posterior,
         mu):
-    data = rst.datasets.data('iris')
+    data = rst.misc.datasets.data('iris')
     data = data.loc[data['Species'] == 'setosa']
 
-    m = rst.bayes_t1sample(
+    m = rst.api.bayes_t1sample(
         data=data, subject='dataset_rownames',
         dependent='Sepal.Width', independent='Species',
         null_interval=null_interval,
@@ -329,8 +329,8 @@ def test_bayes_t1sample(
     [['dose'], "dose"]
 ])
 def test_anova_between(between_vars):
-    m = rst.anova(
-        data=rst.datasets.data('ToothGrowth'),
+    m = rst.api.anova(
+        data=rst.misc.datasets.data('ToothGrowth'),
         dependent='len', subject='dataset_rownames',
         between=between_vars[0])
 
@@ -368,7 +368,7 @@ def test_anova_between(between_vars):
 
 
 def test_anova_within():
-    m = rst.anova(data=ANXIETY_DATASET, within='time',
+    m = rst.api.anova(data=ANXIETY_DATASET, within='time',
                   dependent='score', subject='id')
     r_res = r(
         """
@@ -411,7 +411,7 @@ def test_anova_mixed():
         """
     )
 
-    m = rst.anova(data=ANXIETY_DATASET, within='time', between='group',
+    m = rst.api.anova(data=ANXIETY_DATASET, within='time', between='group',
                   dependent='score', subject='id')
 
     pd.testing.assert_frame_equal(m.fit().get_df(), r('anova_table'))
@@ -449,8 +449,8 @@ def test_anova_mixed():
                          [False]  # , True]
                          )
 def test_bayes_anova_between(between_vars, include_subject):
-    m = rst.bayes_anova(
-        data=rst.datasets.data('ToothGrowth'),
+    m = rst.api.bayes_anova(
+        data=rst.misc.datasets.data('ToothGrowth'),
         dependent='len', subject='dataset_rownames',
         between=between_vars[0], iterations=1e4,
         include_subject=include_subject)
@@ -511,7 +511,7 @@ def test_bayes_anova_between(between_vars, include_subject):
                          )
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_within(within_vars, include_subject):
-    m = rst.bayes_anova(data=ANXIETY_DATASET, within='time',
+    m = rst.api.bayes_anova(data=ANXIETY_DATASET, within='time',
                         dependent='score', subject='id')
 
     formula = within_vars[1]
@@ -564,7 +564,7 @@ def test_bayes_anova_within(within_vars, include_subject):
 
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_mixed(include_subject):
-    m = rst.bayes_anova(data=ANXIETY_DATASET, within='time', between='group',
+    m = rst.api.bayes_anova(data=ANXIETY_DATASET, within='time', between='group',
                         dependent='score', subject='id')
 
     formula = "score ~ group + time | id"
@@ -631,7 +631,7 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
     group = np.repeat(0, len(weight_diff))
     df = pd.DataFrame(data=np.array([weight_diff, group]).T,
                       columns=['weight', 'group']).reset_index()
-    m = rst.wilcoxon_1sample(data=df, independent='group',
+    m = rst.api.wilcoxon_1sample(data=df, independent='group',
                              subject='index',
                              dependent='weight', mu=mu, tail=alternative,
                              p_exact=p_exact, p_correction=p_correction)
@@ -672,20 +672,20 @@ def test_wilcoxon_2samples(p_exact, p_correction, alternative, paired):
              352.2)
     weight = np.concatenate([before, after])
     group = np.repeat([0, 1], 10)
-    id = np.repeat(range(len(before)), 2)
+    sid = np.repeat(range(len(before)), 2)
 
-    df = pd.DataFrame(data=np.array([weight, group, id]).T,
-                      columns=['weight', 'group', 'id'])
+    df = pd.DataFrame(data=np.array([weight, group, sid]).T,
+                      columns=['weight', 'group', 'sid'])
 
-    m = rst.wilcoxon_2samples(
+    m = rst.api.wilcoxon_2samples(
         data=df, independent='group', paired=paired,
-        dependent='weight', subject='id',
+        dependent='weight', subject='sid',
         tail=alternative, p_correction=p_correction, p_exact=p_exact
     )
     res = m.fit().get_df()
     pd.testing.assert_frame_equal(res, r_res)
 
-    m.reset(formula='weight ~ group|id')
+    m.reset(formula='weight ~ group|sid')
     res = m.fit().get_df()
     pd.testing.assert_frame_equal(res, r_res)
 
@@ -696,8 +696,8 @@ def test_kruskal_wallis_test():
     library(broom)
     data.frame(tidy(kruskal.test(weight ~ group, data = PlantGrowth)))
     """)
-    m = rst.kruskal_wallis_test(
-        data=rst.datasets.data('PlantGrowth'),
+    m = rst.api.kruskal_wallis_test(
+        data=rst.misc.datasets.data('PlantGrowth'),
         between='group',
         dependent='weight', subject='dataset_rownames')
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
@@ -719,11 +719,11 @@ def test_friedman_test():
         data.frame(tidy(friedman_test(score ~ time |id, data=data_long)))
         """)
 
-        df = rst.datasets.data('selfesteem').set_index(
+        df = rst.misc.datasets.data('selfesteem').set_index(
             ['id', 'group']).filter(
             regex='^t[1-3]$').stack().reset_index().rename(
             columns={0: 'score', 'level_2': 'time'})
-        m = rst.friedman_test(data=df, within='time', dependent='score',
+        m = rst.api.friedman_test(data=df, within='time', dependent='score',
                               subject='id')
         pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
@@ -741,8 +741,8 @@ def test_aligned_ranks_test():
             art(DryMatter ~ Moisture*Fertilizer + (1|Tray), 
             data=Higgins1990Table5))
         """)
-    m = rst.aligned_ranks_test(
-        data=rst.datasets.data('Higgins1990Table5'),
+    m = rst.api.aligned_ranks_test(
+        data=rst.misc.datasets.data('Higgins1990Table5'),
         formula='DryMatter ~ Moisture*Fertilizer + (1|Tray)')
     pd.testing.assert_frame_equal(
         m.fit().get_df(), r("res")

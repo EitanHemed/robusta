@@ -57,8 +57,7 @@ class PyRIO:
         self.get_required_rpackages()
 
     def get_required_rpackages(self):
-        [(print(pack),
-          setattr(self.rpackages, pack, self.import_r_package(pack))) for
+        [setattr(self.rpackages, pack, self.import_r_package(pack)) for
          pack in self.required_rpacks]
 
     def import_r_package(self, pack):

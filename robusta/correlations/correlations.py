@@ -9,7 +9,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from .. import base, formula_tools, utils, pyr
+from .. import pyr
+from ..misc import utils, base
 
 __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
            'PartialCorrelation', 'BayesCorrelation']

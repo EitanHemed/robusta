@@ -8,4 +8,4 @@ robusta_Eitan.Hemed.egg-info/
 conda/
 
 # Files under developmenet
-/robusta/plotting.py
+/robusta/misc/plotting.py

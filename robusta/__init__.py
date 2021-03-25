@@ -10,18 +10,10 @@ __author_email__ = 'Eitan.Hemed@gmail.com'
 # # and you should manually install dateutil:
 #  use conda install -c anaconda python-dateutil
 
-from .pyrio import PyRIO
-
+# First init a PyRIO object
+from .misc.pyrio import PyRIO
 pyr = PyRIO()
-# from groupwise import *
-from . import groupwise
-from . import base
-from . import formula_tools
-from . import utils
-from . import datasets
-from . import examples
 
-from .api import *
+from . import api
+from .misc import datasets
 
-# from .regressions import *
-# from .correlations import *

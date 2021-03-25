@@ -1,6 +1,7 @@
+print("reports")
 import numpy as np
 
-import groupwise_models
+from . import groupwise_models
 
 P_VALUE_CLAUSE = 'p {pvalue_operator} {p.value:.3f}'
 
@@ -28,17 +29,18 @@ KRUSKSAL_WALLIS_CLAUSE = ('H({df1:.0f}, '
 FRIEDMAN_CLAUSE = ('Z({df1:.0f}, '
                    '{df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
 
-FREQUENTIST_ANOVA_LIKE_CLAUSE_DICT = {
-    groupwise_models.AnovaModel: ANOVA_TERM_CLAUSE,
-    groupwise_models.KruskalWallisTestModel: KRUSKSAL_WALLIS_CLAUSE,
-    groupwise_models.FriedmanTestModel: FRIEDMAN_CLAUSE,
-    groupwise_models.AlignedRanksTestModel: ANOVA_TERM_CLAUSE
-}
-
+# Due to a circular import we have to put this below the top level.
+if __name__ == '__main__':
+    FREQUENTIST_ANOVA_LIKE_CLAUSE_DICT = {
+                groupwise_models.AlignedRanksTestModel: ANOVA_TERM_CLAUSE,
+                groupwise_models.AnovaModel: ANOVA_TERM_CLAUSE,
+                groupwise_models.FriedmanTestModel: FRIEDMAN_CLAUSE,
+                groupwise_models.KruskalWallisTestModel: KRUSKSAL_WALLIS_CLAUSE
+            }
 
 # TODO - consider removing this class as it doesn't seem that we need the reporter
 #  objcet. Everything here can be static.
-class _Reporter:
+class Reporter:
 
     def __init__(self):
         pass

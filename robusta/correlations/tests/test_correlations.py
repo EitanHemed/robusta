@@ -29,7 +29,7 @@ class Test_PairwiseCorrelation(unittest.TestCase):
             rst.correlations._PairwiseCorrelation(
                 x='rating',
                 y=np.random.randint(0, 10, 19),
-                data=rst.datasets.data('attitude')
+                data=robusta.misc.datasets.data('attitude')
             )
 
         # Input strings but both are not in the data
@@ -37,15 +37,15 @@ class Test_PairwiseCorrelation(unittest.TestCase):
             rst.correlations._PairwiseCorrelation(
                 X='SCORE',
                 y='SALES',
-                data=rst.datasets.data('attitude')
+                data=robusta.misc.datasets.data('attitude')
             )
 
 class TestChiSquare(unittest.TestCase):
 
     def compare_output(self):
-        res = rst.ChiSquare(x='am', y='vs', data=rst.datasets.data('mtcars'),
-                    apply_correction=True).get_results()
-        r_res = rst.pyrio.r(
+        res = rst.ChiSquare(x='am', y='vs', data=robusta.misc.datasets.data('mtcars'),
+                            apply_correction=True).get_results()
+        r_res = robusta.misc.pyrio.r(
             """
             library(broom) 
             data.frame(tidy(chisq.test(table(mtcars[ , c('am', 'vs')]))))
@@ -57,7 +57,7 @@ class TestChiSquare(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
 
             nonsignificant_res = rst.ChiSquare(x='am', y='vs',
-                                               data=rst.datasets.data('mtcars')
+                                               data=robusta.misc.datasets.data('mtcars')
                                                ).get_text()
             self.assertEqual(
                 nonsignificant_res,
@@ -66,7 +66,7 @@ class TestChiSquare(unittest.TestCase):
                 'vs [χ²(1) = 0.35, p = 0.556].')
 
             significant_res = rst.ChiSquare(x='gear', y='vs',
-                                            data=rst.datasets.data('mtcars')
+                                            data=robusta.misc.datasets.data('mtcars')
                                             ).get_text()
             self.assertEqual(
                 significant_res,
@@ -78,7 +78,7 @@ class TestChiSquare(unittest.TestCase):
 class TestCorrelation(unittest.TestCase):
 
     def test_faulty_input(self):
-        data = rst.datasets.data('attitude')
+        data = robusta.misc.datasets.data('attitude')
 
         # Faulty method argument
         with self.assertRaises(ValueError):
@@ -90,11 +90,11 @@ class TestCorrelation(unittest.TestCase):
                             method='fisher')
 
     def test_output(self):
-        res = rst.Correlation(data=rst.datasets.data('iris'),
+        res = rst.Correlation(data=robusta.misc.datasets.data('iris'),
                               x='Sepal.Length', y='Sepal.Width',
-                        method='pearson').get_results()
+                              method='pearson').get_results()
 
-        r_res = rst.pyrio.r("""
+        r_res = robusta.misc.pyrio.r("""
         library(broom)
         data.frame(tidy(cor.test(x=iris$Sepal.Length, y=iris$Sepal.Width,
             method='pearson'
@@ -107,7 +107,7 @@ class TestCorrelation(unittest.TestCase):
 class Test_TriplewiseCorrelation(unittest.TestCase):
 
     def test_z_argument(self):
-        data = rst.datasets.data('attitude')
+        data = robusta.misc.datasets.data('attitude')
 
         with self.assertRaises(ValueError):
             rst.correlations._TriplewiseCorrelation(
@@ -142,7 +142,7 @@ class TestPartialCorrelation(unittest.TestCase):
         res = rst.PartialCorrelation(x=satv, y=hsgpa, z=fgpa, method='pearson'
                                      ).get_results()
 
-        r_res = rst.pyrio.r(
+        r_res = robusta.misc.pyrio.r(
         """
         library(ppcor)
         SATV <-  c(500, 550, 450, 400, 600, 650, 700, 550, 650, 550)
@@ -167,7 +167,7 @@ class TestPartCorrelation(unittest.TestCase):
         res = rst.PartCorrelation(x=satv, y=hsgpa, z=fgpa, method='pearson'
                                   ).get_results()
 
-        r_res = rst.pyrio.r(
+        r_res = robusta.misc.pyrio.r(
         """
         # Now in R...
         library(ppcor)
@@ -189,9 +189,9 @@ class TestBayesCorrelation(unittest.TestCase):
 
     def test_output(self):
         res = rst.BayesCorrelation(x='Sepal.Width', y='Sepal.Length',
-                                   data=rst.datasets.data('iris')).get_results(
+                                   data=robusta.misc.datasets.data('iris')).get_results(
         )
-        r_res = rst.pyrio.r(
+        r_res = robusta.misc.pyrio.r(
         """
         library(BayesFactor)
         library(tibble)

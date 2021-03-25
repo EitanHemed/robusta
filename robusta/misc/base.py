@@ -1,7 +1,7 @@
 import abc
 
-import robusta as rst
-
+from .. import pyr
+from ..misc import utils
 
 class BaseModel(metaclass=abc.ABCMeta):
 
@@ -66,8 +66,8 @@ class BaseResults:
         self.r_results = r_results
 
     def _tidy_results(self):
-        return rst.utils.convert_df(
-            rst.pyr.rpackages.generics.tidy(self.r_results))
+        return utils.convert_df(
+            pyr.rpackages.generics.tidy(self.r_results))
 
     def get_df(self):
         return self._tidy_results()

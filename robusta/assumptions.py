@@ -15,6 +15,6 @@ def normality(a):
     -------
 
     """
-    return rst.utils.convert_df(
+    return robusta.misc.utils.convert_df(
         rst.pyr.rpackages.broom.tidy_htest(
             rst.pyr.rpackages.stats.shapiro_test(a)))

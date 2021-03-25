@@ -5,20 +5,15 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from .. import base, formula_tools, utils, pyr
+from .. import pyr
+from ..misc import utils, formula_tools, base
 
 warnings.warn("Currently the regressions module is under development,"
               "nothing is promised to work correctly.")
 
-__all__ = [
-    'LinearRegression', 'BayesianLinearRegression',
-    'LogisticRegression',
-    'MixedModel'
-]
-
 
 @dataclass
-class _BaseRegression(base.AbstractClass):
+class RegressionResults(base.BaseResults):
     formula: typing.Union[str, None]
 
     """
@@ -130,11 +125,11 @@ class _BaseRegression(base.AbstractClass):
             Options are 'response' and 'type'. Default is 'response'.
         @return:
         """
-        return convert_df(pyr.rpackages.stats.predict(
+        return utils.convert_df(pyr.rpackages.stats.predict(
             self._r_results, new_data, type=self.default_predict_type))
 
 
-class LinearRegression(_BaseRegression):
+class LinearRegressionResults(RegressionResults):
     """
 
     Parameters
@@ -149,8 +144,6 @@ class LinearRegression(_BaseRegression):
 
     Returns
     -------
-
-
 
     Inplemented R function: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
     """
@@ -179,14 +172,14 @@ class LinearRegression(_BaseRegression):
                 raise ValueError("interval type must be one of None, "
                                  "'confidence' or 'prediction'")
 
-        convert_df(pyr.rpackages.stats.predict(
+        utils.utils.convert_df(pyr.rpackages.stats.predict(
             self._r_results,
             new_data,
             interval_type=interval_type
         ))
 
 
-class BayesianLinearRegression(LinearRegression):
+class BayesianLinearRegression(LinearRegressionResults):
     """
 
         Parameters
@@ -228,8 +221,8 @@ class BayesianLinearRegression(LinearRegression):
 
     def _tidy_results(self):
         self._results = utils.convert_df(self._r_results,
-                                             'model').drop(columns=['time',
-                                                                    'code'])
+                                         'model').drop(columns=['time',
+                                                                'code'])
 
     def get_report(self, mode: str = 'df'):
 
@@ -240,7 +233,7 @@ class BayesianLinearRegression(LinearRegression):
             return pyr.rpackages.report.report(self._r_results)
 
 
-class LogisticRegression(_BaseRegression):
+class LogisticRegressionResults(RegressionResults):
 
     def _test_input_data(self):
         super()._test_input_data()
@@ -253,7 +246,7 @@ class LogisticRegression(_BaseRegression):
         )
 
 
-class BayesianLogisticRegression(LogisticRegression):
+class BayesianLogisticRegression(LogisticRegressionResults):
 
     def __init__(self):
         raise NotImplementedError
@@ -266,7 +259,7 @@ class BayesianLogisticRegression(LogisticRegression):
         )
 
 
-class MixedModel:
+class MixedModelResults:
 
     def __init__(self,
                  levels,

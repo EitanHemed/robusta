@@ -1,7 +1,10 @@
+print("results")
+
 import typing
 import warnings
 import numpy as np
-from .. import base, utils, pyr
+from .. import pyr
+from ..misc import utils, base
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
@@ -10,31 +13,14 @@ PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
 DEFAULT_ITERATIONS: int = 10000
 DEFAULT_MU: float = 0.0
 
+
 class GroupwiseResults(base.BaseResults):
 
     def get_text(self, mode: str = 'df'):
         raise NotImplementedError
-        # if mode == 'df':
-        #     return pyr.rpackages.report.as_data_frame_report(
-        #         self.r_results)
-        # if mode == 'verbose':
-        #     return pyr.rpackages.report.report(self.r_results)
-
-    # def get_df(self):
-    #    return self._tidy_results()
-
-    # def _tidy_results(self):
-    #    return utils.convert_df(
-    #        pyr.rpackages.generics.tidy(self.r_results))
-
 
 class T2SamplesResults(GroupwiseResults):
     pass
-
-    # def get_text_report(self):
-    #     params = self.r_results
-    #     t_clause = self.results['t']
-
 
 class BayesT2SamplesResults(T2SamplesResults):
     # TODO Validate if correctly inherits init from parent
@@ -210,12 +196,6 @@ class BayesAnovaResults(AnovaResults):
         return utils.convert_df(
             pyr.rpackages.base.data_frame(
                 self.r_results), 'model')[['model', 'bf', 'error']]
-
-        # return utils.tidy_bayes_factor_object(self.r_results)
-        # results = pyr.rpackages.BayesFactor.extractBF(
-        #    self._r_results)
-        # return utils.convert_df(
-        #    results, 'model')[['model', 'bf', 'error']]
 
     def get_margins(self):
         raise NotImplementedError("Not applicable to Bayesian ANOVA")

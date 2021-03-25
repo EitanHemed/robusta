@@ -2,7 +2,6 @@ import unittest
 
 import pandas as pd
 import numpy as np
-
 import robusta as rst
 
 
@@ -20,7 +19,7 @@ class TestLinearRegression(unittest.TestCase):
 
         res = rst.LinearRegression(
             formula='weight ~ group + 1| dataset_rownames', data=data).get_results()
-        r_res = rst.pyrio.r(
+        r_res = rst.misc.pyrio.r(
         """
         # Source:
         # https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
@@ -38,11 +37,11 @@ class TestLinearRegression(unittest.TestCase):
     def test_multiple_linear_regression(self):
 
         res = rst.LinearRegression(
-            data=rst.datasets.data('marketing'),
+            data=rst.misc.datasets.data('marketing'),
             formula='sales~youtube*facebook + 1|dataset_rownames',
             subject='dataset_rownames').get_results()
 
-        r_res = rst.pyrio.r(
+        r_res = rst.misc.pyrio.r(
         """
         library(datarium)
         library(broom)
@@ -53,7 +52,7 @@ class TestLinearRegression(unittest.TestCase):
         pd.testing.assert_frame_equal(res, r_res)
 
     def test_missing_columns(self):
-        df = rst.datasets.data('sleep')
+        df = rst.misc.datasets.data('sleep')
         with self.assertRaises(KeyError):
             rst.LinearRegression(data=df, formula='extra ~ condition + 1|ID')
 
@@ -62,10 +61,10 @@ class TestLinearRegression(unittest.TestCase):
 class TestBayesianLinearRegression(unittest.TestCase):
 
     def test_simple_bayesian_regression(self):
-        res = rst.BayesianLinearRegression(data=rst.datasets.data(
+        res = rst.BayesianLinearRegression(data=rst.misc.datasets.data(
             'attitude'), formula='rating ~ complaints + 1|dataset_rownames').get_results()
 
-        r_res = rst.pyrio.r(
+        r_res = rst.misc.pyrio.r(
         """
         library(BayesFactor)
         library(tibble)
@@ -79,11 +78,11 @@ class TestBayesianLinearRegression(unittest.TestCase):
 
     def test_multiple_bayesian_regression(self):
         res = rst.BayesianLinearRegression(
-            data=rst.datasets.data('attitude'),
+            data=rst.misc.datasets.data('attitude'),
             formula='rating ~ privileges * complaints + raises + 1| dataset_rownames'
         ).get_results()
 
-        r_res = rst.pyrio.r(
+        r_res = rst.misc.pyrio.r(
         """
         library(BayesFactor)
         library(tibble)
@@ -103,10 +102,10 @@ class TestLogisticRegression(unittest.TestCase):
     def test_simple_logistic_regression(self):
 
         res = rst.LogisticRegression(
-            formula='group~extra+1 | ID', data=rst.datasets.data('sleep')
+            formula='group~extra+1 | ID', data=rst.misc.datasets.data('sleep')
                                      ).get_results()
 
-        r_res = rst.pyrio.r(
+        r_res = rst.misc.pyrio.r(
         """
         library(readr)
         library(broom)
@@ -120,10 +119,10 @@ class TestLogisticRegression(unittest.TestCase):
     def test_multiple_logistic_regression(self):
 
         res = rst.LogisticRegression(
-            formula='group~extra+1 | ID', data=rst.datasets.data('sleep')
+            formula='group~extra+1 | ID', data=rst.misc.datasets.data('sleep')
                                      ).get_results()
 
-        r_res = rst.pyrio.r(
+        r_res = rst.misc.pyrio.r(
         """
         library(broom)
         data.frame(tidy(glm(group ~ extra, family='binomial', data=sleep)))

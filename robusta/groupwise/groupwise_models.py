@@ -1,3 +1,5 @@
+print("models")
+
 # TODO - define __repr__ and __str__ for all classes
 
 """
@@ -27,8 +29,11 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-import groupwise_reports
-from .. import base, formula_tools, utils, pyr
+from .. import pyr
+from ..misc import utils, formula_tools, base
+
+# from . import groupwise_reports
+from . import groupwise_results, groupwise_reports
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
@@ -253,7 +258,7 @@ class GroupwiseModel(base.BaseModel):
         self._fitted = False
 
     def report(self):
-        visitor = groupwise_reports._Reporter()
+        visitor = groupwise_reports.Reporter()
         self._accept(visitor)
 
     def _accept(self, visitor):
@@ -820,7 +825,7 @@ class BayesAnovaModel(AnovaModel):
         super()._set_controllers()
 
         # The formula needs to comply with BayesFactor formulas, which might
-        #  leave out the participant term. Therefor we need to re-set the
+        #  leave out the participant term. Therefore we need to re-set the
         #  formula based on the entered/parsed variables
         # TODO - consider leaving this or writing a more sophisticated solution.
         self._set_formula_from_vars()
@@ -870,7 +875,7 @@ class KruskalWallisTestModel(AnovaModel):
         super()._set_controllers()
 
         # The formula needs to comply with BayesFactor formulas, which might
-        #  leave out the participant term. Therefor we need to re-set the
+        #  leave out the participant term. Therefore we need to re-set the
         #  formula based on the entered/parsed variables
         # TODO - consider leaving this or writing a more sophisticated solution.
         self._set_formula_from_vars()
@@ -921,7 +926,7 @@ class FriedmanTestModel(AnovaModel):
 
 
 class AlignedRanksTestModel(AnovaModel):
-    """Multi-way non-parametric Anova"""
+    """N-way non-parametric Anova"""
 
     def _analyze(self):
         return groupwise_results.AlignedRanksTestResults(
