@@ -8,12 +8,14 @@ import pandas as pd
 from .. import pyr
 from ..misc import utils, formula_tools, base
 
+from . import regressions_results
+
 warnings.warn("Currently the regressions module is under development,"
               "nothing is promised to work correctly.")
 
 __all__ = [
-    'LinearRegressionModel', 'BayesianLinearRegressionModel',
-    'LogisticRegressionModel',
+    'LinearRegressionModel', 'BayesLinearRegressionModel',
+    'LogisticRegressionModel', 'BayesLogisticRegressionModel',
     'MixedModelModel'
 ]
 
@@ -41,6 +43,9 @@ class RegressionModel(base.BaseModel):
         self.data = data
         self.formula = formula
         super().__init__()
+
+    def _pre_process(self):
+        pass
 
     def _set_controllers(self):
         # First we parse the variables from the formula
@@ -98,6 +103,9 @@ class RegressionModel(base.BaseModel):
     def _transform_input_data(self):
         pass
 
+    def _validate_input_data(self):
+        pass
+
     def _test_subject_kwarg(self):
         pass
         # TODO - if linear regression check whether we should aggregate on
@@ -132,8 +140,8 @@ class LinearRegressionModel(RegressionModel):
     Inplemented R function: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
     """
 
-    def _analyze(self):
-        return pyr.rpackages.stats.lm(
+    def fit(self):
+        return regressions_results.LinearRegressionResults(pyr.rpackages.stats.lm(
             **{
                 'formula': self._r_formula,
                 'data': self.data,
@@ -141,10 +149,10 @@ class LinearRegressionModel(RegressionModel):
                 # 'singular.ok': np.nan,
                 # 'offset': np.nan
             }
-        )
+        ))
 
 
-class BayesianLinearRegressionModel(LinearRegressionModel):
+class BayesLinearRegressionModel(LinearRegressionModel):
     """
 
         Parameters
@@ -198,7 +206,7 @@ class LogisticRegressionModel(RegressionModel):
         )
 
 
-class BayesianLogisticRegressionModel(LogisticRegressionModel):
+class BayesLogisticRegressionModel(LogisticRegressionModel):
 
     def __init__(self):
         raise NotImplementedError
