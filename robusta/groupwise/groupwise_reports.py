@@ -1,4 +1,3 @@
-print("reports")
 import numpy as np
 
 from . import groupwise_models
@@ -32,11 +31,12 @@ FRIEDMAN_CLAUSE = ('Z({df1:.0f}, '
 # Due to a circular import we have to put this below the top level.
 if __name__ == '__main__':
     FREQUENTIST_ANOVA_LIKE_CLAUSE_DICT = {
-                groupwise_models.AlignedRanksTestModel: ANOVA_TERM_CLAUSE,
-                groupwise_models.AnovaModel: ANOVA_TERM_CLAUSE,
-                groupwise_models.FriedmanTestModel: FRIEDMAN_CLAUSE,
-                groupwise_models.KruskalWallisTestModel: KRUSKSAL_WALLIS_CLAUSE
-            }
+        groupwise_models.AlignedRanksTestModel: ANOVA_TERM_CLAUSE,
+        groupwise_models.AnovaModel: ANOVA_TERM_CLAUSE,
+        groupwise_models.FriedmanTestModel: FRIEDMAN_CLAUSE,
+        groupwise_models.KruskalWallisTestModel: KRUSKSAL_WALLIS_CLAUSE
+    }
+
 
 # TODO - consider removing this class as it doesn't seem that we need the reporter
 #  objcet. Everything here can be static.

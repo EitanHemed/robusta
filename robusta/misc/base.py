@@ -21,13 +21,13 @@ class BaseModel(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _pre_process(self):
-        self._set_controllers()
+        self._set_model_controllers()
         self._select_input_data()
         self._validate_input_data()
         self._transform_input_data()
 
     @abc.abstractmethod
-    def _set_controllers(self):
+    def _set_model_controllers(self):
         pass
 
     @abc.abstractmethod

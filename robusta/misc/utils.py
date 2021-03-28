@@ -16,11 +16,13 @@ def to_list(values):
     """Return a list of string from a list which may have lists, strings or
      None objects"""
     if isinstance(values, str) or not isinstance(values, Iterable):
+        if values == '' or values is None:
+            return []
         return [values]
     return list(
         chain.from_iterable(
             item if isinstance(
-                item, (list, tuple)) and not isinstance(
+                item, (list, tuple, set, np.ndarray)) and not isinstance(
                 item, str) else [
                 item] for item in values))
 

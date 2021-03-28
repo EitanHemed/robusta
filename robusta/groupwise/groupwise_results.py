@@ -1,5 +1,3 @@
-print("results")
-
 import typing
 import warnings
 import numpy as np
@@ -7,6 +5,7 @@ from .. import pyr
 from ..misc import utils, base
 
 BF_COLUMNS = ['model', 'bf', 'error']
+REDUNDANT_BF_COLUMNS = ['time', 'code']
 
 DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
 PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')

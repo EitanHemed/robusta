@@ -1,7 +1,3 @@
-print("models")
-
-# TODO - define __repr__ and __str__ for all classes
-
 """
 ttest_and_anova contains classes used to run statistical tests in which a
 central tendency measure of groups is compared:
@@ -22,6 +18,9 @@ All classes have at least these postestimation methods:
 - get_results(): Returns a pandas dataframe with the results of the analysis.
 - get_text_report(): Returns a textual report of the analysis.
 """
+
+# TODO - define __repr__ and __str__ for all classes
+
 import typing
 import warnings
 from dataclasses import dataclass
@@ -29,11 +28,10 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from .. import pyr
-from ..misc import utils, formula_tools, base
-
 # from . import groupwise_reports
 from . import groupwise_results, groupwise_reports
+from .. import pyr
+from ..misc import utils, formula_tools, base
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
@@ -102,31 +100,50 @@ class GroupwiseModel(base.BaseModel):
         # super().__init__()
 
     def _pre_process(self):
-        self._set_controllers()
+        """
+        Pre-process the input arguments prior to fitting the model.
+        @return:
+        """
+        self._set_model_controllers()
         self._select_input_data()
         self._validate_input_data()
         self._transform_input_data()
 
-    def _set_controllers(self):
+    def _set_model_controllers(self):
         """
-        This function set
-        @param: self
-        @return: None
+        Set the model controllers (formula and data-variables) based on the
+         input - either parse formula from entered variables, or parse variables
+         from entered formula.
         """
-
-        # Parse variables from formula or build formula from entered variables
         if self.formula is None:
-            # Variables setting routine
-            self._set_variables()
-            # Build model formula from entered variables
-            self._set_formula_from_vars()
+            self._build_from_variables()
         elif self.formula is not None:
-            # Parse models from entered formula
-            self._r_formula = pyr.rpackages.stats.formula(
-                self.formula)
-            self._set_vars_from_formula()
-            # Variables setting routine
-            self._set_variables()
+            self._build_from_formula()
+
+    def _build_from_variables(self):
+        """In case we get only variables and no formula as input arguments,
+        we build the model's formula based on the entered variables.
+        """
+        # Variables setting routine
+        self._set_variables()
+        # Build model formula from entered variables
+        self._set_formula_from_vars()
+
+    def _build_from_formula(self):
+        """In case we get only formula and no variables as input arguments,
+        we identify the model's variables based on the entered formula
+        """
+        # Parse models from entered formula
+        self._r_formula = pyr.rpackages.stats.formula(
+            self.formula)
+        self._set_vars_from_formula()
+        # Variables setting routine
+        self._set_variables()
+
+    def _set_variables(self):
+        self.between = utils.to_list(self.between)
+        self.within = utils.to_list(self.within)
+        self.independent = self.between + self.within
 
     def _set_formula_from_vars(self):
         fp = formula_tools.FormulaParser(
@@ -140,28 +157,25 @@ class GroupwiseModel(base.BaseModel):
         (self.dependent, self.between, self.within,
          self.subject) = vp.get_variables()
 
-    def _set_variables(self):
-
-        # Verify independent variables integrity
-        self.between = self._convert_independent_vars_to_list(self.between)
-        self.within = self._convert_independent_vars_to_list(self.within)
-        self.independent = self.between + self.within
-
     def _convert_independent_vars_to_list(self, ind_vars: object) -> list:
-        """Make sure that the you have a list of independent variables"""
-        if isinstance(ind_vars, list):
-            return ind_vars
-        if isinstance(ind_vars, (tuple, set)):
-            return list(ind_vars)
-        if ind_vars is None:
-            return []
-        if isinstance(ind_vars, str):
-            if ind_vars == '':
-                return []
-            return [ind_vars]
-        if isinstance(self, T1SampleModel):
-            return []
-        raise TypeError
+        #if isinstance(self, T1SampleModel):
+        #    return []
+        return utils.to_list(ind_vars)
+
+        # """Make sure that the you have a list of independent variables"""
+        # if isinstance(ind_vars, list):
+        #     return ind_vars
+        # if isinstance(ind_vars, (tuple, set)):
+        #     return list(ind_vars)
+        # if ind_vars is None:
+        #     return []
+        # if isinstance(ind_vars, str):
+        #     if ind_vars == '':
+        #         return []
+        #     return [ind_vars]
+        # if isinstance(self, T1SampleModel):
+        #     return []
+        # raise TypeError
 
     def _select_input_data(self):
         try:
@@ -180,7 +194,7 @@ class GroupwiseModel(base.BaseModel):
         utils.verify_float(self._input_data[self.dependent].values)
 
         # Verify ID variable uniqueness
-        self._perform_aggregation = (
+        self._is_aggregation_required = (
                 self._input_data.groupby(
                     [self.subject] + self.independent).size().any() > 1)
 
@@ -209,7 +223,7 @@ class GroupwiseModel(base.BaseModel):
         # Make sure we are handing R a DataFrame with factor variables,
         # as some packages do not coerce factor type.
 
-        if self._perform_aggregation:
+        if self._is_aggregation_required:
             self._input_data = self._aggregate_data()
 
         self._input_data.loc[:, self.independent] = self._input_data[
@@ -242,6 +256,7 @@ class GroupwiseModel(base.BaseModel):
                                " prior to calling `fit()` again!")
         self._fitted = True
         self._pre_process()
+
         # returns the results objects that is created with the (r) results object
         return self._analyze()
 
@@ -821,8 +836,8 @@ class BayesAnovaModel(AnovaModel):
             subject={False: None, True: self.subject}[self.include_subject])
         self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
-    def _set_controllers(self):
-        super()._set_controllers()
+    def _set_model_controllers(self):
+        super()._set_model_controllers()
 
         # The formula needs to comply with BayesFactor formulas, which might
         #  leave out the participant term. Therefore we need to re-set the
@@ -871,8 +886,8 @@ class KruskalWallisTestModel(AnovaModel):
             subject=None)
         self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
-    def _set_controllers(self):
-        super()._set_controllers()
+    def _set_model_controllers(self):
+        super()._set_model_controllers()
 
         # The formula needs to comply with BayesFactor formulas, which might
         #  leave out the participant term. Therefore we need to re-set the
@@ -909,8 +924,8 @@ class FriedmanTestModel(AnovaModel):
             subject=None)
         self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
-    def _set_controllers(self):
-        super()._set_controllers()
+    def _set_model_controllers(self):
+        super()._set_model_controllers()
 
         # The formula needs to comply with BayesFactor formulas, which might
         #  leave out the participant term. Therefore we need to re-set the

@@ -5,19 +5,18 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from . import regressions_results
 from .. import pyr
 from ..misc import utils, formula_tools, base
-
-from . import regressions_results
-
-warnings.warn("Currently the regressions module is under development,"
-              "nothing is promised to work correctly.")
 
 __all__ = [
     'LinearRegressionModel', 'BayesLinearRegressionModel',
     'LogisticRegressionModel', 'BayesLogisticRegressionModel',
     'MixedModelModel'
 ]
+
+warnings.warn("Currently the regressions module is under development,"
+              "nothing is promised to work correctly.")
 
 
 @dataclass
@@ -27,12 +26,7 @@ class RegressionModel(base.BaseModel):
     """
     Parameters
     ----------
-    formula : str
-        An r-like formula specifying the regression model. Must contain dependent,
-        at least one independent variable and subject term
-    data : pd.DataFrame
-        A pd.DataFrame containing the model variables. Either one row per subject
-        or more.
+    
     """
 
     def __init__(self,
@@ -42,21 +36,39 @@ class RegressionModel(base.BaseModel):
                  ):
         self.data = data
         self.formula = formula
-        super().__init__()
+        self._fitted = False
+        # super().__init__()
+
+    def fit(self):
+        """
+        This method runs the model defined by the input.
+        @return:
+        """
+        if self._fitted is True:
+            raise RuntimeError("Model was already run. Use `reset()` method"
+                               " prior to calling `fit()` again!")
+        self._fitted = True
+        self._pre_process()
+        # returns the results objects that is created with the (r)
+        # results object
+        return self._analyze()
 
     def _pre_process(self):
-        pass
+        self._set_model_controllers()
+        self._select_input_data()
+        self._validate_input_data()
+        self._transform_input_data()
 
-    def _set_controllers(self):
+    def _set_model_controllers(self):
         # First we parse the variables from the formula
         self._set_variables_from_formula()
         # So we can make sure that the formula is compatible
         self._set_formula()
 
     def _set_variables_from_formula(self):
-
         vp = formula_tools.VariablesParser(self.formula)
-        self.dependent, self.between, self.within, self.subject = vp.get_variables()
+        self.dependent, self.between, self.within, self.subject = (
+            vp.get_variables())
         self._vars = utils.to_list(vp.get_variables())
 
     def _set_formula(self):
@@ -121,6 +133,11 @@ class RegressionModel(base.BaseModel):
     def _analyze(self):
         pass
 
+    def reset(self, **kwargs):
+        vars(self).update(**kwargs)
+        self._fitted = False
+
+
 class LinearRegressionModel(RegressionModel):
     """
 
@@ -137,19 +154,21 @@ class LinearRegressionModel(RegressionModel):
     Returns
     -------
 
-    Inplemented R function: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
+    Inplemented R function:
+    https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
     """
 
-    def fit(self):
-        return regressions_results.LinearRegressionResults(pyr.rpackages.stats.lm(
-            **{
-                'formula': self._r_formula,
-                'data': self.data,
-                # 'weights': np.nan,
-                # 'singular.ok': np.nan,
-                # 'offset': np.nan
-            }
-        ))
+    def _analyze(self):
+        return regressions_results.LinearRegressionResults(
+            pyr.rpackages.stats.lm(
+                **{
+                    'formula': self._r_formula,
+                    'data': self.data,
+                    # 'weights': np.nan,
+                    # 'singular.ok': np.nan,
+                    # 'offset': np.nan
+                }
+            ))
 
 
 class BayesLinearRegressionModel(LinearRegressionModel):
@@ -168,7 +187,8 @@ class BayesLinearRegressionModel(LinearRegressionModel):
         Returns
         -------
 
-        Inplemented R function: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
+        Inplemented R function:
+        https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm
         """
 
     def __init__(self,
@@ -183,27 +203,32 @@ class BayesLinearRegressionModel(LinearRegressionModel):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        # raise NotImplementedError("Currently the formula tools just assumes all interactions rather than "
-        #                          "going by the supplied formula.")
-        self._r_results = pyr.rpackages.base.data_frame(
-            pyr.rpackages.bayesfactor.generalTestBF(
-                formula=self._r_formula, data=self._input_data, progress=False,
-                whichRandom=pyr.rinterface.NULL if self.exclude_subject else self.subject,
-                neverExclude=pyr.rinterface.NULL,
-                iterations=self.iterations))
+        # raise NotImplementedError("Currently the formula tools just
+        # assumes all interactions rather than "going by the
+        # ssupplied formula.")
+        return regressions_results.BayesianLinearRegression(
+            pyr.rpackages.base.data_frame(
+                pyr.rpackages.BayesFactor.generalTestBF(
+                    formula=self._r_formula, data=self._input_data,
+                    progress=False,
+                    whichRandom=pyr.rinterface.NULL if self.exclude_subject
+                    else self.subject,
+                    neverExclude=pyr.rinterface.NULL,
+                    iterations=self.iterations)))
 
 
 class LogisticRegressionModel(RegressionModel):
 
-    def _test_input_data(self):
-        super()._test_input_data()
+    def _validate_input_data(self):
+        super()._validate_input_data()
         self._validate_binary_variables(self.dependent)
 
     def _analyze(self):
-        self._r_results = pyr.rpackages.stats.glm(
-            formula=self._r_formula, data=self.data,
-            family='binomial'
-        )
+        return regressions_results.LogisticRegressionResults(
+            pyr.rpackages.stats.glm(
+                formula=self._r_formula, data=self.data,
+                family='binomial'
+            ))
 
 
 class BayesLogisticRegressionModel(LogisticRegressionModel):
@@ -212,11 +237,14 @@ class BayesLogisticRegressionModel(LogisticRegressionModel):
         raise NotImplementedError
 
     def _analyze(self):
-        return pyr.rpackages.brms.brm(
-            formula=self.formula,
-            data=self._data,
-            family=pyr.rpackages.brms.bernoulli(link='logit')
+        return regressions_results.BayesianLogisticRegression(
+            pyr.rpackages.brms.brm(
+                formula=self.formula,
+                data=self._data,
+                family=pyr.rpackages.brms.bernoulli(link='logit')
+            )
         )
+
 
 # TODO - ok, this is silly and we need a better naming convention apparently
 class MixedModelModel:
