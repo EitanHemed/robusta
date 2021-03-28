@@ -9,10 +9,11 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from . import correlation_results
 from .. import pyr
-from ..misc import utils, base
+from ..misc import base
 
-__all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
+__all__ = ['ChiSquareModel', 'Correlation', 'PartCorrelation',
            'PartialCorrelation', 'BayesCorrelation']
 
 CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
@@ -21,7 +22,7 @@ REDUNDANT_BAYES_RESULT_COLS = ['time', 'code']
 DEFAULT_CORRELATION_NULL_INTERVAL = pyr.rinterface.NULL  # [-1, 1]
 
 
-class _PairwiseCorrelation(base.AbstractClass):
+class _PairwiseCorrelationModel(base.BaseModel):
     """
     Parameters
     ----------
@@ -61,6 +62,7 @@ class _PairwiseCorrelation(base.AbstractClass):
         self.x = x
         self.y = y
         self.nan_action = nan_action
+        self._fitted = False
         super().__init__()
 
     def _select_input_data(self):
@@ -107,15 +109,24 @@ class _PairwiseCorrelation(base.AbstractClass):
                     self._input_data.fillna(self._input_data.apply(nan_action),
                                             inplace=True)
 
+    def fit(self):
+        self._pre_process()
+        self._fitted = True
+        return self._analyze()
+
     def _analyze(self):
         pass
 
     def _transform_input_data(self):
         pass
 
+    def reset(self, **kwargs):
+        vars(self).update(**kwargs)
+        self._fitted = False
 
-@custom_inherit.doc_inherit(_PairwiseCorrelation, "numpy_with_merge")
-class ChiSquare(_PairwiseCorrelation):
+
+# @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
+class ChiSquareModel(_PairwiseCorrelationModel):
     """ Run a frequentist Chi-Square \u03C7\u00B2 test of independence.
 
     .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/chisq.test
@@ -139,7 +150,7 @@ class ChiSquare(_PairwiseCorrelation):
         super().__init__(**kwargs)
 
     def _select_input_data(self):
-        super(ChiSquare, self)._select_input_data()
+        super(ChiSquareModel, self)._select_input_data()
         self._crosstab_data()
 
     def _test_input_data(self):
@@ -158,32 +169,14 @@ class ChiSquare(_PairwiseCorrelation):
 
     def _analyze(self):
         """Runs a Chi-Square test"""
-        self._r_results = pyr.rpackages.stats.chisq_test(
-            self.crosstabulated_data,
-            correct=self.apply_correction)
-
-    def _tidy_results(self):
-        """Tidy the test results and return as pd.DataFrame"""
-        self._results = utils.convert_df(
-            pyr.rpackages.generics.tidy(self._r_results))
-
-    def get_text(self, alpha=.05):
-        raise NotImplementedError
-
-        _dat = self.get_results().to_dict('records')[0]
-        significance_result = np.where(_dat['p.value'] < .05, 'a', 'no')
-        main_clause = (f"A Chi-Square test of independence shown"
-                       f" {significance_result} significant association between"
-                       f" {self._input_data.columns[0]} and {self._input_data.columns[1]}"
-                       )
-        result_clause = (f"[\u03C7\u00B2({_dat['parameter']:.0f})" +
-                         f" = {_dat['statistic']:.2f}, p = {_dat['p.value']:.3f}]")
-
-        return f'{main_clause} {result_clause}.'
+        return correlation_results.ChiSquareResults(
+            pyr.rpackages.stats.chisq_test(
+                self.crosstabulated_data,
+                correct=self.apply_correction))
 
 
-@custom_inherit.doc_inherit(_PairwiseCorrelation, "numpy_with_merge")
-class Correlation(_PairwiseCorrelation):
+# @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
+class Correlation(_PairwiseCorrelationModel):
     """Calculate correlation coefficient in one of several methods.
 
     Parameters
@@ -212,20 +205,8 @@ class Correlation(_PairwiseCorrelation):
             alternative=self.alternative,
         )
 
-    def _tidy_results(self):
-        self._results = utils.convert_df(
-            pyr.rpackages.generics.tidy(self._r_results))
 
-    def get_report(self, mode: str = 'df'):
-
-        if mode == 'df':
-            return pyr.rpackages.report.as_data_frame_report(
-                self._r_results)
-        if mode == 'verbose':
-            return pyr.rpackages.report.report(self._r_results)
-
-
-@custom_inherit.doc_inherit(Correlation, "numpy_with_merge")
+# @custom_inherit.doc_inherit(Correlation, "numpy_with_merge")
 class _TriplewiseCorrelation(Correlation):
     """
     A base class for correlation between two variables while controlling for
@@ -277,11 +258,8 @@ class _TriplewiseCorrelation(Correlation):
 
         self._input_data = _data
 
-    def _tidy_results(self):
-        self._results = utils.convert_df(self._r_results)
 
-
-@custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
+# @custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
 class PartialCorrelation(_TriplewiseCorrelation):
     """
     Calculates partial correlation.
@@ -301,7 +279,7 @@ class PartialCorrelation(_TriplewiseCorrelation):
             method=self.method)
 
 
-@custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
+# @custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
 class PartCorrelation(_TriplewiseCorrelation):
     """
     Calculates part (Semi-partial) correlation.
@@ -322,8 +300,8 @@ class PartCorrelation(_TriplewiseCorrelation):
 
 
 # TODO - see what other
-@custom_inherit.doc_inherit(_PairwiseCorrelation, "numpy_with_merge")
-class BayesCorrelation(_PairwiseCorrelation):
+# @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
+class BayesCorrelation(_PairwiseCorrelationModel):
     """
     Calculates Bayes factor or returns posterior samples for correlation.
 
@@ -374,9 +352,3 @@ class BayesCorrelation(_PairwiseCorrelation):
             rscale_prior=self.rscale_prior,
             posterior=self.sample_from_posterior,
         )
-
-    def _tidy_results(self):
-        self._results = utils.convert_df(
-            pyr.rpackages.base.data_frame(self._r_results),
-            'model').drop(
-            columns=REDUNDANT_BAYES_RESULT_COLS)
