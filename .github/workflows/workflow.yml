@@ -6,9 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up R
-          uses: r-lib/actions/setup-r@master
-          with:
-            r-version: 3.6.1
+        uses: r-lib/actions/setup-r@master
+        with:
+          r-version: 3.6.1
       - name: Set up Python
         uses: actions/checkout@v2
         # uses: actions/setup-python@v2
