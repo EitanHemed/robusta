@@ -364,7 +364,7 @@ class T2SamplesModel(GroupwiseModel):
             pyr.rpackages.stats.t_test(
                 **{'x': self.x, 'y': self.y,
                    'paired': self.paired,
-                   'alternative': self.tail,
+                   'tail': self.tail,
                    'var.equal': self.assume_equal_variance,
                    })
         )

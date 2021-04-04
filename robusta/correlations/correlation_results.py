@@ -26,25 +26,29 @@ class CorrelationResults(_PairwiseCorrelationResults):
 
 # @custom_inherit.doc_inherit(CorrelationResults, "numpy_with_merge")
 class _TriplewiseCorrelationResults(CorrelationResults):
+
+    def _tidy_results(self):
+        return utils.convert_df(
+            self.r_results
+        )
+
+
+# @custom_inherit.doc_inherit(_TriplewiseCorrelationResults, "numpy_with_merge")
+class PartialCorrelationResults(_TriplewiseCorrelationResults):
     pass
 
 
 # @custom_inherit.doc_inherit(_TriplewiseCorrelationResults, "numpy_with_merge")
-class PartialCorrelation(_TriplewiseCorrelationResults):
-    pass
-
-
-# @custom_inherit.doc_inherit(_TriplewiseCorrelationResults, "numpy_with_merge")
-class PartCorrelation(_TriplewiseCorrelationResults):
+class PartCorrelationResults(_TriplewiseCorrelationResults):
     pass
 
 
 # TODO - see what other
 # @custom_inherit.doc_inherit(_PairwiseCorrelationResults, "numpy_with_merge")
-class BayesCorrelation(_PairwiseCorrelationResults):
+class BayesCorrelationResults(_PairwiseCorrelationResults):
 
     def _tidy_results(self):
         return utils.convert_df(
-            pyr.rpackages.base.data_frame(self._r_results),
+            pyr.rpackages.base.data_frame(self.r_results),
             'model').drop(
             columns=REDUNDANT_BAYES_RESULT_COLS)

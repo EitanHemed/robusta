@@ -13,8 +13,8 @@ from . import correlation_results
 from .. import pyr
 from ..misc import base
 
-__all__ = ['ChiSquareModel', 'Correlation', 'PartCorrelation',
-           'PartialCorrelation', 'BayesCorrelation']
+__all__ = ['ChiSquareModel', 'CorrelationModel', 'PartCorrelationModel',
+           'PartialCorrelationModel', 'BayesCorrelationModel']
 
 CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
 DEFAULT_CORRELATION_METHOD = 'pearson'
@@ -64,6 +64,16 @@ class _PairwiseCorrelationModel(base.BaseModel):
         self.nan_action = nan_action
         self._fitted = False
         super().__init__()
+
+    def _pre_process(self):
+        """
+        Pre-process the input arguments prior to fitting the model.
+        @return:
+        """
+        self._set_model_controllers()
+        self._select_input_data()
+        self._validate_input_data()
+        self._transform_input_data()
 
     def _select_input_data(self):
         _data = None
@@ -115,9 +125,15 @@ class _PairwiseCorrelationModel(base.BaseModel):
         return self._analyze()
 
     def _analyze(self):
-        pass
+        raise NotImplementedError
 
     def _transform_input_data(self):
+        pass
+
+    def _set_model_controllers(self):
+        pass
+
+    def _validate_input_data(self):
         pass
 
     def reset(self, **kwargs):
@@ -176,7 +192,7 @@ class ChiSquareModel(_PairwiseCorrelationModel):
 
 
 # @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
-class Correlation(_PairwiseCorrelationModel):
+class CorrelationModel(_PairwiseCorrelationModel):
     """Calculate correlation coefficient in one of several methods.
 
     Parameters
@@ -190,6 +206,7 @@ class Correlation(_PairwiseCorrelationModel):
     def __init__(self, method: str = 'pearson', alternative: str = 'two.sided',
                  **kwargs):
         self.method = method
+        self.tail = alternative
         super().__init__(**kwargs)
 
     def _test_input_data(self):
@@ -199,15 +216,16 @@ class Correlation(_PairwiseCorrelationModel):
         super()._test_input_data()
 
     def _analyze(self):
-        self._r_results = pyr.rpackages.stats.cor_test(
-            *self._input_data.values.T,
-            method=self.method,
-            alternative=self.alternative,
-        )
+        return correlation_results.CorrelationResults(
+            pyr.rpackages.stats.cor_test(
+                *self._input_data.values.T,
+                method=self.method,
+                tail=self.tail,
+            ))
 
 
 # @custom_inherit.doc_inherit(Correlation, "numpy_with_merge")
-class _TriplewiseCorrelation(Correlation):
+class _TriplewiseCorrelationModel(CorrelationModel):
     """
     A base class for correlation between two variables while controlling for
     some or all of the effect of a third vriable. Used as base for
@@ -258,9 +276,12 @@ class _TriplewiseCorrelation(Correlation):
 
         self._input_data = _data
 
+    def _analyze(self):
+        raise NotImplementedError
+
 
 # @custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
-class PartialCorrelation(_TriplewiseCorrelation):
+class PartialCorrelationModel(_TriplewiseCorrelationModel):
     """
     Calculates partial correlation.
 
@@ -274,13 +295,14 @@ class PartialCorrelation(_TriplewiseCorrelation):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        self._r_results = pyr.rpackages.ppcor.pcor_test(
-            *self._input_data.values.T,
-            method=self.method)
+        return correlation_results.PartialCorrelationResults(
+            pyr.rpackages.ppcor.pcor_test(
+                self._input_data.values.T,
+                method=self.method))
 
 
 # @custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
-class PartCorrelation(_TriplewiseCorrelation):
+class PartCorrelationModel(_TriplewiseCorrelationModel):
     """
     Calculates part (Semi-partial) correlation.
 
@@ -294,14 +316,15 @@ class PartCorrelation(_TriplewiseCorrelation):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        self._r_results = pyr.rpackages.ppcor.spcor_test(
-            *self._input_data.values.T,
-            method=self.method)
+        return correlation_results.PartCorrelationResults(
+            pyr.rpackages.ppcor.spcor_test(
+                self._input_data.values.T,
+                method=self.method))
 
 
 # TODO - see what other
 # @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
-class BayesCorrelation(_PairwiseCorrelationModel):
+class BayesCorrelationModel(_PairwiseCorrelationModel):
     """
     Calculates Bayes factor or returns posterior samples for correlation.
 
@@ -346,9 +369,10 @@ class BayesCorrelation(_PairwiseCorrelationModel):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        self._r_results = pyr.rpackages.bayesfactor.correlationBF(
-            *self._input_data.values.T,
-            nullInterval=self.null_interval,
-            rscale_prior=self.rscale_prior,
-            posterior=self.sample_from_posterior,
-        )
+        return correlation_results.BayesCorrelationResults(
+            pyr.rpackages.bayesfactor.correlationBF(
+                *self._input_data.values.T,
+                nullInterval=self.null_interval,
+                rscale_prior=self.rscale_prior,
+                posterior=self.sample_from_posterior,
+            ))

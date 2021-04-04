@@ -35,7 +35,7 @@ class FauxInf:
 # TODO - this is messy, separate into two tests
 # @pytest.mark.parametrize('assume_equal_variance', [True, False])
 @pytest.mark.parametrize('paired', [True, False])
-@pytest.mark.parametrize('alternative', TAILS)
+@pytest.mark.parametrize('tail', TAILS)
 def test_t2samples(paired, alternative):
     data = rst.misc.datasets.data('sleep')
     m = rst.api.t2samples(data=data,
@@ -53,7 +53,7 @@ def test_t2samples(paired, alternative):
         library(broom)
         data.frame(tidy(t.test(
             extra~group, data=sleep, paired={'TRUE' if paired else 'FALSE'}, 
-            alternative='{alternative}',
+            tail='{alternative}',
             var.equal=FALSE)
         ))
         """)
@@ -67,7 +67,7 @@ def test_t2samples(paired, alternative):
 
 @pytest.mark.integtest
 @pytest.mark.parametrize('mu', [0, 2.33, 4.66])
-@pytest.mark.parametrize('alternative', TAILS)
+@pytest.mark.parametrize('tail', TAILS)
 def test_t1sample(mu, alternative):
     sleep = rst.misc.datasets.data('sleep')
     m = rst.api.t1sample(data=sleep.loc[sleep['group'] == '1'],
@@ -80,7 +80,7 @@ def test_t1sample(mu, alternative):
         data.frame(tidy(t.test(
             x=sleep[sleep$group == 1, 'extra'],
             mu={mu},
-            alternative='{alternative}')))
+            tail='{alternative}')))
         """
     )
     pd.testing.assert_frame_equal(res, r_res)
@@ -611,7 +611,7 @@ def test_bayes_anova_mixed(include_subject):
 @pytest.mark.parametrize('p_exact', [False, True])
 @pytest.mark.parametrize('p_correction', [False, True])
 @pytest.mark.parametrize('mu', [-10, -3])
-@pytest.mark.parametrize('alternative', TAILS)
+@pytest.mark.parametrize('tail', TAILS)
 def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
     r_res = r(
         f"""
@@ -622,7 +622,7 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
         weight_diff <- x - y
         data.frame(tidy(wilcox.test(weight_diff,
             exact={str(p_exact)[0]}, 
-            correct={str(p_correction)[0]}, mu={mu}, alternative='{alternative}')))
+            correct={str(p_correction)[0]}, mu={mu}, tail='{alternative}')))
         """)
 
     x = (38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
@@ -645,7 +645,7 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
 
 @pytest.mark.parametrize('p_exact', [False, True])
 @pytest.mark.parametrize('p_correction', [False, True])
-@pytest.mark.parametrize('alternative', TAILS)
+@pytest.mark.parametrize('tail', TAILS)
 @pytest.mark.parametrize('paired', [True, False])
 def test_wilcoxon_2samples(p_exact, p_correction, alternative, paired):
     r_res = r(f"""
@@ -662,7 +662,7 @@ def test_wilcoxon_2samples(p_exact, p_correction, alternative, paired):
                 )
         data.frame(tidy(
             wilcox.test(before, after, paired = {str(paired)[0]},
-            alternative='{alternative}',
+            tail='{alternative}',
             exact={str(p_exact)[0]}, correct={str(p_correction)[0]})))
         """)
 

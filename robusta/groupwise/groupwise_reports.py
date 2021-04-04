@@ -4,7 +4,7 @@ from . import groupwise_models
 
 P_VALUE_CLAUSE = 'p {pvalue_operator} {p.value:.3f}'
 
-FREQ_T_CLAUSE = ('{method} {alternative} '
+FREQ_T_CLAUSE = ('{method} {tail} '
                  't({parameter:.0f}) = {statistics:.2f}, ' + P_VALUE_CLAUSE)
 COHEN_D_CLAUSE = "Cohen's d = {cohen_d:.2f}"
 COHEN_D_INTERVAL_CLAUSE = '({low:.2f, high:.2f})'
