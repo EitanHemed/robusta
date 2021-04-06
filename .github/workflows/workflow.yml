@@ -8,8 +8,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7, 3.8, 3.9]
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: [ 3.7 ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
         include:
           - os: ubuntu-latest
             path: ~/.cache/pip
@@ -30,16 +30,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache dependencies
-        uses: actions/cache@v2
+      - uses: actions/cache@master
+        id: cache
         with:
-          path: ${{ matrix.path }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          path: ${{ env.pythonLocation}}/lib/python3.7/site-packages/*
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+            ${{ runner.os }}-
 
-      - name: Install dependencies
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
+          echo "Installing dependencies and caching them."
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
