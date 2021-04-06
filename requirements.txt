@@ -6,6 +6,7 @@ rpy2==2.9.4
 patsy
 tzlocal
 pytest
+pytest-cov
 
 # conda create -n robusta r-essentials r-base python=3.7
 # conda install -n robusta -c r rpy2

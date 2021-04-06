@@ -106,7 +106,7 @@ class _PairwiseCorrelationModel(base.BaseModel):
 
         self._input_data = _data
 
-    def _test_input_data(self):
+    def _validate_input_data(self):
         if self._input_data.isnull().values.any():
             if self.nan_action == 'raise':
                 raise ValueError('NaN in data, either specify action or '
@@ -131,9 +131,6 @@ class _PairwiseCorrelationModel(base.BaseModel):
         pass
 
     def _set_model_controllers(self):
-        pass
-
-    def _validate_input_data(self):
         pass
 
     def reset(self, **kwargs):
@@ -169,9 +166,9 @@ class ChiSquareModel(_PairwiseCorrelationModel):
         super(ChiSquareModel, self)._select_input_data()
         self._crosstab_data()
 
-    def _test_input_data(self):
+    def _validate_input_data(self):
         self._test_crosstab_frequencies()
-        super()._test_input_data()
+        super()._validate_input_data()
 
     def _test_crosstab_frequencies(self):
         if self.crosstabulated_data.min().min() < 5 and not self.apply_correction:
@@ -209,11 +206,12 @@ class CorrelationModel(_PairwiseCorrelationModel):
         self.tail = alternative
         super().__init__(**kwargs)
 
-    def _test_input_data(self):
+    def _validate_input_data(self):
+        print(f'here - {self.method}')
         if self.method not in CORRELATION_METHODS:
             raise ValueError('Invalid correlation coefficient method - specify'
                              ' either `pearson`, `spearman` or `kendall`')
-        super()._test_input_data()
+        super()._validate_input_data()
 
     def _analyze(self):
         return correlation_results.CorrelationResults(
@@ -297,7 +295,7 @@ class PartialCorrelationModel(_TriplewiseCorrelationModel):
     def _analyze(self):
         return correlation_results.PartialCorrelationResults(
             pyr.rpackages.ppcor.pcor_test(
-                self._input_data.values.T,
+                *self._input_data.values.T,
                 method=self.method))
 
 
@@ -318,7 +316,7 @@ class PartCorrelationModel(_TriplewiseCorrelationModel):
     def _analyze(self):
         return correlation_results.PartCorrelationResults(
             pyr.rpackages.ppcor.spcor_test(
-                self._input_data.values.T,
+                *self._input_data.values.T,
                 method=self.method))
 
 
@@ -370,7 +368,7 @@ class BayesCorrelationModel(_PairwiseCorrelationModel):
 
     def _analyze(self):
         return correlation_results.BayesCorrelationResults(
-            pyr.rpackages.bayesfactor.correlationBF(
+            pyr.rpackages.BayesFactor.correlationBF(
                 *self._input_data.values.T,
                 nullInterval=self.null_interval,
                 rscale_prior=self.rscale_prior,

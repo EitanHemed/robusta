@@ -30,17 +30,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-#      - uses: actions/cache@master
-#        id: cache
-#        with:
-#          path: ${{ env.pythonLocation}}/lib/python3.7/site-packages/*
-#          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-#          restore-keys: |
-#            ${{ runner.os }}-pip-
-#            ${{ runner.os }}-
+      - uses: actions/cache@master
+        id: cache
+        with:
+          path: ${{ env.pythonLocation}}/lib/python3.7/site-packages/*
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
 
       - name: Install Dependencies
-#        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           echo "Installing dependencies and caching them."
           python -m pip install --upgrade pip setuptools wheel
