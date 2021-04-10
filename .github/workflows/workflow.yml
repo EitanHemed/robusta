@@ -53,6 +53,6 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest ./robusta/groupwise/test_groupwise.py
-          pytest ./robusta/regressions/test_regressions.py
-          pytest ./robusta/regressions/test_correlations.py
+          pytest ./robusta/groupwise/tests/test_groupwise.py
+          pytest ./robusta/regressions/tests/test_regressions.py
+          pytest ./robusta/correlations/test/test_correlations.py
