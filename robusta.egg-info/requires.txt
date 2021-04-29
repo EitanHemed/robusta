@@ -1,0 +1,6 @@
+pandas
+rpy2==3.4.3
+patsy
+tzlocal
+pytest
+pytest-cov

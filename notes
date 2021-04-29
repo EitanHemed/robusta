@@ -1,0 +1,3 @@
+Notes for installing on Ubuntu:
+- Uncompiled packages take a long while to install
+- You need libssl-dev, libxml2-dev, libcurl-dev

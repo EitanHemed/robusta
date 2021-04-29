@@ -62,7 +62,4 @@ def _load_dataset(dataset_name: str, package_name: str = None):
     df = pyr.rpackages.data(
         getattr(pyr.rpackages, package_name)).fetch(
         dataset_name)[dataset_name]
-    if type(df) == rpy2.robjects.vectors.DataFrame:
-        return utils.convert_df(df, 'dataset_rownames')
-    raise NotImplementedError('Currently only supports datases imported to'
-                              ' R as `data.frame` or `tibble`')
+    return df
