@@ -10,9 +10,11 @@ pyrio is in charge of the following:
 """
 
 from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface
+from rpy2.robjects.conversion import localconverter
 
 numpy2ri.activate()
 pandas2ri.activate()
+
 # warn_if_outdated('robusta', __version__)
 
 # TODO - add functionality to list R envirnoment and select based on others.

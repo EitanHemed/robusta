@@ -5,8 +5,10 @@ import rpy2
 from .. import pyr
 from ..misc import utils
 
+import rpy2.robjects as ro
+
 def data(dataset_name=None, package_name=None):
-    """Returns either a dataset (if `dataset_name` is specieified)
+    """Returns either a dataset (if `dataset_name` is specified)
         or information on available datasets (if `dataset_name` is `None`).
         Works similarly to R's 'utils::data'
 
@@ -59,7 +61,10 @@ def _load_dataset(dataset_name: str, package_name: str = None):
         else:
             package_name = available.item()
 
-    df = pyr.rpackages.data(
+    # TODO - REFACTOR THIS
+    with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
+        return utils.convert_df(utils.convert_df(pyr.rpackages.data(
         getattr(pyr.rpackages, package_name)).fetch(
-        dataset_name)[dataset_name]
-    return df
+        dataset_name)[dataset_name], 'dataset_rownames'), 'dataset_rownames')
+
+

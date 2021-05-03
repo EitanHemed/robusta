@@ -66,8 +66,7 @@ class BaseResults:
         self.r_results = r_results
 
     def _tidy_results(self):
-        return utils.convert_df(
-            pyr.rpackages.generics.tidy(self.r_results))
+        return utils.convert_df(pyr.rpackages.generics.tidy(self.r_results))
 
     def get_df(self):
         return self._tidy_results()

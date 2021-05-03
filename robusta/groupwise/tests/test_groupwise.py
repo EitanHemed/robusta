@@ -31,32 +31,31 @@ class FauxInf:
         return f'{self.sign}Inf'
 
 
-@pytest.mark.integtest
 # TODO - this is messy, separate into two tests
 # @pytest.mark.parametrize('assume_equal_variance', [True, False])
 @pytest.mark.parametrize('paired', [True, False])
 @pytest.mark.parametrize('tail', TAILS)
-def test_t2samples(paired, alternative):
+def test_t2samples(paired, tail):
     data = rst.misc.datasets.data('sleep')
     m = rst.api.t2samples(data=data,
                       independent='group',
                       dependent='extra',
                       subject='ID',
                       paired=paired,
-                      tail=alternative,
+                      tail=tail,
                       assume_equal_variance=False
                       )
     res = m.fit()
 
-    r_res = r(
+    r_res = rst.misc.utils.convert_df(r(
         f"""
         library(broom)
         data.frame(tidy(t.test(
             extra~group, data=sleep, paired={'TRUE' if paired else 'FALSE'}, 
-            tail='{alternative}',
+            tail='{tail}',
             var.equal=FALSE)
         ))
-        """)
+        """))
     pd.testing.assert_frame_equal(r_res, res.get_df())
 
     m.reset(formula='extra~group+1|ID')
@@ -65,24 +64,23 @@ def test_t2samples(paired, alternative):
     pd.testing.assert_frame_equal(r_res, res.get_df())
 
 
-@pytest.mark.integtest
 @pytest.mark.parametrize('mu', [0, 2.33, 4.66])
 @pytest.mark.parametrize('tail', TAILS)
-def test_t1sample(mu, alternative):
+def test_t1sample(mu, tail):
     sleep = rst.misc.datasets.data('sleep')
     m = rst.api.t1sample(data=sleep.loc[sleep['group'] == '1'],
                      dependent='extra', subject='ID',
-                     independent='group', mu=mu, tail=alternative)
+                     independent='group', mu=mu, tail=tail)
     res = m.fit().get_df()
-    r_res = r(
+    rst.misc.utils.convert_df(r(
         f"""
         library(broom)
         data.frame(tidy(t.test(
             x=sleep[sleep$group == 1, 'extra'],
             mu={mu},
-            tail='{alternative}')))
+            tail='{tail}')))
         """
-    )
+    ))
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(formula='extra~group+1|ID')
@@ -117,7 +115,7 @@ def test_bayes_t2samples_independent(
 
     res = m.fit().get_df()
 
-    r_res = r("""   
+    r_res = rst.misc.utils.convert_df(r("""   
     library(BayesFactor)
     library(tibble)
     
@@ -155,7 +153,7 @@ def test_bayes_t2samples_independent(
         prior_scale,
         'TRUE' if sample_from_posterior else 'FALSE',
         iterations,
-    ))
+    )))
 
     # TODO - we need a better solution to compare the sampled values
     if sample_from_posterior:
@@ -170,7 +168,6 @@ def test_bayes_t2samples_independent(
         check_less_precise=5)
 
 
-@pytest.mark.integtest
 @pytest.mark.parametrize('iterations', [1e4, 1e5])
 @pytest.mark.parametrize('prior_scale', [0.5, 0.707])
 @pytest.mark.parametrize('null_interval',
@@ -195,7 +192,7 @@ def test_bayes_t2samples_dependent(
 
     res = m.fit().get_df()
 
-    r_res = r("""
+    r_res = rst.misc.utils.convert_df(r("""
     library(BayesFactor)
     library(tibble)
 
@@ -234,7 +231,7 @@ def test_bayes_t2samples_dependent(
         'TRUE' if sample_from_posterior else 'FALSE',
         iterations,
         mu
-    ))
+    )))
 
     # TODO - we need a better solution to compare the sampled values
     if sample_from_posterior:
@@ -249,7 +246,6 @@ def test_bayes_t2samples_dependent(
         check_less_precise=5)
 
 
-@pytest.mark.integtest
 @pytest.mark.parametrize('iterations', [1e4, 1e5])
 @pytest.mark.parametrize('prior_scale', [0.5, 0.707])
 @pytest.mark.parametrize('null_interval',
@@ -275,7 +271,7 @@ def test_bayes_t1sample(
 
     res = m.fit().get_df()
 
-    r_res = r("""
+    r_res = rst.misc.utils.convert_df(r("""
     library(BayesFactor)
     library(tibble)
 
@@ -308,7 +304,7 @@ def test_bayes_t1sample(
         'TRUE' if sample_from_posterior else 'FALSE',
         iterations,
         mu
-    ))
+    )))
 
     # TODO - we need a better solution to compare the sampled values
     if sample_from_posterior:
@@ -414,11 +410,11 @@ def test_anova_mixed():
     m = rst.api.anova(data=ANXIETY_DATASET, within='time', between='group',
                   dependent='score', subject='id')
 
-    pd.testing.assert_frame_equal(m.fit().get_df(), r('anova_table'))
+    pd.testing.assert_frame_equal(m.fit().get_df(), rst.misc.utils.convert_df(r('anova_table')))
 
     m.reset(formula='score ~ group + (time|id)')
     res = m.fit()
-    pd.testing.assert_frame_equal(res.get_df(), r('anova_table'))
+    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r('anova_table')))
 
     pd.testing.assert_frame_equal(
         res.get_margins(['group', 'time']),
@@ -459,7 +455,7 @@ def test_bayes_anova_between(between_vars, include_subject):
     if include_subject:
         formula += ' + dataset_rownames'
 
-    r_res = r(
+    r_res = rst.misc.utils.convert_df(r(
         f"""
         library(BayesFactor)
         library(tibble)
@@ -484,7 +480,7 @@ def test_bayes_anova_between(between_vars, include_subject):
             'model'
             )
         )
-        """)
+        """))
 
     # TODO - as we would upgrade the project to a more recent pandas version we
     #  can provide better testing of the dataframe's values, now it would
@@ -518,7 +514,7 @@ def test_bayes_anova_within(within_vars, include_subject):
     if include_subject:
         formula += ' + id'
 
-    r_res = r(
+    r_res = rst.misc.utils.convert_df(r(
         f"""
         library(BayesFactor)
         library(tibble)
@@ -540,7 +536,7 @@ def test_bayes_anova_within(within_vars, include_subject):
             'model'
             )
         )
-        """)
+        """))
 
     # TODO - as we would upgrade the project to a more recent pandas version we
     #  can provide better testing of the dataframe's values, now it would
@@ -569,7 +565,7 @@ def test_bayes_anova_mixed(include_subject):
 
     formula = "score ~ group + time | id"
 
-    r_res = r(
+    r_res = rst.misc.utils.convert_df(r(
         f"""
         library(BayesFactor)
         library(tibble)
@@ -591,7 +587,7 @@ def test_bayes_anova_mixed(include_subject):
             'model'
             )
         )
-        """)
+        """))
 
     # TODO - as we would upgrade the project to a more recent pandas version we
     #  can provide better testing of the dataframe's values, now it would
@@ -612,8 +608,8 @@ def test_bayes_anova_mixed(include_subject):
 @pytest.mark.parametrize('p_correction', [False, True])
 @pytest.mark.parametrize('mu', [-10, -3])
 @pytest.mark.parametrize('tail', TAILS)
-def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
-    r_res = r(
+def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
+    r_res = rst.misc.utils.convert_df(r(
         f"""
         # Example from http://www.sthda.com/english/wiki/unpaired-two-samples-wilcoxon-test-in-r
         library(broom)
@@ -622,8 +618,8 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
         weight_diff <- x - y
         data.frame(tidy(wilcox.test(weight_diff,
             exact={str(p_exact)[0]}, 
-            correct={str(p_correction)[0]}, mu={mu}, tail='{alternative}')))
-        """)
+            correct={str(p_correction)[0]}, mu={mu}, tail='{tail}')))
+        """))
 
     x = (38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
     y = (67.8, 60, 63.4, 76, 89.4, 73.3, 67.3, 61.3, 62.4)
@@ -633,7 +629,7 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
                       columns=['weight', 'group']).reset_index()
     m = rst.api.wilcoxon_1sample(data=df, independent='group',
                              subject='index',
-                             dependent='weight', mu=mu, tail=alternative,
+                             dependent='weight', mu=mu, tail=tail,
                              p_exact=p_exact, p_correction=p_correction)
     res = m.fit().get_df()
     pd.testing.assert_frame_equal(res, r_res)
@@ -647,7 +643,7 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, alternative):
 @pytest.mark.parametrize('p_correction', [False, True])
 @pytest.mark.parametrize('tail', TAILS)
 @pytest.mark.parametrize('paired', [True, False])
-def test_wilcoxon_2samples(p_exact, p_correction, alternative, paired):
+def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
     r_res = r(f"""
         # Example from http://www.sthda.com/english/wiki/paired-samples-wilcoxon-test-in-r
         library(broom)
@@ -662,7 +658,7 @@ def test_wilcoxon_2samples(p_exact, p_correction, alternative, paired):
                 )
         data.frame(tidy(
             wilcox.test(before, after, paired = {str(paired)[0]},
-            tail='{alternative}',
+            tail='{tail}',
             exact={str(p_exact)[0]}, correct={str(p_correction)[0]})))
         """)
 
@@ -680,7 +676,7 @@ def test_wilcoxon_2samples(p_exact, p_correction, alternative, paired):
     m = rst.api.wilcoxon_2samples(
         data=df, independent='group', paired=paired,
         dependent='weight', subject='sid',
-        tail=alternative, p_correction=p_correction, p_exact=p_exact
+        tail=tail, p_correction=p_correction, p_exact=p_exact
     )
     res = m.fit().get_df()
     pd.testing.assert_frame_equal(res, r_res)
@@ -691,11 +687,11 @@ def test_wilcoxon_2samples(p_exact, p_correction, alternative, paired):
 
 
 def test_kruskal_wallis_test():
-    r_res = r("""
+    r_res = rst.misc.utils.convert_df(r("""
     # Example from http://www.sthda.com/english/wiki/kruskal-wallis-test-in-r
     library(broom)
     data.frame(tidy(kruskal.test(weight ~ group, data = PlantGrowth)))
-    """)
+    """))
     m = rst.api.kruskal_wallis_test(
         data=rst.misc.datasets.data('PlantGrowth'),
         between='group',
@@ -709,7 +705,7 @@ def test_kruskal_wallis_test():
 def test_friedman_test():
     with pytest.raises(rst.pyr.rinterface.RRuntimeError):
         # Until we get rstatix on the environment
-        r_res = r("""
+        r_res = rst.misc.utils.convert_df(r("""
         # Example from https://www.datanovia.com/en/lessons/friedman-test-in-r/
         library(rstatix)
         library(broom)
@@ -717,7 +713,7 @@ def test_friedman_test():
         library(tidyr)
         data_long <- gather(selfesteem, 'time', 'score', t1:t3, factor_key=TRUE)
         data.frame(tidy(friedman_test(score ~ time |id, data=data_long)))
-        """)
+        """))
 
         df = rst.misc.datasets.data('selfesteem').set_index(
             ['id', 'group']).filter(
@@ -745,11 +741,11 @@ def test_aligned_ranks_test():
         data=rst.misc.datasets.data('Higgins1990Table5'),
         formula='DryMatter ~ Moisture*Fertilizer + (1|Tray)')
     pd.testing.assert_frame_equal(
-        m.fit().get_df(), r("res")
+        m.fit().get_df(), rst.misc.utils.convert_df(r("res"))
     )
 
     m.reset(between=['Moisture', 'Fertilizer'], dependent='DryMatter',
             subject='Tray')
     pd.testing.assert_frame_equal(
-        m.fit().get_df(), r("res")
+        m.fit().get_df(), rst.misc.utils.convert_df(r("res"))
     )

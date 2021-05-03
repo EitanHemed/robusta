@@ -4,7 +4,7 @@ from collections.abc import Iterable
 import numpy as np
 import pandas as pd
 import typing
-from rpy2 import robjects
+import rpy2.robjects as ro
 
 import robusta as rst  # So we can get the PyR singleton
 
@@ -90,30 +90,51 @@ def convert_df(df, rownames_to_column_name: typing.Union[None, str]=None):
     """A utility for safe conversion
     @type df: An R or Python DataFrame.
     """
+
     if type(df) == pd.core.frame.DataFrame:
-        _cat_cols = df.dtypes.reset_index()
-        _cat_cols = _cat_cols.loc[
-            _cat_cols[0] == 'category', 'index'].values.tolist()
-        _df = robjects.pandas2ri.py2ri(df)
-        for cn in filter(lambda s: s in _cat_cols, _df.names):
-            _df[_df.names.index(cn)] = rst.pyr.rpackages.base.factor(
-                _df[_df.names.index(cn)])
-        return _df
-    elif type(df) == robjects.vectors.DataFrame:
-        if rownames_to_column_name is None:
-            return pd.DataFrame(robjects.pandas2ri.ri2py(df))
-        else:
-            if not isinstance(rownames_to_column_name, str):
-                raise ValueError("Column name of previous row names must be a str")
-            df = rst.pyr.rpackages.tibble.rownames_to_column(
-                    df, var=rownames_to_column_name)
-            df = pd.DataFrame(robjects.pandas2ri.ri2py(df))
-            cols = df.columns.tolist()
-            cols = cols[-1:] + cols[:-1]
-            df = df[cols]
-            return df
+        with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
+            return ro.conversion.py2rpy(df.copy())
+
+    elif type(df) == np.recarray:
+        # Yes, currently a recursion until we refactor this function,
+        # Send it as python dataframe into convert_df to get back an R dataframe with the column names, then
+        # it will be returned as a python dataframe with the rownames as an adiditional column
+        df = pd.DataFrame(convert_df(convert_df(pd.DataFrame(df), rownames_to_column_name=rownames_to_column_name)))
+        return df
+
     else:
-        raise RuntimeError("Input can only be R/Python DataFrame object")
+        with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
+            # Make sure it is coerced into data frame
+            _df = rst.pyr.rpackages.base.data_frame(df)
+            if rownames_to_column_name is not None:
+                _df = _df.rename_axis(rownames_to_column_name).reset_index()
+            return _df
+
+
+# if type(df) == pd.core.frame.DataFrame:
+    #     _cat_cols = df.dtypes.reset_index()
+    #     _cat_cols = _cat_cols.loc[
+    #         _cat_cols[0] == 'category', 'index'].values.tolist()
+    #     _df = robjects.pandas2ri.py2ri(df)
+    #     for cn in filter(lambda s: s in _cat_cols, _df.names):
+    #         _df[_df.names.index(cn)] = rst.pyr.rpackages.base.factor(
+    #             _df[_df.names.index(cn)])
+    #     return _df
+    # elif type(df) == robjects.vectors.DataFrame:
+    #     if rownames_to_column_name is None:
+    #         return pd.DataFrame(robjects.pandas2ri.ri2py(df))
+    #     else:
+    #         if not isinstance(rownames_to_column_name, str):
+    #             raise ValueError("Column name of previous row names must be a str")
+    #         df = rst.pyr.rpackages.tibble.rownames_to_column(
+    #                 df, var=rownames_to_column_name)
+    #         df = pd.DataFrame(robjects.pandas2ri.ri2py(df))
+    #         cols = df.columns.tolist()
+    #         cols = cols[-1:] + cols[:-1]
+    #         df = df[cols]
+    #         return df
+    # else:
+    #     raise RuntimeError("Input can only be R/Python DataFrame object")
 
 
 def bayes_style_formula_from_vars(dependent, between, within, subject=None):

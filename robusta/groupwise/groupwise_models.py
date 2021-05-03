@@ -33,6 +33,8 @@ from . import groupwise_results, groupwise_reports
 from .. import pyr
 from ..misc import utils, formula_tools, base
 
+import rpy2.robjects as ro
+
 BF_COLUMNS = ['model', 'bf', 'error']
 
 __all__ = [
@@ -186,7 +188,7 @@ class GroupwiseModel(base.BaseModel):
             _ = [i for i in utils.to_list(
                 [self.independent, self.subject, self.dependent])
                  if i not in self.data.columns]
-            raise KeyError(f"Variables not in data: \n{','.join(_)}")
+            raise KeyError(f"Variables not in data: {', '.join(_)}")
         self._input_data = data
 
     def _validate_input_data(self):
@@ -325,7 +327,7 @@ class T2SamplesModel(GroupwiseModel):
                  paired: bool = None,
                  independent: bool = None,
                  tail: str = 'two.sided',
-                 assume_equal_variance: bool = None,
+                 assume_equal_variance: bool = False,
                  x=None,
                  y=None,
                  correct=False,
@@ -336,20 +338,39 @@ class T2SamplesModel(GroupwiseModel):
         kwargs['max_levels'] = 2
         kwargs['min_levels'] = 2
 
+
+        # if kwargs.get('formula') is None:
+        #
+        #     if paired is not None:
+        #         # If independent is specified, try to set between/within based on independent and paired
+        #         if independent is not None:
+        #             kwargs[{False: 'between', True: 'within'}[paired]] = independent
+        #         # If no independent variable is specified, try to use paired and between/within to infer independent
+        #         if independent is None:
+        #             kwargs['independent'] = {False: 'between', True: 'within'}[paired]
+        #     else:
+        #         # try to infer paired and independent from between/within
+        #         if kwargs['between'] is not None:
+        #             kwargs['independent'] = kwargs['between']
+        #             paired = False
+        #         elif kwargs['within'] is not None:
+        #             kwargs['independent'] = kwargs['within']
+        #             paired = True
+        #         else:
+        #             raise ValueError
+
+        # TODO - refactor this
         if kwargs.get('formula') is None:
-            if independent is None:
-                try:
-                    independent = kwargs[{
-                        False: 'between', True: 'within'}[paired]]
-                except KeyError as e:
-                    if paired:
-                        raise TypeError(
-                            f'Specify `independent` or `within`: {e}')
-                    else:
-                        raise TypeError(
-                            f'Specify `independent` or `between`: {e}')
-            else:
+            # If independent is specified, try to set between/within based on independent and paired
+            if independent is not None and paired is not None:
                 kwargs[{False: 'between', True: 'within'}[paired]] = independent
+            # If no independent variable is specified, try to use paired and between/within to infer independent
+            if independent is None and paired is not None:
+                if paired is True:
+                    independent = kwargs['between']
+                elif paired is False:
+                    independent = kwargs['within']
+
 
         super().__init__(**kwargs)
 
@@ -462,9 +483,7 @@ class BayesT2SamplesModel(T2SamplesModel):
     #         ))
 
     def _analyze(self):
-        return groupwise_results.BayesT2SamplesResults(
-            pyr.rpackages.base.data_frame(
-                pyr.rpackages.BayesFactor.ttestBF(
+        b = pyr.rpackages.BayesFactor.ttestBF(
                     x=self.x,
                     y=self.y,
                     paired=self.paired,
@@ -473,8 +492,10 @@ class BayesT2SamplesModel(T2SamplesModel):
                     posterior=self.sample_from_posterior,
                     rscale=self.prior_scale,
                     mu=self.mu
-                )),
-            # TODO - refactor
+                )
+
+        return groupwise_results.BayesT2SamplesResults(b,
+        # TODO - refactor
             mode='posterior' if self.sample_from_posterior else 'bf'
         )
 
@@ -609,9 +630,7 @@ class BayesT1SampleModel(T1SampleModel):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        return groupwise_results.BayesT1SampleResults(
-            pyr.rpackages.base.data_frame(
-                pyr.rpackages.BayesFactor.ttestBF(
+        b = pyr.rpackages.BayesFactor.ttestBF(
                     x=self.x,
                     y=pyr.rinterface.NULL,
                     nullInterval=self.null_interval,
@@ -619,8 +638,11 @@ class BayesT1SampleModel(T1SampleModel):
                     posterior=self.sample_from_posterior,
                     rscale=self.prior_scale,
                     mu=self.mu
-                )),
-            mode='posterior' if self.sample_from_posterior else 'bf')
+                )
+        #with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
+        #    z = ro.conversion.rpy2py(pyr.rpackages.base.data_frame(b))
+        return groupwise_results.BayesT1SampleResults(b,
+                                                      mode='posterior' if self.sample_from_posterior else 'bf')
 
 
 class Wilcoxon1SampleModel(T1SampleModel):
@@ -846,8 +868,7 @@ class BayesAnovaModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _analyze(self):
-        return groupwise_results.BayesAnovaResults(
-            pyr.rpackages.BayesFactor.anovaBF(
+        b = pyr.rpackages.BayesFactor.anovaBF(
                 self._r_formula,
                 self._r_input_data,
                 whichRandom=self.subject,
@@ -860,7 +881,8 @@ class BayesAnovaModel(AnovaModel):
                 method=self.method,
                 progress=False
                 # noSample=self.no_sample
-            ))
+            )
+        return groupwise_results.BayesAnovaResults(b)
 
 
 class KruskalWallisTestModel(AnovaModel):
