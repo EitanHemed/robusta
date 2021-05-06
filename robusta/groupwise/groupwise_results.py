@@ -35,6 +35,9 @@ class BayesT2SamplesResults(T2SamplesResults):
         else:
             return utils.convert_df(self.r_results)
 
+    def get_df(self):
+        return self._tidy_results()
+
 
 class T1SampleResults(T2SamplesResults):
     pass
@@ -46,7 +49,6 @@ class BayesT1SampleResults(T1SampleResults):
 
     def __init__(self, r_results, mode='bf'):
         self.mode = mode
-
         super().__init__(r_results)
 
     def _tidy_results(self):
@@ -54,6 +56,9 @@ class BayesT1SampleResults(T1SampleResults):
             return utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
         else:
             return utils.convert_df(self.r_results, 'iteration')
+
+    def get_df(self):
+        return self._tidy_results()
 
 
 class Wilcoxon1SampleResults(T1SampleResults):
@@ -67,9 +72,7 @@ class Wilcoxon2SamplesResults(T2SamplesResults):
 class AnovaResults(GroupwiseResults):
 
     def _tidy_results(self):
-        return utils.convert_df(
-            pyr.rpackages.generics.tidy(
-                pyr.rpackages.stats.anova(self.r_results)))
+        return pyr.rpackages.stats.anova(self.r_results)
 
     def get_margins(
             self,
@@ -203,8 +206,7 @@ class BayesAnovaResults(AnovaResults):
 class KruskalWallisTestResults(AnovaResults):
 
     def _tidy_results(self):
-        return (utils.convert_df(
-            pyr.rpackages.generics.tidy(self.r_results)))
+        return pyr.rpackages.generics.tidy(self.r_results)
 
     def get_margins(self):
         raise NotImplementedError("Not applicable to non-parametric ANOVA")

@@ -5,6 +5,8 @@ from rpy2.robjects import r
 
 import robusta as rst
 
+from robusta.groupwise.groupwise_results import BF_COLUMNS
+
 # TODO - when rst is installed as a package, remove the following line
 # sys.path.append('./')
 
@@ -52,7 +54,7 @@ def test_t2samples(paired, tail):
         library(broom)
         data.frame(tidy(t.test(
             extra~group, data=sleep, paired={'TRUE' if paired else 'FALSE'}, 
-            tail='{tail}',
+            alternative='{tail}',
             var.equal=FALSE)
         ))
         """))
@@ -72,13 +74,13 @@ def test_t1sample(mu, tail):
                      dependent='extra', subject='ID',
                      independent='group', mu=mu, tail=tail)
     res = m.fit().get_df()
-    rst.misc.utils.convert_df(r(
+    r_res = rst.misc.utils.convert_df(r(
         f"""
         library(broom)
         data.frame(tidy(t.test(
             x=sleep[sleep$group == 1, 'extra'],
             mu={mu},
-            tail='{tail}')))
+            alternative='{tail}')))
         """
     ))
     pd.testing.assert_frame_equal(res, r_res)
@@ -162,7 +164,7 @@ def test_bayes_t2samples_independent(
 
     pd.testing.assert_frame_equal(
         res,
-        r_res[res.columns.tolist()],
+        r_res[res.columns.tolist()].reset_index(drop=True),
         # test only the columns that we are intrested in
         check_exact=(not sample_from_posterior),
         check_less_precise=5)
@@ -192,7 +194,7 @@ def test_bayes_t2samples_dependent(
 
     res = m.fit().get_df()
 
-    r_res = rst.misc.utils.convert_df(r("""
+    r_res = r("""
     library(BayesFactor)
     library(tibble)
 
@@ -231,19 +233,24 @@ def test_bayes_t2samples_dependent(
         'TRUE' if sample_from_posterior else 'FALSE',
         iterations,
         mu
-    )))
+    ))
 
     # TODO - we need a better solution to compare the sampled values
     if sample_from_posterior:
         res = res.describe()
         r_res = r_res.describe()
+        pd.testing.assert_frame_equal(
+            res,
+            rst.misc.utils.convert_df(r_res),
+            check_exact=False,
+            check_less_precise=5)
 
-    pd.testing.assert_frame_equal(
-        res,
-        r_res[res.columns.tolist()],
-        # test only the columns that we are intrested in
-        check_exact=(not sample_from_posterior),
-        check_less_precise=5)
+    else:
+        pd.testing.assert_frame_equal(
+            res.reset_index(drop=True),
+            rst.misc.utils.convert_df(r_res, 'model')[BF_COLUMNS].reset_index(drop=True),
+            check_exact=True,
+            check_less_precise=5.)
 
 
 @pytest.mark.parametrize('iterations', [1e4, 1e5])
@@ -271,7 +278,7 @@ def test_bayes_t1sample(
 
     res = m.fit().get_df()
 
-    r_res = rst.misc.utils.convert_df(r("""
+    r_res = r("""
     library(BayesFactor)
     library(tibble)
 
@@ -304,19 +311,25 @@ def test_bayes_t1sample(
         'TRUE' if sample_from_posterior else 'FALSE',
         iterations,
         mu
-    )))
+    ))
 
     # TODO - we need a better solution to compare the sampled values
     if sample_from_posterior:
         res = res.describe()
         r_res = r_res.describe()
+        pd.testing.assert_frame_equal(
+            res,
+            rst.misc.utils.convert_df(r_res),
+            check_exact=False,
+            check_less_precise=5)
 
-    pd.testing.assert_frame_equal(
-        res,
-        r_res[res.columns.tolist()],
-        # test only the columns that we are intrested in
-        check_exact=(not sample_from_posterior),
-        check_less_precise=5)
+    else:
+        pd.testing.assert_frame_equal(
+            res.reset_index(drop=True),
+            rst.misc.utils.convert_df(r_res, 'model')[BF_COLUMNS].reset_index(drop=True),
+            # test only the columns that we are intrested in
+            check_exact=(not sample_from_posterior),
+            check_less_precise=5)
 
 
 @pytest.mark.parametrize('between_vars', [
@@ -330,7 +343,7 @@ def test_anova_between(between_vars):
         dependent='len', subject='dataset_rownames',
         between=between_vars[0])
 
-    r_res = r(
+    r_res = rst.misc.utils.convert_df(r(
         f"""
         library(broom)
         library(afex)
@@ -349,7 +362,7 @@ def test_anova_between(between_vars):
                     )
                 )
         )
-        """)
+        """))
 
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
@@ -366,7 +379,7 @@ def test_anova_between(between_vars):
 def test_anova_within():
     m = rst.api.anova(data=ANXIETY_DATASET, within='time',
                   dependent='score', subject='id')
-    r_res = r(
+    r_res = rst.misc.utils.convert_df(r(
         """
         library(afex)
         library(broom)
@@ -377,7 +390,7 @@ def test_anova_within():
         data.frame(tidy(anova(aov_4(score ~ (time|id), data=data_long,
                 ))))
         """
-    )
+    ))
 
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
 
@@ -618,7 +631,7 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
         weight_diff <- x - y
         data.frame(tidy(wilcox.test(weight_diff,
             exact={str(p_exact)[0]}, 
-            correct={str(p_correction)[0]}, mu={mu}, tail='{tail}')))
+            correct={str(p_correction)[0]}, mu={mu}, alternative='{tail}')))
         """))
 
     x = (38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
@@ -658,7 +671,7 @@ def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
                 )
         data.frame(tidy(
             wilcox.test(before, after, paired = {str(paired)[0]},
-            tail='{tail}',
+            alternative='{tail}',
             exact={str(p_exact)[0]}, correct={str(p_correction)[0]})))
         """)
 
@@ -679,11 +692,11 @@ def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
         tail=tail, p_correction=p_correction, p_exact=p_exact
     )
     res = m.fit().get_df()
-    pd.testing.assert_frame_equal(res, r_res)
+    pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r_res))
 
     m.reset(formula='weight ~ group|sid')
     res = m.fit().get_df()
-    pd.testing.assert_frame_equal(res, r_res)
+    pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r_res))
 
 
 def test_kruskal_wallis_test():

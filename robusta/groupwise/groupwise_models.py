@@ -228,8 +228,9 @@ class GroupwiseModel(base.BaseModel):
         if self._is_aggregation_required:
             self._input_data = self._aggregate_data()
 
-        self._input_data.loc[:, self.independent] = self._input_data[
-            self.independent].astype('category')
+        # TODO - check if this can be permanently removed
+        # self._input_data.loc[:, self.independent] = self._input_data[
+        #     self.independent].astype('category')
 
         self._r_input_data = utils.convert_df(self._input_data.copy())
 
@@ -385,7 +386,7 @@ class T2SamplesModel(GroupwiseModel):
             pyr.rpackages.stats.t_test(
                 **{'x': self.x, 'y': self.y,
                    'paired': self.paired,
-                   'tail': self.tail,
+                   'alternative': self.tail,
                    'var.equal': self.assume_equal_variance,
                    })
         )

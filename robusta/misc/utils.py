@@ -93,15 +93,14 @@ def convert_df(df, rownames_to_column_name: typing.Union[None, str]=None):
 
     if type(df) == pd.core.frame.DataFrame:
         with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
-            return ro.conversion.py2rpy(df.copy())
-
+            _df = ro.conversion.py2rpy(df.copy())
+            return _df
     elif type(df) == np.recarray:
         # Yes, currently a recursion until we refactor this function,
         # Send it as python dataframe into convert_df to get back an R dataframe with the column names, then
         # it will be returned as a python dataframe with the rownames as an adiditional column
-        df = pd.DataFrame(convert_df(convert_df(pd.DataFrame(df), rownames_to_column_name=rownames_to_column_name)))
-        return df
-
+        _df = pd.DataFrame(convert_df(convert_df(pd.DataFrame(df), rownames_to_column_name=rownames_to_column_name)))
+        return _df
     else:
         with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
             # Make sure it is coerced into data frame
