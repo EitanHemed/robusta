@@ -18,8 +18,10 @@ class GroupwiseResults(base.BaseResults):
     def get_text(self, mode: str = 'df'):
         raise NotImplementedError
 
+
 class T2SamplesResults(GroupwiseResults):
     pass
+
 
 class BayesT2SamplesResults(T2SamplesResults):
     # TODO Validate if correctly inherits init from parent
@@ -72,7 +74,16 @@ class Wilcoxon2SamplesResults(T2SamplesResults):
 class AnovaResults(GroupwiseResults):
 
     def _tidy_results(self):
-        return pyr.rpackages.stats.anova(self.r_results)
+        # TODO - this is an ugly hack. The problem is that up until now we didn't have the auto convertsion to recarray
+        #  that removes the rownames. This needs to be fixed.
+        return pyr.rpackages.afex.nice(self.r_results)
+
+        # anova_table = utils.convert_df(
+        #     pyr.rpackages.stats.anova(
+        #         self.r_results))
+        # missing_column = utils.convert_df(pyr.rpackages.afex.nice(self.r_results))['Effect'].values
+        # anova_table.insert(loc=0, column='term', value=missing_column)
+        # return anova_table
 
     def get_margins(
             self,
@@ -93,7 +104,7 @@ class AnovaResults(GroupwiseResults):
         )
 
         if not all(
-                term in self.get_df()['term'].values for term in
+                term in self.get_df()['Effect'].values for term in
                 _terms_to_test):
             raise RuntimeError(
                 f'Margins term: {[i for i in _terms_to_test]}'
@@ -119,6 +130,7 @@ class AnovaResults(GroupwiseResults):
                 _r_margins))
 
         return margins
+
 
         # self.margins_results[tuple(margins_term)] = {
         #    'margins': margins, 'r_margins': _r_margins}
@@ -196,8 +208,10 @@ class BayesAnovaResults(AnovaResults):
 
     def _tidy_results(self):
         return utils.convert_df(
-            pyr.rpackages.base.data_frame(
-                self.r_results), 'model')[['model', 'bf', 'error']]
+                self.r_results, 'model')
+
+    def get_df(self):
+        return self._tidy_results()[['model', 'bf', 'error']]
 
     def get_margins(self):
         raise NotImplementedError("Not applicable to Bayesian ANOVA")
@@ -224,6 +238,6 @@ class AlignedRanksTestResults(AnovaResults):
         raise NotImplementedError("Not applicable to non-parametric ANOVA")
 
     def _tidy_results(self):
-        return utils.convert_df(pyr.rpackages.stats.anova(
+        return pyr.rpackages.stats.anova(
             self.r_results
-        ))
+        )

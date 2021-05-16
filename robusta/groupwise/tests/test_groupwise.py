@@ -220,7 +220,7 @@ def test_bayes_t2samples_dependent(
         ttestBF(x=x, y=y, nullInterval=nullInterval,
             rscale=rscale,
             posterior=posterior,
-            iterations=iterations, mu=mu, paired=T))
+            iterations=iterations, mu=mu, paired=TRUE))
 
     if (!posterior){{
         r = data.frame(rownames_to_column(r, 'model'))
@@ -351,7 +351,7 @@ def test_anova_between(between_vars):
         rownames_to_column(ToothGrowth, 'dataset_rownames')
     
         data.frame(
-            tidy(
+            nice(
                 anova(
                     aov_4(
                     data=rownames_to_column(ToothGrowth, 'dataset_rownames'),
@@ -387,7 +387,7 @@ def test_anova_within():
         library(datarium)
         data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
 
-        data.frame(tidy(anova(aov_4(score ~ (time|id), data=data_long,
+        data.frame(nice(anova(aov_4(score ~ (time|id), data=data_long,
                 ))))
         """
     ))
@@ -410,7 +410,7 @@ def test_anova_mixed():
         data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
 
         a1 = aov_4(score~(time|id) + group, data=data_long)
-        anova_table = data.frame(tidy(anova(a1)))
+        anova_table = data.frame(nice(anova(a1)))
         interaction_margins = data.frame(emmeans(a1, specs=c('group', 'time'),
          type='response'))
         time_margins = data.frame(emmeans(a1, specs=c('time'),
@@ -431,19 +431,19 @@ def test_anova_mixed():
 
     pd.testing.assert_frame_equal(
         res.get_margins(['group', 'time']),
-        r('interaction_margins')
+        rst.misc.utils.convert_df(r('interaction_margins'))
     )
     pd.testing.assert_frame_equal(
         res.get_margins(margins_terms='group', by_terms='time'),
-        r('interaction_margins')
+        rst.misc.utils.convert_df(r('interaction_margins'))
     )
     pd.testing.assert_frame_equal(
         res.get_margins(margins_terms='time'),
-        r('time_margins')
+        rst.misc.utils.convert_df(r('time_margins'))
     )
     pd.testing.assert_frame_equal(
         res.get_margins(margins_terms='group'),
-        r('group_margins')
+        rst.misc.utils.convert_df(r('group_margins'))
     )
 
 
@@ -506,13 +506,13 @@ def test_bayes_anova_between(between_vars, include_subject):
     #            784100477177213.6]
 
     pd.testing.assert_frame_equal(
-        m.fit().get_df().head(2), r_res.head(2))
+        m.fit().get_df().head(2), r_res.head(2).reset_index(drop=True))
 
     m.reset(
         formula=f"{between_vars[1]} + (1|dataset_rownames)",
         include_subject=include_subject)
 
-    pd.testing.assert_frame_equal(m.fit().get_df().head(2), r_res.head(2))
+    pd.testing.assert_frame_equal(m.fit().get_df().head(2), r_res.head(2).reset_index(drop=True))
 
 
 @pytest.mark.parametrize('within_vars',
@@ -562,13 +562,13 @@ def test_bayes_anova_within(within_vars, include_subject):
     #            784100477177213.6]
 
     pd.testing.assert_frame_equal(
-        m.fit().get_df(), r_res)
+        m.fit().get_df(), r_res.reset_index(drop=True))
 
     m.reset(
         formula=f"{within_vars[1]} + (1|id)",
         include_subject=include_subject)
 
-    pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
+    pd.testing.assert_frame_equal(m.fit().get_df(), r_res.reset_index(drop=True))
 
 
 @pytest.mark.parametrize('include_subject', [False])
@@ -608,13 +608,13 @@ def test_bayes_anova_mixed(include_subject):
     #   `check_less_exact' (e.g., see below)
 
     res = m.fit().get_df()
-    pd.testing.assert_frame_equal(res.head(2), r_res.head(2))
+    pd.testing.assert_frame_equal(res.head(2), r_res.head(2).reset_index(drop=True))
 
     m.reset(
         formula=formula,
         include_subject=include_subject)
     res = m.fit().get_df()
-    pd.testing.assert_frame_equal(res.head(2), r_res.head(2))
+    pd.testing.assert_frame_equal(res.head(2), r_res.head(2).reset_index(drop=True))
 
 
 @pytest.mark.parametrize('p_exact', [False, True])

@@ -228,10 +228,6 @@ class GroupwiseModel(base.BaseModel):
         if self._is_aggregation_required:
             self._input_data = self._aggregate_data()
 
-        # TODO - check if this can be permanently removed
-        # self._input_data.loc[:, self.independent] = self._input_data[
-        #     self.independent].astype('category')
-
         self._r_input_data = utils.convert_df(self._input_data.copy())
 
     # def _verify_independent_vars(self):
@@ -867,6 +863,15 @@ class BayesAnovaModel(AnovaModel):
         #  formula based on the entered/parsed variables
         # TODO - consider leaving this or writing a more sophisticated solution.
         self._set_formula_from_vars()
+
+    def _transform_input_data(self):
+
+        # TODO - check if this can be permanently removed
+        self._input_data.loc[:, self.independent] = self._input_data[
+            self.independent].astype('category')
+        
+        super(BayesAnovaModel, self)._transform_input_data()
+
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.anovaBF(
