@@ -329,7 +329,6 @@ class T2SamplesModel(GroupwiseModel):
                  y=None,
                  correct=False,
                  **kwargs):
-        self.paired = paired
         self.tail = tail
         self.assume_equal_variance = assume_equal_variance
         kwargs['max_levels'] = 2

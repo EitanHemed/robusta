@@ -75,15 +75,14 @@ class BayesianLinearRegression(LinearRegressionResults):
 
         super().__init__(r_results)
 
-    def _tidy_results(self):
-        if self.mode == 'bf':
-            return utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
-        else:
-            return utils.convert_df(self.r_results)
+    # def _tidy_results(self):
+    #     if self.mode == 'bf':
+    #         return self.r_results[BF_COLUMNS] # return utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
+    #     else:
+    #         return self.r_results[BF_COLUMNS] # utils.convert_df(self.r_results)
 
     def _tidy_results(self):
-        return utils.convert_df(self.r_results,
-                                'model').drop(columns=REDUNDANT_BF_COLUMNS)
+        return self.r_results.drop(columns=REDUNDANT_BF_COLUMNS)
 
     # def get_report(self, mode: str = 'df'):
     #

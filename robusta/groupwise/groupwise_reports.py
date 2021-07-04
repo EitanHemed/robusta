@@ -49,7 +49,7 @@ class Reporter:
         if isinstance(model,
                       (groupwise_models.T1SampleModel,
                        groupwise_models.T2SamplesModel)):
-            return self._populate_t_test(model)
+            return self._populate_t_test_clause(model)
         if isinstance(model,
                       (groupwise_models.BayesT1SampleModel,
                        groupwise_models.BayesT2SamplesModel)):

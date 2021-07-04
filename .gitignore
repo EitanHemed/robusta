@@ -9,3 +9,5 @@ conda/
 
 # Files under developmenet
 /robusta/misc/plotting.py
+
+.ipynb_checkpoints

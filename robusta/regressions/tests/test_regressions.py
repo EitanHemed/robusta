@@ -34,12 +34,12 @@ def test_simple_linear_regression():
 
     res = m.fit()
 
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_multiple_linear_regression():
     m = rst.api.linear_regression(
-        data=rst.misc.datasets.data('marketing'),
+        data=rst.misc.datasets.load_dataset('marketing'),
         formula='sales~youtube*facebook + 1|dataset_rownames',
         subject='dataset_rownames')
     res = m.fit()
@@ -52,11 +52,11 @@ def test_multiple_linear_regression():
         """
     )
 
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_missing_columns():
-    df = rst.misc.datasets.data('sleep')
+    df = rst.misc.datasets.load_dataset('sleep')
     with pytest.raises(KeyError):
         m = rst.api.linear_regression(
             data=df, formula='extra ~ condition + 1|ID')
@@ -64,7 +64,7 @@ def test_missing_columns():
 
 
 def test_simple_bayesian_regression():
-    m = rst.api.bayes_linear_regression(data=rst.misc.datasets.data(
+    m = rst.api.bayes_linear_regression(data=rst.misc.datasets.load_dataset(
         'attitude'),
         formula='rating ~ complaints + 1|dataset_rownames')
     res = m.fit()
@@ -79,12 +79,12 @@ def test_simple_bayesian_regression():
             ), 'model')[, c('model', 'bf', 'error')]
         """
     )
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_multiple_bayesian_regression():
     m = rst.api.bayes_linear_regression(
-        data=rst.misc.datasets.data('attitude'),
+        data=rst.misc.datasets.load_dataset('attitude'),
         formula='rating ~ privileges * complaints + raises + 1| dataset_rownames'
     )
     res = m.fit()
@@ -102,12 +102,12 @@ def test_multiple_bayesian_regression():
         """
     )
 
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_simple_logistic_regression():
     m = rst.api.logistic_regression(
-        formula='group~extra+1 | ID', data=rst.misc.datasets.data('sleep')
+        formula='group~extra+1 | ID', data=rst.misc.datasets.load_dataset('sleep')
     )
     res = m.fit()
 
@@ -119,12 +119,12 @@ def test_simple_logistic_regression():
         """
     )
 
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_multiple_logistic_regression():
     m = rst.api.logistic_regression(
-        formula='group~extra+1 | ID', data=rst.misc.datasets.data('sleep')
+        formula='group~extra+1 | ID', data=rst.misc.datasets.load_dataset('sleep')
     )
     res = m.fit()
 
@@ -135,4 +135,4 @@ def test_multiple_logistic_regression():
         """
     )
 
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))

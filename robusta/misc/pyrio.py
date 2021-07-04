@@ -25,7 +25,7 @@ r_libraries_to_include = ['BayesFactor', 'Matrix', 'afex',
                           'backports', 'base', 'broom', 'datarium', 'datasets',
                           'dplyr', 'effsize', 'emmeans', 'generics', 'lme4',
                           'ppcor', 'psych', 'stats', 'tibble', 'tidyr', 'utils',
-                         'ARTool'
+                          'ARTool'
                           ]
 
 
@@ -44,10 +44,10 @@ class PyRIO:
         if required_packs is None:
             required_packs = r_libraries_to_include
         if PyRIO.instances_count == 1:  # Check if the number of instances present are more than one.
-            del self
-            print(
+            # del self
+            warnings.warn(
                 "A PyRIO object has already been initialized. Please use existing")
-            return
+            # return
         PyRIO.instances_count += 1
 
         self.rpackages = packages

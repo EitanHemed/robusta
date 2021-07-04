@@ -1,3 +1,5 @@
+# TODO - credit all!
+
 __version__ = '0.0.1'
 __author__ = 'Eitan Hemed'
 __author_email__ = 'Eitan.Hemed@gmail.com'
@@ -14,6 +16,7 @@ __author_email__ = 'Eitan.Hemed@gmail.com'
 from .misc.pyrio import PyRIO
 pyr = PyRIO()
 
+
 from . import api
-from .misc import datasets
+from .misc.datasets import get_available_datasets, load_dataset
 

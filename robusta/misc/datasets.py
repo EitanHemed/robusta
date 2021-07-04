@@ -7,7 +7,7 @@ from ..misc import utils
 
 import rpy2.robjects as ro
 
-def data(dataset_name=None, package_name=None):
+def load_dataset(dataset_name, package_name=None):
     """Returns either a dataset (if `dataset_name` is specified)
         or information on available datasets (if `dataset_name` is `None`).
         Works similarly to R's 'utils::data'
@@ -28,21 +28,18 @@ def data(dataset_name=None, package_name=None):
             Either a data frame of the requested data set or data frame of all
             available data sets.
         """
-    if dataset_name is None:
-        return _get_available_datasets()
-    else:
-        return _load_dataset(dataset_name, package_name)
+    return _load(dataset_name, package_name)
 
 
-def _get_available_datasets():
+def get_available_datasets():
     # Get a (x, 4) np.array of the
     info = pyr.rpackages.utils.data()
     names = ['Package', 'LibPath', 'Item', 'Description']
-    data = np.array(info[2]).reshape(4, len(info[2]) // 4)
-    return pd.DataFrame(data=data.T, columns=names)
+    data = np.fliplr(np.array(info[2]).reshape(4, len(info[2]) // 4))
+    return pd.DataFrame(data=data.T, columns=names).drop(columns=['LibPath'])
 
 
-def _load_dataset(dataset_name: str, package_name: str = None):
+def _load(dataset_name: str, package_name: str = None):
     """
     Load an R-dataset and retrieve it as a pandas dataframe. Row-names
     (similar to pandas
@@ -52,7 +49,7 @@ def _load_dataset(dataset_name: str, package_name: str = None):
     @rtype pd.core.frame.DataFrame
     """
     if package_name is None:
-        available = _get_available_datasets()
+        available = get_available_datasets()
         available = available.loc[available['Item'] == dataset_name,
                                   'Package']
         if available.shape[0] != 1:

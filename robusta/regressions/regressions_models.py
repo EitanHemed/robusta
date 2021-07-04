@@ -15,8 +15,8 @@ __all__ = [
     'MixedModelModel'
 ]
 
-warnings.warn("Currently the regressions module is under development,"
-              "nothing is promised to work correctly.")
+# warnings.warn("Currently the regressions module is under development,"
+#               "nothing is promised to work correctly.")
 
 
 @dataclass
@@ -113,7 +113,7 @@ class RegressionModel(base.BaseModel):
                     raise NotImplementedError
 
     def _transform_input_data(self):
-        pass
+        self._r_input_data = utils.convert_df(self._input_data)
 
     def _validate_input_data(self):
         pass
@@ -163,7 +163,7 @@ class LinearRegressionModel(RegressionModel):
             pyr.rpackages.stats.lm(
                 **{
                     'formula': self._r_formula,
-                    'data': self.data,
+                    'data': self._r_input_data,
                     # 'weights': np.nan,
                     # 'singular.ok': np.nan,
                     # 'offset': np.nan
@@ -209,7 +209,7 @@ class BayesLinearRegressionModel(LinearRegressionModel):
         return regressions_results.BayesianLinearRegression(
             pyr.rpackages.base.data_frame(
                 pyr.rpackages.BayesFactor.generalTestBF(
-                    formula=self._r_formula, data=self._input_data,
+                    formula=self._r_formula, data=self._r_input_data,
                     progress=False,
                     whichRandom=pyr.rinterface.NULL if self.exclude_subject
                     else self.subject,
@@ -226,7 +226,7 @@ class LogisticRegressionModel(RegressionModel):
     def _analyze(self):
         return regressions_results.LogisticRegressionResults(
             pyr.rpackages.stats.glm(
-                formula=self._r_formula, data=self.data,
+                formula=self._r_formula, data=self._r_input_data,
                 family='binomial'
             ))
 
@@ -264,7 +264,7 @@ class MixedModelModel:
         return pyr.rpackages.lme4.lmer(
             **{
                 'formula': self._r_formula,
-                'data': self.data,
+                'data': self._r_input_data,
                 # 'weights': np.nan,
                 # 'singular.ok': np.nan,
                 # 'offset': np.nan

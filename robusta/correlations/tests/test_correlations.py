@@ -10,7 +10,7 @@ from robusta.correlations.correlations_models import (_PairwiseCorrelationModel,
 
 BIVARIATE_CORRELEATION_METHODS = ['kendall', 'spearman', 'pearson']
 
-ATTITUDE_DATA, MTCARS_DATA, IRIS_DATA = map(rst.datasets.data,
+ATTITUDE_DATA, MTCARS_DATA, IRIS_DATA = map(rst.datasets.load_dataset,
                                             ['attitude', 'mtcars', 'iris'])
 TRIPLEWISE_CORRS_XYZ = dict(
     x=(500, 550, 450, 400, 600, 650, 700, 550, 650, 550),

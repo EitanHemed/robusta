@@ -10,7 +10,7 @@ from robusta.groupwise.groupwise_results import BF_COLUMNS
 # TODO - when rst is installed as a package, remove the following line
 # sys.path.append('./')
 
-ANXIETY_DATASET = rst.misc.datasets.data('anxiety').set_index(
+ANXIETY_DATASET = rst.load_dataset('anxiety').set_index(
     ['id', 'group']).filter(
     regex='^t[1-3]$').stack().reset_index().rename(
     columns={0: 'score',
@@ -38,7 +38,7 @@ class FauxInf:
 @pytest.mark.parametrize('paired', [True, False])
 @pytest.mark.parametrize('tail', TAILS)
 def test_t2samples(paired, tail):
-    data = rst.misc.datasets.data('sleep')
+    data = rst.load_dataset('sleep')
     m = rst.api.t2samples(data=data,
                       independent='group',
                       dependent='extra',
@@ -69,7 +69,7 @@ def test_t2samples(paired, tail):
 @pytest.mark.parametrize('mu', [0, 2.33, 4.66])
 @pytest.mark.parametrize('tail', TAILS)
 def test_t1sample(mu, tail):
-    sleep = rst.misc.datasets.data('sleep')
+    sleep = rst.load_dataset('sleep')
     m = rst.api.t1sample(data=sleep.loc[sleep['group'] == '1'],
                      dependent='extra', subject='ID',
                      independent='group', mu=mu, tail=tail)
@@ -105,7 +105,7 @@ def test_bayes_t2samples_independent(
         prior_scale,
         sample_from_posterior,
         iterations):
-    data = rst.misc.datasets.data('mtcars')
+    data = rst.load_dataset('mtcars')
 
     m = rst.api.bayes_t2samples(
         data=data, subject='dataset_rownames',
@@ -182,7 +182,7 @@ def test_bayes_t2samples_dependent(
         null_interval,
         sample_from_posterior,
         mu):
-    data = rst.misc.datasets.data('sleep')
+    data = rst.load_dataset('sleep')
 
     m = rst.api.bayes_t2samples(
         data=data, subject='ID',
@@ -265,7 +265,7 @@ def test_bayes_t1sample(
         null_interval,
         sample_from_posterior,
         mu):
-    data = rst.misc.datasets.data('iris')
+    data = rst.load_dataset('iris')
     data = data.loc[data['Species'] == 'setosa']
 
     m = rst.api.bayes_t1sample(
@@ -339,7 +339,7 @@ def test_bayes_t1sample(
 ])
 def test_anova_between(between_vars):
     m = rst.api.anova(
-        data=rst.misc.datasets.data('ToothGrowth'),
+        data=rst.load_dataset('ToothGrowth'),
         dependent='len', subject='dataset_rownames',
         between=between_vars[0])
 
@@ -459,7 +459,7 @@ def test_anova_mixed():
                          )
 def test_bayes_anova_between(between_vars, include_subject):
     m = rst.api.bayes_anova(
-        data=rst.misc.datasets.data('ToothGrowth'),
+        data=rst.load_dataset('ToothGrowth'),
         dependent='len', subject='dataset_rownames',
         between=between_vars[0], iterations=1e4,
         include_subject=include_subject)
@@ -706,7 +706,7 @@ def test_kruskal_wallis_test():
     data.frame(tidy(kruskal.test(weight ~ group, data = PlantGrowth)))
     """))
     m = rst.api.kruskal_wallis_test(
-        data=rst.misc.datasets.data('PlantGrowth'),
+        data=rst.load_dataset('PlantGrowth'),
         between='group',
         dependent='weight', subject='dataset_rownames')
     pd.testing.assert_frame_equal(m.fit().get_df(), r_res)
@@ -728,7 +728,7 @@ def test_friedman_test():
         data.frame(tidy(friedman_test(score ~ time |id, data=data_long)))
         """))
 
-        df = rst.misc.datasets.data('selfesteem').set_index(
+        df = rst.load_dataset('selfesteem').set_index(
             ['id', 'group']).filter(
             regex='^t[1-3]$').stack().reset_index().rename(
             columns={0: 'score', 'level_2': 'time'})
@@ -751,7 +751,7 @@ def test_aligned_ranks_test():
             data=Higgins1990Table5))
         """)
     m = rst.api.aligned_ranks_test(
-        data=rst.misc.datasets.data('Higgins1990Table5'),
+        data=rst.load_dataset('Higgins1990Table5'),
         formula='DryMatter ~ Moisture*Fertilizer + (1|Tray)')
     pd.testing.assert_frame_equal(
         m.fit().get_df(), rst.misc.utils.convert_df(r("res"))
