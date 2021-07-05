@@ -45,7 +45,10 @@ class Reporter:
     def __init__(self):
         pass
 
-    def visit(self, model):
+    def report_table(self, model):
+        return model.get_df()
+
+    def report_text(self, model):
         if isinstance(model,
                       (groupwise_models.T1SampleModel,
                        groupwise_models.T2SamplesModel)):

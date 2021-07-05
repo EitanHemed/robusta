@@ -95,6 +95,7 @@ class GroupwiseModel(base.BaseModel):
             min_levels=kwargs.get('min_levels', 2)
         )
 
+        self._results = None
         self._fitted = False
 
         # TODO - on the new structure nothing is run on init, so do we really
@@ -160,7 +161,7 @@ class GroupwiseModel(base.BaseModel):
          self.subject) = vp.get_variables()
 
     def _convert_independent_vars_to_list(self, ind_vars: object) -> list:
-        #if isinstance(self, T1SampleModel):
+        # if isinstance(self, T1SampleModel):
         #    return []
         return utils.to_list(ind_vars)
 
@@ -255,9 +256,7 @@ class GroupwiseModel(base.BaseModel):
                                " prior to calling `fit()` again!")
         self._fitted = True
         self._pre_process()
-
-        # returns the results objects that is created with the (r) results object
-        return self._analyze()
+        self._analyze()
 
     def reset(self, **kwargs):
 
@@ -270,18 +269,25 @@ class GroupwiseModel(base.BaseModel):
         vars(self).update(**kwargs)
 
         self._fitted = False
+        self._results = None
 
-    def report(self):
+    def get_df(self):
+        return self._results.get_df()
+
+    def report_text(self):
+        # TODO - remake this into a visitor pattern
         visitor = groupwise_reports.Reporter()
-        self._accept(visitor)
+        return visitor.report_text(self._results)
 
-    def _accept(self, visitor):
-        visitor.visit(self)
+    def report_table(self):
+        # TODO - remake this into a visitor pattern
+        visitor = groupwise_reports.Reporter()
+        return visitor.report_table(self._results)
 
 
 class T2SamplesModel(GroupwiseModel):
     """
-    Run a frequentist dependent or independent samples t-test.
+    Run a frequentist dependent or independent-samples t-test.
 
     To run a model either specify the dependent, independent and subject
     variables, or enter a formula (SPECIFY FORM HERE).
@@ -335,7 +341,6 @@ class T2SamplesModel(GroupwiseModel):
         kwargs['max_levels'] = 2
         kwargs['min_levels'] = 2
 
-
         # if kwargs.get('formula') is None:
         #
         #     if paired is not None:
@@ -371,7 +376,6 @@ class T2SamplesModel(GroupwiseModel):
                 if independent is not None:
                     kwargs[{False: 'between', True: 'within'}[paired]] = independent
 
-
         super().__init__(**kwargs)
 
     def _select_input_data(self):
@@ -381,7 +385,7 @@ class T2SamplesModel(GroupwiseModel):
             lambda s: s.values)
 
     def _analyze(self):
-        return groupwise_results.T2SamplesResults(
+        self._results = groupwise_results.T2SamplesResults(
             pyr.rpackages.stats.t_test(
                 **{'x': self.x, 'y': self.y,
                    'paired': self.paired,
@@ -484,20 +488,20 @@ class BayesT2SamplesModel(T2SamplesModel):
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.ttestBF(
-                    x=self.x,
-                    y=self.y,
-                    paired=self.paired,
-                    nullInterval=self.null_interval,
-                    iterations=self.iterations,
-                    posterior=self.sample_from_posterior,
-                    rscale=self.prior_scale,
-                    mu=self.mu
-                )
-
-        return groupwise_results.BayesT2SamplesResults(b,
-        # TODO - refactor
-            mode='posterior' if self.sample_from_posterior else 'bf'
+            x=self.x,
+            y=self.y,
+            paired=self.paired,
+            nullInterval=self.null_interval,
+            iterations=self.iterations,
+            posterior=self.sample_from_posterior,
+            rscale=self.prior_scale,
+            mu=self.mu
         )
+
+        self._results = groupwise_results.BayesT2SamplesResults(b,
+                                                                # TODO - refactor
+                                                                mode='posterior' if self.sample_from_posterior else 'bf'
+                                                                )
 
 
 class T1SampleModel(T2SamplesModel):
@@ -550,7 +554,7 @@ class T1SampleModel(T2SamplesModel):
         self.x = self._input_data[getattr(self, 'dependent')].values
 
     def _analyze(self):
-        return groupwise_results.T1SampleResults(pyr.rpackages.stats.t_test(
+        self._results = groupwise_results.T1SampleResults(pyr.rpackages.stats.t_test(
             x=self.x,
             mu=self.mu,
             alternative=self.tail
@@ -631,18 +635,18 @@ class BayesT1SampleModel(T1SampleModel):
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.ttestBF(
-                    x=self.x,
-                    y=pyr.rinterface.NULL,
-                    nullInterval=self.null_interval,
-                    iterations=self.iterations,
-                    posterior=self.sample_from_posterior,
-                    rscale=self.prior_scale,
-                    mu=self.mu
-                )
-        #with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
+            x=self.x,
+            y=pyr.rinterface.NULL,
+            nullInterval=self.null_interval,
+            iterations=self.iterations,
+            posterior=self.sample_from_posterior,
+            rscale=self.prior_scale,
+            mu=self.mu
+        )
+        # with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
         #    z = ro.conversion.rpy2py(pyr.rpackages.base.data_frame(b))
-        return groupwise_results.BayesT1SampleResults(b,
-                                                      mode='posterior' if self.sample_from_posterior else 'bf')
+        self._results = groupwise_results.BayesT1SampleResults(b,
+                                                               mode='posterior' if self.sample_from_posterior else 'bf')
 
 
 class Wilcoxon1SampleModel(T1SampleModel):
@@ -661,7 +665,7 @@ class Wilcoxon1SampleModel(T1SampleModel):
     """Mann-Whitney"""
 
     def _analyze(self):
-        return groupwise_results.Wilcoxon1SampleResults(
+        self._results = groupwise_results.Wilcoxon1SampleResults(
             pyr.rpackages.stats.wilcox_test(
                 x=self.x, mu=self.mu, alternative=self.tail,
                 exact=self.p_exact, correct=self.p_correction,
@@ -680,7 +684,7 @@ class Wilcoxon2SamplesModel(T2SamplesModel):
         super().__init__(paired=self.paired, **kwargs)
 
     def _analyze(self):
-        return groupwise_results.Wilcoxon2SamplesResults(
+        self._results = groupwise_results.Wilcoxon2SamplesResults(
             pyr.rpackages.stats.wilcox_test(
                 x=self.x, y=self.y, paired=self.paired,
                 alternative=self.tail,
@@ -735,7 +739,7 @@ class AnovaModel(GroupwiseModel):
         # TODO - if we want to use aov_4 than the error term needs to be
         #  encapsulated in parentheses. Maybe write something that will add the
         #  parantheses automatically.
-        return groupwise_results.AnovaResults(pyr.rpackages.afex.aov_4(
+        self._results = groupwise_results.AnovaResults(pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
             # dependent=self.dependent,
             # id=self.subject,
@@ -868,30 +872,28 @@ class BayesAnovaModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _transform_input_data(self):
-
         # TODO - check if this can be permanently removed
         self._input_data.loc[:, self.independent] = self._input_data[
             self.independent].astype('category')
-        
-        super(BayesAnovaModel, self)._transform_input_data()
 
+        super(BayesAnovaModel, self)._transform_input_data()
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.anovaBF(
-                self._r_formula,
-                self._r_input_data,
-                whichRandom=self.subject,
-                whichModels=self.which_models,
-                iterations=self.iterations,
-                rscaleFixed=self.r_scale_fixed,
-                rscaleRandom=self.r_scale_random,
-                rscaleEffects=self.r_scale_effects,
-                multicore=self.multi_core,
-                method=self.method,
-                progress=False
-                # noSample=self.no_sample
-            )
-        return groupwise_results.BayesAnovaResults(b)
+            self._r_formula,
+            self._r_input_data,
+            whichRandom=self.subject,
+            whichModels=self.which_models,
+            iterations=self.iterations,
+            rscaleFixed=self.r_scale_fixed,
+            rscaleRandom=self.r_scale_random,
+            rscaleEffects=self.r_scale_effects,
+            multicore=self.multi_core,
+            method=self.method,
+            progress=False
+            # noSample=self.no_sample
+        )
+        self._results = groupwise_results.BayesAnovaResults(b)
 
 
 class KruskalWallisTestModel(AnovaModel):
@@ -927,7 +929,7 @@ class KruskalWallisTestModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _analyze(self):
-        return groupwise_results.KruskalWallisTestResults(
+        self._results = groupwise_results.KruskalWallisTestResults(
             pyr.rpackages.stats.kruskal_test(
                 self._r_formula, data=self._r_input_data
             ))
@@ -965,7 +967,7 @@ class FriedmanTestModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _analyze(self):
-        return groupwise_results.FriedmanTestResults(
+        self._results = groupwise_results.FriedmanTestResults(
             pyr.rpackages.stats.friedman_test(
                 self._r_formula, data=self._r_input_data
             ))
@@ -975,7 +977,7 @@ class AlignedRanksTestModel(AnovaModel):
     """N-way non-parametric Anova"""
 
     def _analyze(self):
-        return groupwise_results.AlignedRanksTestResults(
+        self._results = groupwise_results.AlignedRanksTestResults(
             pyr.rpackages.ARTool.art(
                 data=self._r_input_data,
                 formula=self._r_formula

@@ -8,6 +8,7 @@ pyrio is in charge of the following:
     - Starting an R session.
     - Transferring objects into the R environment and back.
 """
+import warnings
 
 from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface
 from rpy2.robjects.conversion import localconverter
@@ -46,7 +47,7 @@ class PyRIO:
         if PyRIO.instances_count == 1:  # Check if the number of instances present are more than one.
             # del self
             warnings.warn(
-                "A PyRIO object has already been initialized. Please use existing")
+                "A PyRIO object has already been initialized.")
             # return
         PyRIO.instances_count += 1
 
@@ -54,13 +55,14 @@ class PyRIO:
         self.rinterface = rinterface
         self._get_r_utils()
         self.required_rpacks = required_packs
-        self.get_required_rpackages()
+        print("Initializing robusta. Please wait.")
+        self._get_required_rpackages()
 
-    def get_required_rpackages(self):
-        [setattr(self.rpackages, pack, self.import_r_package(pack)) for
+    def _get_required_rpackages(self):
+        [setattr(self.rpackages, pack, self._import_r_package(pack)) for
          pack in self.required_rpacks]
 
-    def import_r_package(self, pack):
+    def _import_r_package(self, pack):
         """This utility checks whether the package is installed and only then imports the package"""
         self._verify_if_r_package_installed(pack)
         return self.rpackages.importr(pack)
@@ -70,11 +72,11 @@ class PyRIO:
             self._install_r_package(pack)
 
     def _install_r_package(self, pack):
+        warnings.warn(f'Installing: {pack}...')
         self.rpackages.utils.install_packages(pack, dependencies=True)
 
     def _get_r_utils(self):
-        """It is important to get the utils package in order to to """
-        setattr(self.rpackages, 'utils', self.import_r_package('utils'))
+        setattr(self.rpackages, 'utils', self._import_r_package('utils'))
         self.rpackages.utils.chooseCRANmirror(ind=self.cran_mirror_idx)
 
     def get_imported_packages(self):
