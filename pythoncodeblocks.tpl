@@ -1,6 +1,6 @@
 {% extends 'markdown.tpl' %}
-{% block codecell %}
-``` python
-{{cell.source}}
-```
-{% endblock codecell %}
+    {% block codecell %}
+    ``` python
+    {{cell.source}}
+    ```
+    {% endblock codecell %}
