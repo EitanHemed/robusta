@@ -329,6 +329,7 @@ class T2SamplesModel(GroupwiseModel):
                  y=None,
                  correct=False,
                  **kwargs):
+        self.paired = paired
         self.tail = tail
         self.assume_equal_variance = assume_equal_variance
         kwargs['max_levels'] = 2
@@ -358,14 +359,17 @@ class T2SamplesModel(GroupwiseModel):
         # TODO - refactor this
         if kwargs.get('formula') is None:
             # If independent is specified, try to set between/within based on independent and paired
-            if independent is not None and paired is not None:
-                kwargs[{False: 'between', True: 'within'}[paired]] = independent
             # If no independent variable is specified, try to use paired and between/within to infer independent
-            if independent is None and paired is not None:
-                if paired is True:
-                    independent = kwargs['between']
-                elif paired is False:
-                    independent = kwargs['within']
+            if paired is None:
+                pass
+            else:
+                if independent is None:
+                    if paired is True:
+                        kwargs['independent'] = kwargs['within']
+                    else:
+                        kwargs['independent'] = kwargs['between']
+                if independent is not None:
+                    kwargs[{False: 'between', True: 'within'}[paired]] = independent
 
 
         super().__init__(**kwargs)
