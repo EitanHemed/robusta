@@ -4,7 +4,7 @@
 
 robusta is a statistics package in Python3 providing an interface to 
 many common statistical analyses, performed using through [R](https://www.r-project.org/)
-using [RPY2](https://github.com/rpy2/rpy2).  
+using [RPY2](https://github.com/rpy2/rpy2). robusta relies on many wonderful projects in R (**TODO - full list here**).
 
 **PLEASE NOTE** robusta is under active development and is supplied as-is with no guarantees.
 
