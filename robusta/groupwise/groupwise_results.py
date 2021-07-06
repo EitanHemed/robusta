@@ -12,6 +12,12 @@ PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
 DEFAULT_ITERATIONS: int = 10000
 DEFAULT_MU: float = 0.0
 
+T_TEST_COLUMNS_RENAME = {'statistic': 't', 'parameter': 'dof', 'estimate': 'mean', 'p.value': 'p-value'}
+T_TEST_COHEN_COLUMN_NAMES = ['Cohen-d Low', 'Cohen-d', 'Cohen-d High']
+T_TEST_RETURNED_COLUMNS = [T_TEST_COLUMNS_RENAME['statistic'], T_TEST_COLUMNS_RENAME['parameter'],
+                           T_TEST_COLUMNS_RENAME['p.value'], 'Cohen-d', 'Cohen-d Low', 'Cohen-d High']
+
+ANOVA_COLUMNS_RENAME = {'Effect':'Term', 'p.value': 'p-value'}
 
 class GroupwiseResults(base.BaseResults):
 
@@ -20,7 +26,22 @@ class GroupwiseResults(base.BaseResults):
 
 
 class T2SamplesResults(GroupwiseResults):
-    pass
+
+    def _reformat_r_output_df(self):
+        df = self._get_r_output_df().copy()
+        df.rename(columns=T_TEST_COLUMNS_RENAME, inplace=True)
+
+        vals = df.to_dict('records')[0]
+
+        dofs = vals['df']
+
+        # TODO - how to handle unequal group size
+        cohen_d = pyr.rpackages.psych.t2d(vals['t'], n=vals['dof'])
+        cohen_d_ci = pyr.rpackages.psych.d_ci(cohen_d, n=vals['dof'])
+
+        df[T_TEST_COHEN_COLUMN_NAMES] = cohen_d_ci  # Skip the middle value
+
+        return df[T_TEST_RETURNED_COLUMNS]
 
 
 class BayesT2SamplesResults(T2SamplesResults):
@@ -37,8 +58,14 @@ class BayesT2SamplesResults(T2SamplesResults):
         else:
             return utils.convert_df(self.r_results)
 
-    def get_df(self):
+    def _get_r_output_df(self):
         return self._tidy_results()
+
+    def _reformat_r_output_df(self):
+        return self.get_df()
+
+    def get_df(self):
+        return self._get_r_output_df()
 
 
 class T1SampleResults(T2SamplesResults):
@@ -59,7 +86,7 @@ class BayesT1SampleResults(T1SampleResults):
         else:
             return utils.convert_df(self.r_results, 'iteration')
 
-    def get_df(self):
+    def _get_r_output_df(self):
         return self._tidy_results()
 
 
@@ -85,6 +112,20 @@ class AnovaResults(GroupwiseResults):
         # anova_table.insert(loc=0, column='term', value=missing_column)
         # return anova_table
 
+    def _reformat_r_output_df(self):
+        df = self._get_r_output_df().copy()
+        df.rename(columns=ANOVA_COLUMNS_RENAME, inplace=True)
+
+
+
+        # TODO - how to handle unequal group size
+        cohen_d = pyr.rpackages.psych.t2d(vals['t'], n=vals['dof'])
+        cohen_d_ci = pyr.rpackages.psych.d_ci(cohen_d, n=vals['dof'])
+
+        df[T_TEST_COHEN_COLUMN_NAMES] = cohen_d_ci  # Skip the middle value
+
+        return df[T_TEST_RETURNED_COLUMNS]
+
     def get_margins(
             self,
             margins_terms: typing.List[str] = None,
@@ -104,7 +145,7 @@ class AnovaResults(GroupwiseResults):
         )
 
         if not all(
-                term in self.get_df()['Effect'].values for term in
+                term in self._get_r_output_df()['Effect'].values for term in
                 _terms_to_test):
             raise RuntimeError(
                 f'Margins term: {[i for i in _terms_to_test]}'
@@ -130,7 +171,6 @@ class AnovaResults(GroupwiseResults):
                 _r_margins))
 
         return margins
-
 
         # self.margins_results[tuple(margins_term)] = {
         #    'margins': margins, 'r_margins': _r_margins}
@@ -208,9 +248,9 @@ class BayesAnovaResults(AnovaResults):
 
     def _tidy_results(self):
         return utils.convert_df(
-                self.r_results, 'model')
+            self.r_results, 'model')
 
-    def get_df(self):
+    def _get_r_output_df(self):
         return self._tidy_results()[['model', 'bf', 'error']]
 
     def get_margins(self):

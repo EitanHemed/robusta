@@ -65,8 +65,16 @@ class BaseResults:
     def __init__(self, r_results, **kwargs):
         self.r_results = r_results
 
+        self.results_df = self._reformat_r_output_df()
+
+    def get_df(self):
+        return self.results_df.copy()
+
+    def _reformat_r_output_df(self):
+        return None
+
     def _tidy_results(self):
         return pyr.rpackages.generics.tidy(self.r_results)
 
-    def get_df(self):
+    def _get_r_output_df(self):
         return utils.convert_df(self._tidy_results())

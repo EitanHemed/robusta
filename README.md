@@ -150,16 +150,15 @@ Analyses are performed through using designated model objects that also store th
 
 Here is a paired-samples t-test using the Students' sleep dataset previously loaded:
 
-
 ```python
 # Create the model
 m = rst.api.t2samples(
-    data=rst.load_dataset('sleep'), independent='group', 
+    data=rst.load_dataset('sleep'), independent='group',
     dependent='extra', subject='ID', paired=True, tail='less')
 # Fit the data
 results = m.fit()
 # Dataframe format of the results
-results.get_df()
+results._get_r_output_df()
 ```
 
 
@@ -200,10 +199,9 @@ results.get_df()
 
 We can reset the models in order to update the model parameters and re-fit it. In this example, we run the same model an an independent samples t-test:
 
-
 ```python
 m.reset(paired=False, assume_equal_variance=True)
-m.fit().get_df()
+m.fit()._get_r_output_df()
 ```
 
 
@@ -254,17 +252,17 @@ As shown above, see also `rst.t1sample`. Relatedly, see non-parametric variation
 #### Bayesian t-tests
 `bayes_t2samples` and `bayes_t1sample` allow you to calculate Bayes factors or sample from the posterior distribution:
 
-
 ```python
 m = rst.api.bayes_t2samples(
-        data=rst.load_dataset('mtcars'), subject='dataset_rownames',
-        dependent='mpg', independent='am', prior_scale=0.5,
-        paired=False)
-print(m.fit().get_df())
+    data=rst.load_dataset('mtcars'), subject='dataset_rownames',
+    dependent='mpg', independent='am', prior_scale=0.5,
+    paired=False)
+print(m.fit()._get_r_output_df())
 
 # Test different null intervals and prior values:
-m.reset(prior_scale=0.1, 
-        null_interval=[0, 0.5]); print(m.fit().get_df())
+m.reset(prior_scale=0.1,
+        null_interval=[0, 0.5]);
+print(m.fit()._get_r_output_df())
 ```
 
              model         bf         error
@@ -345,15 +343,12 @@ anxiety.head()
 </table>
 </div>
 
-
-
-
 ```python
 m = rst.api.anova(
-        data=anxiety, subject='id',
-        dependent='score', between='group', within='time')
+    data=anxiety, subject='id',
+    dependent='score', between='group', within='time')
 res = m.fit()
-res.get_df()
+res._get_r_output_df()
 ```
 
     R[write to console]: Contrasts set to contr.sum for the following variables: group
@@ -412,10 +407,9 @@ res.get_df()
 
 Similarly, we run the model usign only the between subject term (`group`). As the model was already generated we can simpyl drop the within-subject term:
 
-
 ```python
 m.reset(within=None)
-m.fit().get_df()
+m.fit()._get_r_output_df()
 ```
 
     R[write to console]: Contrasts set to contr.sum for the following variables: group
@@ -454,13 +448,12 @@ m.fit().get_df()
 
 
 
-R and many other statistical packages (e.g., [statsmodels](https://www.statsmodels.org/stable/index.html) support a formula interface to fit statistical models. Here it is shown that a model can also be specified by the formula kwargs rather than specifying `dependent`, `between` etc. The formula indicates that the score column is regressed by the time variable, with observations nested within the id column. 
-
+R and many other statistical packages (e.g., [statsmodels](https://www.statsmodels.org/stable/index.html) support a formula interface to fit statistical models. Here it is shown that a model can also be specified by the formula kwargs rather than specifying `dependent`, `between` etc. The formula indicates that the score column is regressed by the time variable, with observations nested within the id column.
 
 ```python
 m.reset(formula='score~time|id')
 res = m.fit()
-res.get_df()
+res._get_r_output_df()
 ```
 
 
@@ -554,11 +547,10 @@ res.get_margins('time')
 
 We can also run a similar, bayesian ANOVA using `bayes_anova` comparing the specified terms to the null model:
 
-
 ```python
 m = rst.api.bayes_anova(data=anxiety, within='time',
                         dependent='score', subject='id')
-m.fit().get_df()
+m.fit()._get_r_output_df()
 ```
 
 

@@ -34,7 +34,7 @@ def test_simple_linear_regression():
 
     res = m.fit()
 
-    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
+    pd.testing.assert_frame_equal(res._get_r_output_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_multiple_linear_regression():
@@ -52,7 +52,7 @@ def test_multiple_linear_regression():
         """
     )
 
-    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
+    pd.testing.assert_frame_equal(res._get_r_output_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_missing_columns():
@@ -79,7 +79,7 @@ def test_simple_bayesian_regression():
             ), 'model')[, c('model', 'bf', 'error')]
         """
     )
-    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
+    pd.testing.assert_frame_equal(res._get_r_output_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_multiple_bayesian_regression():
@@ -102,7 +102,7 @@ def test_multiple_bayesian_regression():
         """
     )
 
-    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
+    pd.testing.assert_frame_equal(res._get_r_output_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_simple_logistic_regression():
@@ -119,7 +119,7 @@ def test_simple_logistic_regression():
         """
     )
 
-    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
+    pd.testing.assert_frame_equal(res._get_r_output_df(), rst.misc.utils.convert_df(r_res))
 
 
 def test_multiple_logistic_regression():
@@ -135,4 +135,4 @@ def test_multiple_logistic_regression():
         """
     )
 
-    pd.testing.assert_frame_equal(res.get_df(), rst.misc.utils.convert_df(r_res))
+    pd.testing.assert_frame_equal(res._get_r_output_df(), rst.misc.utils.convert_df(r_res))

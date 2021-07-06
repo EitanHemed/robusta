@@ -39,7 +39,7 @@ class FauxInf:
 @pytest.mark.parametrize('tail', TAILS)
 def test_t2samples(paired, tail):
     data = rst.load_dataset('sleep')
-    m = rst.api.t2samples(data=data,
+    m = rst.groupwise.groupwise_api.T2SamplesModel(data=data,
                       independent='group',
                       dependent='extra',
                       subject='ID',
@@ -58,23 +58,23 @@ def test_t2samples(paired, tail):
             var.equal=FALSE)
         ))
         """))
-    pd.testing.assert_frame_equal(r_res, m._results.get_df())
+    pd.testing.assert_frame_equal(r_res, m._results._get_r_output_df())
 
     m.reset(formula='extra~group+1|ID')
     m.fit()
 
-    pd.testing.assert_frame_equal(r_res, m._results.get_df())
+    pd.testing.assert_frame_equal(r_res, m._results._get_r_output_df())
 
 
 @pytest.mark.parametrize('mu', [0, 2.33, 4.66])
 @pytest.mark.parametrize('tail', TAILS)
 def test_t1sample(mu, tail):
     sleep = rst.load_dataset('sleep')
-    m = rst.api.t1sample(data=sleep.loc[sleep['group'] == '1'],
+    m = rst.groupwise.groupwise_api.T1SampleModel(data=sleep.loc[sleep['group'] == '1'],
                      dependent='extra', subject='ID',
                      independent='group', mu=mu, tail=tail)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
     r_res = rst.misc.utils.convert_df(r(
         f"""
         library(broom)
@@ -88,7 +88,7 @@ def test_t1sample(mu, tail):
 
     m.reset(formula='extra~group+1|ID')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
     pd.testing.assert_frame_equal(res, r_res)
 
 
@@ -108,7 +108,7 @@ def test_bayes_t2samples_independent(
         iterations):
     data = rst.load_dataset('mtcars')
 
-    m = rst.api.bayes_t2samples(
+    m = rst.groupwise.groupwise_api.BayesT2SamplesModel(
         data=data, subject='dataset_rownames',
         dependent='mpg', independent='am',
         null_interval=null_interval,
@@ -116,7 +116,7 @@ def test_bayes_t2samples_independent(
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, paired=False)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     r_res = rst.misc.utils.convert_df(r("""   
     library(BayesFactor)
@@ -185,7 +185,7 @@ def test_bayes_t2samples_dependent(
         mu):
     data = rst.load_dataset('sleep')
 
-    m = rst.api.bayes_t2samples(
+    m = rst.groupwise.groupwise_api.BayesT2SamplesModel(
         data=data, subject='ID',
         dependent='extra', independent='group',
         null_interval=null_interval,
@@ -193,7 +193,7 @@ def test_bayes_t2samples_dependent(
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, paired=True, mu=mu)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     r_res = r("""
     library(BayesFactor)
@@ -269,7 +269,7 @@ def test_bayes_t1sample(
     data = rst.load_dataset('iris')
     data = data.loc[data['Species'] == 'setosa']
 
-    m = rst.api.bayes_t1sample(
+    m = rst.groupwise.groupwise_api.BayesT1Sample(
         data=data, subject='dataset_rownames',
         dependent='Sepal.Width', independent='Species',
         null_interval=null_interval,
@@ -277,7 +277,7 @@ def test_bayes_t1sample(
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, mu=mu)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     r_res = r("""
     library(BayesFactor)
@@ -339,7 +339,7 @@ def test_bayes_t1sample(
     [['dose'], "dose"]
 ])
 def test_anova_between(between_vars):
-    m = rst.api.anova(
+    m = rst.groupwise.groupwise_api.AnovaModel(
         data=rst.load_dataset('ToothGrowth'),
         dependent='len', subject='dataset_rownames',
         between=between_vars[0])
@@ -366,14 +366,14 @@ def test_anova_between(between_vars):
         """))
 
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(
         formula=f"len ~ {between_vars[1]} + (1|dataset_rownames)")
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     # m = rst.anova(
     #    data=rst.datasets.data('ToothGrowth'),
@@ -383,10 +383,10 @@ def test_anova_between(between_vars):
 
 
 def test_anova_within():
-    m = rst.api.anova(data=ANXIETY_DATASET, within='time',
+    m = rst.groupwise.groupwise_api.AnovaModel(data=ANXIETY_DATASET, within='time',
                   dependent='score', subject='id')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     r_res = rst.misc.utils.convert_df(r(
         """
@@ -405,7 +405,7 @@ def test_anova_within():
 
     m.reset(formula='score~time|id')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res)
 
@@ -432,17 +432,17 @@ def test_anova_mixed():
         """
     )
 
-    m = rst.api.anova(data=ANXIETY_DATASET, within='time', between='group',
+    m = rst.groupwise.groupwise_api.AnovaModel(data=ANXIETY_DATASET, within='time', between='group',
                   dependent='score', subject='id')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r('anova_table')))
 
     m.reset(formula='score ~ group + (time|id)')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r('anova_table')))
 
@@ -475,13 +475,13 @@ def test_anova_mixed():
                          [False]  # , True]
                          )
 def test_bayes_anova_between(between_vars, include_subject):
-    m = rst.api.bayes_anova(
+    m = rst.groupwise.groupwise_api.BayesAnovaModel(
         data=rst.load_dataset('ToothGrowth'),
         dependent='len', subject='dataset_rownames',
         between=between_vars[0], iterations=1e4,
         include_subject=include_subject)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
 
     formula = between_vars[1]
@@ -532,7 +532,7 @@ def test_bayes_anova_between(between_vars, include_subject):
         formula=f"{between_vars[1]} + (1|dataset_rownames)",
         include_subject=include_subject)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res.head(2), r_res.head(2).reset_index(drop=True))
 
@@ -542,10 +542,10 @@ def test_bayes_anova_between(between_vars, include_subject):
                          )
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_within(within_vars, include_subject):
-    m = rst.api.bayes_anova(data=ANXIETY_DATASET, within='time',
+    m = rst.groupwise.groupwise_api.BayesAnovaModel(data=ANXIETY_DATASET, within='time',
                         dependent='score', subject='id')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     formula = within_vars[1]
     if include_subject:
@@ -592,17 +592,17 @@ def test_bayes_anova_within(within_vars, include_subject):
         formula=f"{within_vars[1]} + (1|id)",
         include_subject=include_subject)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res.reset_index(drop=True))
 
 
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_mixed(include_subject):
-    m = rst.api.bayes_anova(data=ANXIETY_DATASET, within='time', between='group',
+    m = rst.groupwise.groupwise_api.BayesAnovaModel(data=ANXIETY_DATASET, within='time', between='group',
                         dependent='score', subject='id')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     formula = "score ~ group + time | id"
 
@@ -641,7 +641,7 @@ def test_bayes_anova_mixed(include_subject):
         formula=formula,
         include_subject=include_subject)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res.head(2), r_res.head(2).reset_index(drop=True))
 
@@ -669,18 +669,18 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
     group = np.repeat(0, len(weight_diff))
     df = pd.DataFrame(data=np.array([weight_diff, group]).T,
                       columns=['weight', 'group']).reset_index()
-    m = rst.api.wilcoxon_1sample(data=df, independent='group',
+    m = rst.groupwise.groupwise_api.Wilcoxon1SampleModel(data=df, independent='group',
                              subject='index',
                              dependent='weight', mu=mu, tail=tail,
                              p_exact=p_exact, p_correction=p_correction)
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(formula='weight ~ group + 1|index')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res)
 
@@ -719,19 +719,19 @@ def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
     df = pd.DataFrame(data=np.array([weight, group, sid]).T,
                       columns=['weight', 'group', 'sid'])
 
-    m = rst.api.wilcoxon_2samples(
+    m = rst.groupwise.groupwise_api.Wilcoxon2SamplesModel(
         data=df, independent='group', paired=paired,
         dependent='weight', subject='sid',
         tail=tail, p_correction=p_correction, p_exact=p_exact
     )
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r_res))
 
     m.reset(formula='weight ~ group|sid')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r_res))
 
@@ -742,17 +742,17 @@ def test_kruskal_wallis_test():
     library(broom)
     data.frame(tidy(kruskal.test(weight ~ group, data = PlantGrowth)))
     """))
-    m = rst.api.kruskal_wallis_test(
+    m = rst.groupwise.groupwise_api.KruskalWallisTestModel(
         data=rst.load_dataset('PlantGrowth'),
         between='group',
         dependent='weight', subject='dataset_rownames')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(formula='weight~group+1|dataset_rownames')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
     pd.testing.assert_frame_equal(res, r_res)
 
 
@@ -773,15 +773,15 @@ def test_friedman_test():
             ['id', 'group']).filter(
             regex='^t[1-3]$').stack().reset_index().rename(
             columns={0: 'score', 'level_2': 'time'})
-        m = rst.api.friedman_test(data=df, within='time', dependent='score',
+        m = rst.groupwise.groupwise_api.FriedmanTestModel(data=df, within='time', dependent='score',
                               subject='id')
         m.fit()
-        res = m._results.get_df()
+        res = m._results._get_r_output_df()
         pd.testing.assert_frame_equal(res, r_res)
 
         m.reset(formula='score ~ time|id')
         m.fit()
-        res = m._results.get_df()
+        res = m._results._get_r_output_df()
         pd.testing.assert_frame_equal(res, r_res)
 
 
@@ -795,11 +795,11 @@ def test_aligned_ranks_test():
             art(DryMatter ~ Moisture*Fertilizer + (1|Tray), 
             data=Higgins1990Table5))
         """)
-    m = rst.api.aligned_ranks_test(
+    m = rst.groupwise.groupwise_api.AlignedRanksTestModel(
         data=rst.load_dataset('Higgins1990Table5'),
         formula='DryMatter ~ Moisture*Fertilizer + (1|Tray)')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(
         res, rst.misc.utils.convert_df(r("res"))
@@ -808,7 +808,7 @@ def test_aligned_ranks_test():
     m.reset(between=['Moisture', 'Fertilizer'], dependent='DryMatter',
             subject='Tray')
     m.fit()
-    res = m._results.get_df()
+    res = m._results._get_r_output_df()
     pd.testing.assert_frame_equal(
         res, rst.misc.utils.convert_df(r("res"))
     )

@@ -59,7 +59,7 @@ def test_chi_square_output():
         data.frame(tidy(chisq.test(table(mtcars[ , c('am', 'vs')]))))
         """
     )
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res)
 
 
 # def test_chisquare_get_text():
@@ -103,7 +103,7 @@ def test_correleation_output(method):
         method='{method}'
     ))) 
     """)
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res)
 
 
 def test_triplewise_correlation_z_argument():
@@ -149,7 +149,7 @@ def test_partial_correleation_output():
     # The method column is returned as a categorical type
     # r_res['Method'] = r_res['Method'].astype(str).values
 
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res)
 
 
 def test_part_output():
@@ -172,7 +172,7 @@ def test_part_output():
     # The method column is returned as a categorical type
     # r_res['Method'] = r_res['Method'].astype(str).values
 
-    pd.testing.assert_frame_equal(res.get_df(), r_res, check_dtype=False)
+    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res, check_dtype=False)
 
 
 def test_bayes_correleation():
@@ -189,4 +189,4 @@ def test_bayes_correleation():
             x = iris$Sepal.Width))[, c('bf', 'error')], 'model')
         """
     )
-    pd.testing.assert_frame_equal(res.get_df(), r_res)
+    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res)

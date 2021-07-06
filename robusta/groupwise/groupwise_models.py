@@ -271,18 +271,18 @@ class GroupwiseModel(base.BaseModel):
         self._fitted = False
         self._results = None
 
-    def get_df(self):
+    def report_table(self):
         return self._results.get_df()
 
     def report_text(self):
         # TODO - remake this into a visitor pattern
         visitor = groupwise_reports.Reporter()
-        return visitor.report_text(self._results)
+        return visitor.report_text(self)
 
-    def report_table(self):
-        # TODO - remake this into a visitor pattern
-        visitor = groupwise_reports.Reporter()
-        return visitor.report_table(self._results)
+    # def report_table(self):
+    #     # TODO - remake this into a visitor pattern
+    #     visitor = groupwise_reports.Reporter()
+    #     return visitor.report_table(self._results)
 
 
 class T2SamplesModel(GroupwiseModel):
