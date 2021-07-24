@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from . import regressions_results
+from . import results
 from .. import pyr
 from ..misc import utils, formula_tools, base
 
@@ -159,7 +159,7 @@ class LinearRegressionModel(RegressionModel):
     """
 
     def _analyze(self):
-        return regressions_results.LinearRegressionResults(
+        return results.LinearRegressionResults(
             pyr.rpackages.stats.lm(
                 **{
                     'formula': self._r_formula,
@@ -206,7 +206,7 @@ class BayesLinearRegressionModel(LinearRegressionModel):
         # raise NotImplementedError("Currently the formula tools just
         # assumes all interactions rather than "going by the
         # ssupplied formula.")
-        return regressions_results.BayesianLinearRegression(
+        return results.BayesianLinearRegression(
             pyr.rpackages.base.data_frame(
                 pyr.rpackages.BayesFactor.generalTestBF(
                     formula=self._r_formula, data=self._r_input_data,
@@ -224,7 +224,7 @@ class LogisticRegressionModel(RegressionModel):
         self._validate_binary_variables(self.dependent)
 
     def _analyze(self):
-        return regressions_results.LogisticRegressionResults(
+        return results.LogisticRegressionResults(
             pyr.rpackages.stats.glm(
                 formula=self._r_formula, data=self._r_input_data,
                 family='binomial'
@@ -237,7 +237,7 @@ class BayesLogisticRegressionModel(LogisticRegressionModel):
         raise NotImplementedError
 
     def _analyze(self):
-        return regressions_results.BayesianLogisticRegression(
+        return results.BayesianLogisticRegression(
             pyr.rpackages.brms.brm(
                 formula=self.formula,
                 data=self._data,

@@ -1,6 +1,6 @@
 import numpy as np
 
-from . import groupwise_models
+from . import models
 
 P_VALUE_CLAUSE = 'p {pvalue_operator} {p-value:.3f}'
 
@@ -32,10 +32,10 @@ FRIEDMAN_CLAUSE = ('Z({df1:.0f}, '
 # Due to a circular import we have to put this below the top level.
 if __name__ == '__main__':
     FREQUENTIST_ANOVA_LIKE_CLAUSE_DICT = {
-        groupwise_models.AlignedRanksTestModel: ANOVA_TERM_CLAUSE,
-        groupwise_models.AnovaModel: ANOVA_TERM_CLAUSE,
-        groupwise_models.FriedmanTestModel: FRIEDMAN_CLAUSE,
-        groupwise_models.KruskalWallisTestModel: KRUSKSAL_WALLIS_CLAUSE
+        models.AlignedRanksTest: ANOVA_TERM_CLAUSE,
+        models.Anova: ANOVA_TERM_CLAUSE,
+        models.FriedmanTest: FRIEDMAN_CLAUSE,
+        models.KruskalWallisTest: KRUSKSAL_WALLIS_CLAUSE
     }
 
 
@@ -51,16 +51,16 @@ class Reporter:
 
     def report_text(self, model):
         if isinstance(model,
-                      (groupwise_models.BayesT1SampleModel,
-                       groupwise_models.BayesT2SamplesModel)):
+                      (models.BayesT1Sample,
+                       models.BayesT2Samples)):
             return self._populate_bayes_t_test_clause(model)
         elif isinstance(model,
-                      (groupwise_models.T1SampleModel,
-                       groupwise_models.T2SamplesModel)):
+                        (models.T1Sample,
+                         models.T2Samples)):
             return self._populate_t_test_clause(model)
-        elif isinstance(model, groupwise_models.AnovaModel):
+        elif isinstance(model, models.Anova):
             return self._populate_anova_like_clauses(model)
-        elif isinstance(model, groupwise_models.BayesAnovaModel):
+        elif isinstance(model, models.BayesAnova):
             return self._populate_bayes_anova_clauses(model)
         else:
             raise NotImplementedError

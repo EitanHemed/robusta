@@ -3,7 +3,9 @@ import pandas as pd
 import pytest
 import robusta as rst
 
-def test_t2samples():
+MTCARS = rst.load_dataset('mtcars')
+
+def test_t2samples_between():
     pass
 
 def test_t1sample():

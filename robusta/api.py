@@ -1,3 +1,3 @@
-from .groupwise.groupwise_api import *
-from .regressions.regressions_api import *
-from .correlations.correleations_api import *
+from .groupwise.api import *
+from .regressions.api import *
+from .correlations.api import *

@@ -1,4 +1,4 @@
-from .regressions_models import *
+from .models import *
 
 __all__ = [
     'linear_regression',

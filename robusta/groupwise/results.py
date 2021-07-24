@@ -1,5 +1,6 @@
 import typing
 import warnings
+import pandas as pd
 import numpy as np
 from .. import pyr
 from ..misc import utils, base
@@ -12,12 +13,20 @@ PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
 DEFAULT_ITERATIONS: int = 10000
 DEFAULT_MU: float = 0.0
 
-T_TEST_COLUMNS_RENAME = {'statistic': 't', 'parameter': 'dof', 'estimate': 'mean', 'p.value': 'p-value'}
+T_TEST_COLUMNS_RENAME = {'statistic': 't', 'parameter': 'df', 'estimate': 'mean', 'p.value': 'p-value'}
 T_TEST_COHEN_COLUMN_NAMES = ['Cohen-d Low', 'Cohen-d', 'Cohen-d High']
 T_TEST_RETURNED_COLUMNS = [T_TEST_COLUMNS_RENAME['statistic'], T_TEST_COLUMNS_RENAME['parameter'],
                            T_TEST_COLUMNS_RENAME['p.value'], 'Cohen-d', 'Cohen-d Low', 'Cohen-d High']
 
-ANOVA_COLUMNS_RENAME = {'Effect':'Term', 'p.value': 'p-value'}
+BAYES_T_TEST_COLUMNS_RENAME = {'bf': 'BF', 'error': 'BF-Error'}
+BAYES_T_TEST_RETURN_COLUMNS = BAYES_T_TEST_COLUMNS_RENAME.values()
+
+WILCOX_COLUMNS_RENAME = {'statistic': 'Z', 'p.value': 'p-value'}
+WILCOX_RETURN_COLUMNS = WILCOX_COLUMNS_RENAME.values()
+
+ANOVA_COLUMNS_RENAME = {'Effect': 'Term', 'p.value': 'p-value'}
+ANOVA_DF_COLUMNS = ['df1', 'df2']
+ANOVA_RETURNED_COLUMNS = list(ANOVA_COLUMNS_RENAME.values()) + ANOVA_DF_COLUMNS
 
 class GroupwiseResults(base.BaseResults):
 
@@ -33,19 +42,17 @@ class T2SamplesResults(GroupwiseResults):
 
         vals = df.to_dict('records')[0]
 
-        dofs = vals['df']
-
         # TODO - how to handle unequal group size
-        cohen_d = pyr.rpackages.psych.t2d(vals['t'], n=vals['dof'])
-        cohen_d_ci = pyr.rpackages.psych.d_ci(cohen_d, n=vals['dof'])
+        cohen_d = pyr.rpackages.psych.t2d(vals['t'], n=vals[T_TEST_COLUMNS_RENAME['parameter']])
+        cohen_d_ci = pyr.rpackages.psych.d_ci(cohen_d, n=vals[T_TEST_COLUMNS_RENAME['parameter']])
 
         df[T_TEST_COHEN_COLUMN_NAMES] = cohen_d_ci  # Skip the middle value
 
         return df[T_TEST_RETURNED_COLUMNS]
 
 
-class BayesT2SamplesResults(T2SamplesResults):
-    # TODO Validate if correctly inherits init from parent
+class BayesResults(T2SamplesResults):
+    # TODO check whether correctly inherits __init__ from parent
 
     def __init__(self, r_results, mode='bf'):
         self.mode = mode
@@ -67,6 +74,11 @@ class BayesT2SamplesResults(T2SamplesResults):
     def get_df(self):
         return self._get_r_output_df()
 
+    def _reformat_r_output_df(self):
+        df = self._get_r_output_df().copy()
+        df.rename(columns=BAYES_T_TEST_COLUMNS_RENAME, inplace=True)
+        return df[BAYES_T_TEST_RETURN_COLUMNS]
+
 
 class T1SampleResults(T2SamplesResults):
     pass
@@ -74,27 +86,32 @@ class T1SampleResults(T2SamplesResults):
 
 # TODO - this is fairly similar to the two-sample bayesian t-test, so consider
 #  merging them
-class BayesT1SampleResults(T1SampleResults):
-
-    def __init__(self, r_results, mode='bf'):
-        self.mode = mode
-        super().__init__(r_results)
-
-    def _tidy_results(self):
-        if self.mode == 'bf':
-            return utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
-        else:
-            return utils.convert_df(self.r_results, 'iteration')
-
-    def _get_r_output_df(self):
-        return self._tidy_results()
+class BayesT1SampleResults(BayesResults):
+    pass
+    #
+    # def __init__(self, r_results, mode='bf'):
+    #     self.mode = mode
+    #     super().__init__(r_results)
+    #
+    # def _tidy_results(self):
+    #     if self.mode == 'bf':
+    #         return utils.convert_df(self.r_results, 'model')[BF_COLUMNS]
+    #     else:
+    #         return utils.convert_df(self.r_results, 'iteration')
+    #
+    # def _get_r_output_df(self):
+    #     return self._tidy_results()
 
 
 class Wilcoxon1SampleResults(T1SampleResults):
-    pass
+
+    def _reformat_r_output_df(self):
+        df = self._get_r_output_df().copy()
+        df.rename(columns=WILCOX_COLUMNS_RENAME, inplace=True)
+        return df[WILCOX_RETURN_COLUMNS]
 
 
-class Wilcoxon2SamplesResults(T2SamplesResults):
+class Wilcoxon2SamplesResults(Wilcoxon1SampleResults):
     pass
 
 
@@ -116,15 +133,9 @@ class AnovaResults(GroupwiseResults):
         df = self._get_r_output_df().copy()
         df.rename(columns=ANOVA_COLUMNS_RENAME, inplace=True)
 
-
-
-        # TODO - how to handle unequal group size
-        cohen_d = pyr.rpackages.psych.t2d(vals['t'], n=vals['dof'])
-        cohen_d_ci = pyr.rpackages.psych.d_ci(cohen_d, n=vals['dof'])
-
-        df[T_TEST_COHEN_COLUMN_NAMES] = cohen_d_ci  # Skip the middle value
-
-        return df[T_TEST_RETURNED_COLUMNS]
+        _dofs = pd.DataFrame(df['df'].str.split(', ').tolist(), columns=ANOVA_DF_COLUMNS)
+        df = pd.concat([df, _dofs], axis=1)
+        return df[ANOVA_RETURNED_COLUMNS]
 
     def get_margins(
             self,
@@ -244,17 +255,19 @@ class AnovaResults(GroupwiseResults):
             self.margins_results[margins_term]['r_margins']))
 
 
-class BayesAnovaResults(AnovaResults):
-
-    def _tidy_results(self):
-        return utils.convert_df(
-            self.r_results, 'model')
-
-    def _get_r_output_df(self):
-        return self._tidy_results()[['model', 'bf', 'error']]
-
-    def get_margins(self):
-        raise NotImplementedError("Not applicable to Bayesian ANOVA")
+class BayesAnovaResults(BayesResults):
+    pass
+    #
+    #
+    # def _tidy_results(self):
+    #     return utils.convert_df(
+    #         self.r_results, 'model')
+    #
+    # def _get_r_output_df(self):
+    #     return self._tidy_results()[['model', 'bf', 'error']]
+    #
+    # def get_margins(self):
+    #     raise NotImplementedError("Not applicable to Bayesian ANOVA")
 
 
 class KruskalWallisTestResults(AnovaResults):

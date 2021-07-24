@@ -1,4 +1,4 @@
-from .correlations_models import *
+from .models import *
 
 __all__ = [
     'chisquare',

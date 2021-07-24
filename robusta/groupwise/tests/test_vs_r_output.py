@@ -5,7 +5,7 @@ from rpy2.robjects import r
 
 import robusta as rst
 
-from robusta.groupwise.groupwise_results import BF_COLUMNS
+from robusta.groupwise.results import BF_COLUMNS
 
 # TODO - when rst is installed as a package, remove the following line
 # sys.path.append('./')
@@ -39,14 +39,14 @@ class FauxInf:
 @pytest.mark.parametrize('tail', TAILS)
 def test_t2samples(paired, tail):
     data = rst.load_dataset('sleep')
-    m = rst.groupwise.groupwise_api.T2SamplesModel(data=data,
-                      independent='group',
-                      dependent='extra',
-                      subject='ID',
-                      paired=paired,
-                      tail=tail,
-                      assume_equal_variance=False
-                      )
+    m = rst.groupwise.T2Samples(data=data,
+                                              independent='group',
+                                              dependent='extra',
+                                              subject='ID',
+                                              paired=paired,
+                                              tail=tail,
+                                              assume_equal_variance=False
+                                              )
     m.fit()
 
     r_res = rst.misc.utils.convert_df(r(
@@ -70,9 +70,9 @@ def test_t2samples(paired, tail):
 @pytest.mark.parametrize('tail', TAILS)
 def test_t1sample(mu, tail):
     sleep = rst.load_dataset('sleep')
-    m = rst.groupwise.groupwise_api.T1SampleModel(data=sleep.loc[sleep['group'] == '1'],
-                     dependent='extra', subject='ID',
-                     independent='group', mu=mu, tail=tail)
+    m = rst.groupwise.T1Sample(data=sleep.loc[sleep['group'] == '1'],
+                                             dependent='extra', subject='ID',
+                                             independent='group', mu=mu, tail=tail)
     m.fit()
     res = m._results._get_r_output_df()
     r_res = rst.misc.utils.convert_df(r(
@@ -108,7 +108,7 @@ def test_bayes_t2samples_independent(
         iterations):
     data = rst.load_dataset('mtcars')
 
-    m = rst.groupwise.groupwise_api.BayesT2SamplesModel(
+    m = rst.groupwise.BayesT2Samples(
         data=data, subject='dataset_rownames',
         dependent='mpg', independent='am',
         null_interval=null_interval,
@@ -185,7 +185,7 @@ def test_bayes_t2samples_dependent(
         mu):
     data = rst.load_dataset('sleep')
 
-    m = rst.groupwise.groupwise_api.BayesT2SamplesModel(
+    m = rst.groupwise.BayesT2Samples(
         data=data, subject='ID',
         dependent='extra', independent='group',
         null_interval=null_interval,
@@ -269,7 +269,7 @@ def test_bayes_t1sample(
     data = rst.load_dataset('iris')
     data = data.loc[data['Species'] == 'setosa']
 
-    m = rst.groupwise.groupwise_api.BayesT1Sample(
+    m = rst.groupwise.BayesT1Sample(
         data=data, subject='dataset_rownames',
         dependent='Sepal.Width', independent='Species',
         null_interval=null_interval,
@@ -339,7 +339,7 @@ def test_bayes_t1sample(
     [['dose'], "dose"]
 ])
 def test_anova_between(between_vars):
-    m = rst.groupwise.groupwise_api.AnovaModel(
+    m = rst.groupwise.Anova(
         data=rst.load_dataset('ToothGrowth'),
         dependent='len', subject='dataset_rownames',
         between=between_vars[0])
@@ -383,8 +383,8 @@ def test_anova_between(between_vars):
 
 
 def test_anova_within():
-    m = rst.groupwise.groupwise_api.AnovaModel(data=ANXIETY_DATASET, within='time',
-                  dependent='score', subject='id')
+    m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time',
+                                          dependent='score', subject='id')
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -432,8 +432,8 @@ def test_anova_mixed():
         """
     )
 
-    m = rst.groupwise.groupwise_api.AnovaModel(data=ANXIETY_DATASET, within='time', between='group',
-                  dependent='score', subject='id')
+    m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time', between='group',
+                                          dependent='score', subject='id')
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -475,7 +475,7 @@ def test_anova_mixed():
                          [False]  # , True]
                          )
 def test_bayes_anova_between(between_vars, include_subject):
-    m = rst.groupwise.groupwise_api.BayesAnovaModel(
+    m = rst.groupwise.BayesAnova(
         data=rst.load_dataset('ToothGrowth'),
         dependent='len', subject='dataset_rownames',
         between=between_vars[0], iterations=1e4,
@@ -542,8 +542,8 @@ def test_bayes_anova_between(between_vars, include_subject):
                          )
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_within(within_vars, include_subject):
-    m = rst.groupwise.groupwise_api.BayesAnovaModel(data=ANXIETY_DATASET, within='time',
-                        dependent='score', subject='id')
+    m = rst.groupwise.BayesAnova(data=ANXIETY_DATASET, within='time',
+                                               dependent='score', subject='id')
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -599,8 +599,8 @@ def test_bayes_anova_within(within_vars, include_subject):
 
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_mixed(include_subject):
-    m = rst.groupwise.groupwise_api.BayesAnovaModel(data=ANXIETY_DATASET, within='time', between='group',
-                        dependent='score', subject='id')
+    m = rst.groupwise.BayesAnova(data=ANXIETY_DATASET, within='time', between='group',
+                                               dependent='score', subject='id')
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -669,10 +669,10 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
     group = np.repeat(0, len(weight_diff))
     df = pd.DataFrame(data=np.array([weight_diff, group]).T,
                       columns=['weight', 'group']).reset_index()
-    m = rst.groupwise.groupwise_api.Wilcoxon1SampleModel(data=df, independent='group',
-                             subject='index',
-                             dependent='weight', mu=mu, tail=tail,
-                             p_exact=p_exact, p_correction=p_correction)
+    m = rst.groupwise.Wilcoxon1Sample(data=df, independent='group',
+                                                    subject='index',
+                                                    dependent='weight', mu=mu, tail=tail,
+                                                    p_exact=p_exact, p_correction=p_correction)
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -719,7 +719,7 @@ def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
     df = pd.DataFrame(data=np.array([weight, group, sid]).T,
                       columns=['weight', 'group', 'sid'])
 
-    m = rst.groupwise.groupwise_api.Wilcoxon2SamplesModel(
+    m = rst.groupwise.Wilcoxon2Samples(
         data=df, independent='group', paired=paired,
         dependent='weight', subject='sid',
         tail=tail, p_correction=p_correction, p_exact=p_exact
@@ -742,7 +742,7 @@ def test_kruskal_wallis_test():
     library(broom)
     data.frame(tidy(kruskal.test(weight ~ group, data = PlantGrowth)))
     """))
-    m = rst.groupwise.groupwise_api.KruskalWallisTestModel(
+    m = rst.groupwise.KruskalWallisTest(
         data=rst.load_dataset('PlantGrowth'),
         between='group',
         dependent='weight', subject='dataset_rownames')
@@ -773,8 +773,8 @@ def test_friedman_test():
             ['id', 'group']).filter(
             regex='^t[1-3]$').stack().reset_index().rename(
             columns={0: 'score', 'level_2': 'time'})
-        m = rst.groupwise.groupwise_api.FriedmanTestModel(data=df, within='time', dependent='score',
-                              subject='id')
+        m = rst.groupwise.FriedmanTest(data=df, within='time', dependent='score',
+                                                     subject='id')
         m.fit()
         res = m._results._get_r_output_df()
         pd.testing.assert_frame_equal(res, r_res)
@@ -795,7 +795,7 @@ def test_aligned_ranks_test():
             art(DryMatter ~ Moisture*Fertilizer + (1|Tray), 
             data=Higgins1990Table5))
         """)
-    m = rst.groupwise.groupwise_api.AlignedRanksTestModel(
+    m = rst.groupwise.AlignedRanksTest(
         data=rst.load_dataset('Higgins1990Table5'),
         formula='DryMatter ~ Moisture*Fertilizer + (1|Tray)')
     m.fit()

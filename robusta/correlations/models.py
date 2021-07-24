@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from . import correlation_results
+from . import results
 from .. import pyr
 from ..misc import base
 
@@ -182,7 +182,7 @@ class ChiSquareModel(_PairwiseCorrelationModel):
 
     def _analyze(self):
         """Runs a Chi-Square test"""
-        return correlation_results.ChiSquareResults(
+        return results.ChiSquareResults(
             pyr.rpackages.stats.chisq_test(
                 self.crosstabulated_data,
                 correct=self.apply_correction))
@@ -214,7 +214,7 @@ class CorrelationModel(_PairwiseCorrelationModel):
         super()._validate_input_data()
 
     def _analyze(self):
-        return correlation_results.CorrelationResults(
+        return results.CorrelationResults(
             pyr.rpackages.stats.cor_test(
                 *self._input_data.values.T,
                 method=self.method,
@@ -293,7 +293,7 @@ class PartialCorrelationModel(_TriplewiseCorrelationModel):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        return correlation_results.PartialCorrelationResults(
+        return results.PartialCorrelationResults(
             pyr.rpackages.ppcor.pcor_test(
                 *self._input_data.values.T,
                 method=self.method))
@@ -314,7 +314,7 @@ class PartCorrelationModel(_TriplewiseCorrelationModel):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        return correlation_results.PartCorrelationResults(
+        return results.PartCorrelationResults(
             pyr.rpackages.ppcor.spcor_test(
                 *self._input_data.values.T,
                 method=self.method))
@@ -367,7 +367,7 @@ class BayesCorrelationModel(_PairwiseCorrelationModel):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        return correlation_results.BayesCorrelationResults(
+        return results.BayesCorrelationResults(
             pyr.rpackages.BayesFactor.correlationBF(
                 *self._input_data.values.T,
                 nullInterval=self.null_interval,

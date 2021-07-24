@@ -5,8 +5,8 @@ from rpy2.robjects import r
 
 import robusta as rst
 # from ..correlations_models import _PairwiseCorrelationModel, _TriplewiseCorrelationModel
-from robusta.correlations.correlations_models import (_PairwiseCorrelationModel,
-                                                      _TriplewiseCorrelationModel)
+from robusta.correlations.models import (_PairwiseCorrelationModel,
+                                         _TriplewiseCorrelationModel)
 
 BIVARIATE_CORRELEATION_METHODS = ['kendall', 'spearman', 'pearson']
 

@@ -1,4 +1,4 @@
-from .groupwise_models import *
+from .models import *
 
 __all__ = [
     "t1sample",
@@ -15,44 +15,44 @@ __all__ = [
 ]
 
 def t1sample(**kwargs):
-    return T1SampleModel(**kwargs)
+    return T1Sample(**kwargs)
 
 
 def bayes_t1sample(**kwargs):
-    return BayesT1SampleModel(**kwargs)
+    return BayesT1Sample(**kwargs)
 
 
 def t2samples(**kwargs):
-    return T2SamplesModel(**kwargs)
+    return T2Samples(**kwargs)
 
 
 def bayes_t2samples(**kwargs):
-    return BayesT2SamplesModel(**kwargs)
+    return BayesT2Samples(**kwargs)
 
 
 def anova(**kwargs):
-    return AnovaModel(**kwargs)
+    return Anova(**kwargs)
 
 
 def bayes_anova(**kwargs):
-    return BayesAnovaModel(**kwargs)
+    return BayesAnova(**kwargs)
 
 
 def wilcoxon_1sample(**kwargs):
-    return Wilcoxon1SampleModel(**kwargs)
+    return Wilcoxon1Sample(**kwargs)
 
 
 def wilcoxon_2samples(**kwargs):
-    return Wilcoxon2SamplesModel(**kwargs)
+    return Wilcoxon2Samples(**kwargs)
 
 
 def kruskal_wallis_test(**kwargs):
-    return KruskalWallisTestModel(**kwargs)
+    return KruskalWallisTest(**kwargs)
 
 
 def friedman_test(**kwargs):
-    return FriedmanTestModel(**kwargs)
+    return FriedmanTest(**kwargs)
 
 
 def aligned_ranks_test(**kwargs):
-    return AlignedRanksTestModel(**kwargs)
+    return AlignedRanksTest(**kwargs)

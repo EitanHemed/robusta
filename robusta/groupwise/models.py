@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 # from . import groupwise_reports
-from . import groupwise_results, groupwise_reports
+from . import results, reports
 from .. import pyr
 from ..misc import utils, formula_tools, base
 
@@ -38,12 +38,12 @@ import rpy2.robjects as ro
 BF_COLUMNS = ['model', 'bf', 'error']
 
 __all__ = [
-    "AnovaModel", "BayesAnovaModel",
-    "T1SampleModel", "T2SamplesModel",
-    "BayesT1SampleModel", "BayesT2SamplesModel",
-    "Wilcoxon1SampleModel", "Wilcoxon2SamplesModel",
-    "KruskalWallisTestModel", "FriedmanTestModel",
-    "AlignedRanksTestModel"
+    "Anova", "BayesAnova",
+    "T1Sample", "T2Samples",
+    "BayesT1Sample", "BayesT2Samples",
+    "Wilcoxon1Sample", "Wilcoxon2Samples",
+    "KruskalWallisTest", "FriedmanTest",
+    "AlignedRanksTest"
 ]
 
 DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
@@ -276,7 +276,7 @@ class GroupwiseModel(base.BaseModel):
 
     def report_text(self):
         # TODO - remake this into a visitor pattern
-        visitor = groupwise_reports.Reporter()
+        visitor = reports.Reporter()
         return visitor.report_text(self)
 
     # def report_table(self):
@@ -285,7 +285,7 @@ class GroupwiseModel(base.BaseModel):
     #     return visitor.report_table(self._results)
 
 
-class T2SamplesModel(GroupwiseModel):
+class T2Samples(GroupwiseModel):
     """
     Run a frequentist dependent or independent-samples t-test.
 
@@ -385,7 +385,7 @@ class T2SamplesModel(GroupwiseModel):
             lambda s: s.values)
 
     def _analyze(self):
-        self._results = groupwise_results.T2SamplesResults(
+        self._results = results.T2SamplesResults(
             pyr.rpackages.stats.t_test(
                 **{'x': self.x, 'y': self.y,
                    'paired': self.paired,
@@ -395,7 +395,7 @@ class T2SamplesModel(GroupwiseModel):
         )
 
 
-class BayesT2SamplesModel(T2SamplesModel):
+class BayesT2Samples(T2Samples):
     """
     Run a Bayesian independent-samples t-test.
 
@@ -498,13 +498,13 @@ class BayesT2SamplesModel(T2SamplesModel):
             mu=self.mu
         )
 
-        self._results = groupwise_results.BayesT2SamplesResults(b,
-                                                                # TODO - refactor
-                                                                mode='posterior' if self.sample_from_posterior else 'bf'
-                                                                )
+        self._results = results.BayesResults(b,
+                                             # TODO - refactor
+                                             mode='posterior' if self.sample_from_posterior else 'bf'
+                                             )
 
 
-class T1SampleModel(T2SamplesModel):
+class T1Sample(T2Samples):
     """
     Run a frequentist one-sample t-test.
 
@@ -554,7 +554,7 @@ class T1SampleModel(T2SamplesModel):
         self.x = self._input_data[getattr(self, 'dependent')].values
 
     def _analyze(self):
-        self._results = groupwise_results.T1SampleResults(pyr.rpackages.stats.t_test(
+        self._results = results.T1SampleResults(pyr.rpackages.stats.t_test(
             x=self.x,
             mu=self.mu,
             alternative=self.tail
@@ -562,7 +562,7 @@ class T1SampleModel(T2SamplesModel):
         )
 
 
-class BayesT1SampleModel(T1SampleModel):
+class BayesT1Sample(T1Sample):
     """
     Run a frequentist independent-samples t-test.
 
@@ -645,11 +645,11 @@ class BayesT1SampleModel(T1SampleModel):
         )
         # with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
         #    z = ro.conversion.rpy2py(pyr.rpackages.base.data_frame(b))
-        self._results = groupwise_results.BayesT1SampleResults(b,
-                                                               mode='posterior' if self.sample_from_posterior else 'bf')
+        self._results = results.BayesT1SampleResults(b,
+                                                     mode='posterior' if self.sample_from_posterior else 'bf')
 
 
-class Wilcoxon1SampleModel(T1SampleModel):
+class Wilcoxon1Sample(T1Sample):
 
     def __init__(self,
                  p_exact: bool = True,
@@ -665,7 +665,7 @@ class Wilcoxon1SampleModel(T1SampleModel):
     """Mann-Whitney"""
 
     def _analyze(self):
-        self._results = groupwise_results.Wilcoxon1SampleResults(
+        self._results = results.Wilcoxon1SampleResults(
             pyr.rpackages.stats.wilcox_test(
                 x=self.x, mu=self.mu, alternative=self.tail,
                 exact=self.p_exact, correct=self.p_correction,
@@ -673,7 +673,7 @@ class Wilcoxon1SampleModel(T1SampleModel):
             ))
 
 
-class Wilcoxon2SamplesModel(T2SamplesModel):
+class Wilcoxon2Samples(T2Samples):
 
     def __init__(self, paired: bool = True, p_exact: bool = True,
                  p_correction: bool = True, ci: int = 95, **kwargs):
@@ -684,7 +684,7 @@ class Wilcoxon2SamplesModel(T2SamplesModel):
         super().__init__(paired=self.paired, **kwargs)
 
     def _analyze(self):
-        self._results = groupwise_results.Wilcoxon2SamplesResults(
+        self._results = results.Wilcoxon2SamplesResults(
             pyr.rpackages.stats.wilcox_test(
                 x=self.x, y=self.y, paired=self.paired,
                 alternative=self.tail,
@@ -693,7 +693,7 @@ class Wilcoxon2SamplesModel(T2SamplesModel):
             ))
 
 
-class AnovaModel(GroupwiseModel):
+class Anova(GroupwiseModel):
     """
     Run a mixed (between + within) frequentist ANOVA.
 
@@ -739,7 +739,7 @@ class AnovaModel(GroupwiseModel):
         # TODO - if we want to use aov_4 than the error term needs to be
         #  encapsulated in parentheses. Maybe write something that will add the
         #  parantheses automatically.
-        self._results = groupwise_results.AnovaResults(pyr.rpackages.afex.aov_4(
+        self._results = results.AnovaResults(pyr.rpackages.afex.aov_4(
             formula=self._r_formula,
             # dependent=self.dependent,
             # id=self.subject,
@@ -753,7 +753,7 @@ class AnovaModel(GroupwiseModel):
         # pyr.vectors.StrVector(["", "", "", ""]))
 
 
-class BayesAnovaModel(AnovaModel):
+class BayesAnova(Anova):
     # TODO - Formula specification will be using the lme4 syntax and variables
     #  will be parsed from it
     """
@@ -876,7 +876,7 @@ class BayesAnovaModel(AnovaModel):
         self._input_data.loc[:, self.independent] = self._input_data[
             self.independent].astype('category')
 
-        super(BayesAnovaModel, self)._transform_input_data()
+        super(BayesAnova, self)._transform_input_data()
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.anovaBF(
@@ -893,10 +893,10 @@ class BayesAnovaModel(AnovaModel):
             progress=False
             # noSample=self.no_sample
         )
-        self._results = groupwise_results.BayesAnovaResults(b)
+        self._results = results.BayesAnovaResults(b)
 
 
-class KruskalWallisTestModel(AnovaModel):
+class KruskalWallisTest(Anova):
     """Runs a Kruskal-Wallis test, similar to a non-parametric between
     subject anova.
     """
@@ -929,13 +929,13 @@ class KruskalWallisTestModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _analyze(self):
-        self._results = groupwise_results.KruskalWallisTestResults(
+        self._results = results.KruskalWallisTestResults(
             pyr.rpackages.stats.kruskal_test(
                 self._r_formula, data=self._r_input_data
             ))
 
 
-class FriedmanTestModel(AnovaModel):
+class FriedmanTest(Anova):
     """Runs a Friedman test, similar to a non-parametric within-subject anova.
     """
 
@@ -967,17 +967,17 @@ class FriedmanTestModel(AnovaModel):
         self._set_formula_from_vars()
 
     def _analyze(self):
-        self._results = groupwise_results.FriedmanTestResults(
+        self._results = results.FriedmanTestResults(
             pyr.rpackages.stats.friedman_test(
                 self._r_formula, data=self._r_input_data
             ))
 
 
-class AlignedRanksTestModel(AnovaModel):
+class AlignedRanksTest(Anova):
     """N-way non-parametric Anova"""
 
     def _analyze(self):
-        self._results = groupwise_results.AlignedRanksTestResults(
+        self._results = results.AlignedRanksTestResults(
             pyr.rpackages.ARTool.art(
                 data=self._r_input_data,
                 formula=self._r_formula
