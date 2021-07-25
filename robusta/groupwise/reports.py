@@ -5,7 +5,7 @@ from . import models
 P_VALUE_CLAUSE = 'p {pvalue_operator} {p-value:.3f}'
 
 FREQ_T_CLAUSE = (
-                 't({dof:.0f}) = {t:.2f}, ' + P_VALUE_CLAUSE)
+        't({dof:.0f}) = {t:.2f}, ' + P_VALUE_CLAUSE)
 COHEN_D_CLAUSE = "Cohen's d = {cohen_d:.2f}"
 COHEN_D_INTERVAL_CLAUSE = '({low:.2f, high:.2f})'
 
@@ -19,8 +19,13 @@ BAYES_SWITCH_TO_SCIENTIFIC = 1e4
 
 WILCOXON_CLAUSE = 'Z(df:.0f) = {statistic:.2f}, ' + P_VALUE_CLAUSE
 
-ANOVA_TERM_CLAUSE = ('{Term} F({df1:.0f}, '
-                     '{df2:.0f}) = {F:.2f}, ' + P_VALUE_CLAUSE)
+ANOVA_TERM_CLAUSE = ('{Term}'
+                     ' ['
+                     'F({df1:.0f}, '
+                     '{df2:.0f}) = {F:.2f}, '
+                     + P_VALUE_CLAUSE
+                     + ', Partial Eta-Sq. = {Partial Eta-Squared:.2f}'
+                     ']')
 BAYES_ANOVA_TERM_CLAUSE_DEC_NOTATION = 'model - ' + BAYES_T_CLAUSE_DEC_NOTATION
 BAYES_ANOVA_TERM_CLAUSE_SCI_NOTATION = 'model - ' + BAYES_T_CLAUSE_SCI_NOTATION
 
@@ -28,6 +33,7 @@ KRUSKSAL_WALLIS_CLAUSE = ('H({df1:.0f}, '
                           '{df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
 FRIEDMAN_CLAUSE = ('Z({df1:.0f}, '
                    '{df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
+
 
 # # Due to a circular import we have to put this below the top level.
 # if __name__ == '__main__':
@@ -62,10 +68,10 @@ class Reporter:
             return self._populate_anova_like_clauses(model, KRUSKSAL_WALLIS_CLAUSE)
         elif isinstance(model, models.FriedmanTest):
             return self._populate_anova_like_clauses(model, FRIEDMAN_CLAUSE)
-        elif isinstance(model, models.Anova):
-            return self._populate_anova_like_clauses(model)
         elif isinstance(model, models.BayesAnova):
             return self._populate_bayes_anova_clauses(model)
+        elif isinstance(model, models.Anova):
+            return self._populate_anova_like_clauses(model)
         else:
             raise NotImplementedError
 

@@ -24,7 +24,7 @@ BAYES_T_TEST_RETURNED_COLUMNS = BAYES_T_TEST_COLUMNS_RENAME.values()
 WILCOX_COLUMNS_RENAME = {'statistic': 'Z', 'p.value': 'p-value'}
 WILCOX_RETURNED_COLUMNS = WILCOX_COLUMNS_RENAME.values()
 
-ANOVA_COLUMNS_RENAME = {'Effect': 'Term', 'p.value': 'p-value'}
+ANOVA_COLUMNS_RENAME = {'Effect': 'Term', 'p.value': 'p-value', 'pes': 'Partial Eta-Squared'}
 ANOVA_DF_COLUMNS = ['df1', 'df2']
 ANOVA_RETURNED_COLUMNS = list(ANOVA_COLUMNS_RENAME.values()) + ['F', 'df']
 
@@ -112,17 +112,17 @@ class AnovaResults(GroupwiseResults):
         df = super()._reformat_r_output_df()
         _dofs = pd.DataFrame(df['df'].str.split(', ').tolist(), columns=ANOVA_DF_COLUMNS,
                              index=df.index)
-        df = pd.concat([df, _dofs], axis=1)
+        df = pd.concat([df.drop(columns=['df']), _dofs], axis=1)
 
         # TODO - Refactor this.
         df['F'] = df['F'].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
         df['p-value'] = df['p-value'].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
         df['df1'] = df['df1'].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
         df['df2'] = df['df2'].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
-
+        df[ANOVA_COLUMNS_RENAME['pes']] = df[ANOVA_COLUMNS_RENAME['pes']].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
         #df[[]]apply(lambda s: s.str.extract(r'(\d*\.\d+|\d+)').astype(float)).values
 
-        return df[self.returned_columns + ANOVA_DF_COLUMNS]
+        return df
 
 class KruskalWallisTestResults(GroupwiseResults):
     columns_rename = KWT_COLUMNS_RENAME
