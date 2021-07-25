@@ -62,6 +62,9 @@ class BaseModel(metaclass=abc.ABCMeta):
 # group vs. repeated variables, etc.).
 class BaseResults:
 
+    columns_rename = {}
+    returned_columns = []
+
     def __init__(self, r_results, **kwargs):
         self.r_results = r_results
 
@@ -78,3 +81,8 @@ class BaseResults:
 
     def _get_r_output_df(self):
         return utils.convert_df(self._tidy_results())
+
+    def _reformat_r_output_df(self):
+        df = self._get_r_output_df().copy()
+        df.rename(columns=self.columns_rename, inplace=True)
+        return df[self.returned_columns]

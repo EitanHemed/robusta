@@ -447,19 +447,19 @@ def test_anova_mixed():
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r('anova_table')))
 
     pd.testing.assert_frame_equal(
-        res.get_margins(['group', 'time']),
+        m.get_margins(['group', 'time']),
         rst.misc.utils.convert_df(r('interaction_margins'))
     )
     pd.testing.assert_frame_equal(
-        res.get_margins(margins_terms='group', by_terms='time'),
+        m.get_margins(margins_terms='group', by_terms='time'),
         rst.misc.utils.convert_df(r('interaction_margins'))
     )
     pd.testing.assert_frame_equal(
-        res.get_margins(margins_terms='time'),
+        m.get_margins(margins_terms='time'),
         rst.misc.utils.convert_df(r('time_margins'))
     )
     pd.testing.assert_frame_equal(
-        res.get_margins(margins_terms='group'),
+        m.get_margins(margins_terms='group'),
         rst.misc.utils.convert_df(r('group_margins'))
     )
 

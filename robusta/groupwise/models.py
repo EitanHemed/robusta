@@ -385,7 +385,7 @@ class T2Samples(GroupwiseModel):
             lambda s: s.values)
 
     def _analyze(self):
-        self._results = results.T2SamplesResults(
+        self._results = results.TTestResults(
             pyr.rpackages.stats.t_test(
                 **{'x': self.x, 'y': self.y,
                    'paired': self.paired,
@@ -554,7 +554,7 @@ class T1Sample(T2Samples):
         self.x = self._input_data[getattr(self, 'dependent')].values
 
     def _analyze(self):
-        self._results = results.T1SampleResults(pyr.rpackages.stats.t_test(
+        self._results = results.TTestResults(pyr.rpackages.stats.t_test(
             x=self.x,
             mu=self.mu,
             alternative=self.tail
@@ -645,7 +645,7 @@ class BayesT1Sample(T1Sample):
         )
         # with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
         #    z = ro.conversion.rpy2py(pyr.rpackages.base.data_frame(b))
-        self._results = results.BayesT1SampleResults(b,
+        self._results = results.BayesResults(b,
                                                      mode='posterior' if self.sample_from_posterior else 'bf')
 
 
@@ -665,7 +665,7 @@ class Wilcoxon1Sample(T1Sample):
     """Mann-Whitney"""
 
     def _analyze(self):
-        self._results = results.Wilcoxon1SampleResults(
+        self._results = results.WilcoxonResults(
             pyr.rpackages.stats.wilcox_test(
                 x=self.x, mu=self.mu, alternative=self.tail,
                 exact=self.p_exact, correct=self.p_correction,
@@ -684,7 +684,7 @@ class Wilcoxon2Samples(T2Samples):
         super().__init__(paired=self.paired, **kwargs)
 
     def _analyze(self):
-        self._results = results.Wilcoxon2SamplesResults(
+        self._results = results.WilcoxonResults(
             pyr.rpackages.stats.wilcox_test(
                 x=self.x, y=self.y, paired=self.paired,
                 alternative=self.tail,
@@ -751,6 +751,123 @@ class Anova(GroupwiseModel):
         # TODO: Add reliance on aov_ez aggregation functionality.
         # TODO: Add this functionality - sig_symbols=
         # pyr.vectors.StrVector(["", "", "", ""]))
+
+    def get_margins(
+            self,
+            margins_terms: typing.List[str] = None,
+            by_terms: typing.List[str] = None,
+            ci: int = 95,
+            overwrite: bool = False
+    ):
+        # TODO Look at this - emmeans::as_data_frame_emm_list
+        # TODO - Documentation
+        # TODO - Issue the 'balanced-design' warning etc.
+        # TODO - allow for `by` option
+        # TODO - implement between and within CI calculation
+
+        _terms_to_test = np.array(
+            utils.to_list([margins_terms,
+                           [] if by_terms is None else by_terms])
+        )
+
+        if not all(
+                term in self.report_table()['Term'].values for term in
+                _terms_to_test):
+            raise RuntimeError(
+                f'Margins term: {[i for i in _terms_to_test]}'
+                'not included in model')
+
+        margins_terms = np.array(utils.to_list(margins_terms))
+
+        if by_terms is None:
+            by_terms = pyr.rinterface.NULL
+        else:
+            by_terms = np.array(utils.to_list(by_terms))
+
+        _r_margins = pyr.rpackages.emmeans.emmeans(
+            self._results.r_results,
+            specs=margins_terms,
+            type='response',
+            level=ci,
+            by=by_terms
+        )
+
+        margins = utils.convert_df(
+            pyr.rpackages.emmeans.as_data_frame_emmGrid(
+                _r_margins))
+
+        return margins
+
+        # self.margins_results[tuple(margins_term)] = {
+        #    'margins': margins, 'r_margins': _r_margins}
+
+        # if self.margins_results is not None and overwrite is False:
+        #     raise RuntimeError(
+        #         'Margins already defined. To re-run, get_margins'
+        #         'with `overwrite` kwarg set to True')
+        #
+        # if margins_term is None:
+        #     if self.margins_term is None:
+        #         raise RuntimeError('No margins term defined')
+        # else:
+        #     self.margins_term = margins_term
+        #
+        #
+        # # TODO Currently this does not support integer arguments if we would
+        # #  get those. Also we need to make sure that we get a list or array
+        # #  as RPy2 doesn't take tuples. Probably should go with array as this
+        # #  might save time on checking whether the margins term is in the model,
+        # #  without making sure we are not comparing a string and a list.
+        # if isinstance(margins_term, str):
+        #     margins_term = [margins_term]
+        # margins_term = np.array(margins_term)
+        # if not all(
+        #         term in self.get_df()['term'].values for term in
+        #         margins_term):
+        #     raise RuntimeError(
+        #         f'Margins term: {[i for i in margins_term]}'
+        #         'not included in model')
+        #
+        # _r_margins = pyr.rpackages.emmeans.emmeans(
+        #     self.r_results,
+        #     specs=margins_term,
+        #     type='response',
+        #     level=ci,
+        # )
+        # margins = utils.convert_df(
+        #     pyr.rpackages.emmeans.as_data_frame_emmGrid(
+        #         _r_margins))
+        #
+        # self.margins_results[tuple(margins_term)] = {
+        #     'margins': margins, 'r_margins': _r_margins}
+        # return margins
+
+    def get_pairwise(self,
+                     margins_term: typing.Optional[typing.Union[str]] = None,
+                     overwrite_pairwise_results: bool = False):
+        # TODO - Documentation.
+        # TODO - Testing.
+        # TODO - implement pairwise options (e.g., `infer`)
+        warnings.warn('Currently under development. Expect bugs.')
+
+        if not isinstance(str, margins_term):
+            if self.margins_term is None:
+                raise RuntimeError("No margins_term defined")
+            else:
+                margins_term = self.margins_term
+        if '*' in margins_term:  # an interaction
+            raise RuntimeError(
+                'get_pairwise cannot be run using an interaction'
+                'margins term')
+        if margins_term in self.margins_results:
+            if ('pairwise' in self.margins_results[margins_term]
+                    and not overwrite_pairwise_results):
+                raise RuntimeError(
+                    'Margins already defined. To re-run, get_margins'
+                    'with `overwrite_margins_results` kwarg set '
+                    'to True')
+        return utils.convert_df(pyr.rpackages.emmeans.pairs(
+            self.margins_results[margins_term]['r_margins']))
 
 
 class BayesAnova(Anova):
@@ -893,7 +1010,7 @@ class BayesAnova(Anova):
             progress=False
             # noSample=self.no_sample
         )
-        self._results = results.BayesAnovaResults(b)
+        self._results = results.BayesResults(b)
 
 
 class KruskalWallisTest(Anova):
