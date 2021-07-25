@@ -5,8 +5,8 @@ from rpy2.robjects import r
 
 import robusta as rst
 # from ..correlations_models import _PairwiseCorrelationModel, _TriplewiseCorrelationModel
-from robusta.correlations.models import (_PairwiseCorrelationModel,
-                                         _TriplewiseCorrelationModel)
+from robusta.correlations.models import (_PairwiseCorrelation,
+                                         _TriplewiseCorrelation)
 
 BIVARIATE_CORRELEATION_METHODS = ['kendall', 'spearman', 'pearson']
 
@@ -20,21 +20,21 @@ TRIPLEWISE_CORRS_XYZ = dict(
 
 def test_pairwise_correlation_faulty_input():
     with pytest.raises(KeyError):
-        _PairwiseCorrelationModel(
+        _PairwiseCorrelation(
             x='x', y='y', data=pd.DataFrame()).fit()
     with pytest.raises(ValueError):
-        _PairwiseCorrelationModel(
+        _PairwiseCorrelation(
             x='x', y='y', data=None
         ).fit()
     with pytest.raises(ValueError):
-        _PairwiseCorrelationModel(
+        _PairwiseCorrelation(
             x=np.random.randint(0, 10, 20),
             y=np.random.randint(0, 10, 19), data=None
         ).fit()
 
     # X is string, y is an array
     with pytest.raises(ValueError):
-        _PairwiseCorrelationModel(
+        _PairwiseCorrelation(
             x='rating',
             y=np.random.randint(0, 10, 19),
             data=ATTITUDE_DATA
@@ -42,7 +42,7 @@ def test_pairwise_correlation_faulty_input():
 
     # Input strings but both are not in the data
     with pytest.raises(ValueError):
-        _PairwiseCorrelationModel(
+        _PairwiseCorrelation(
             X='SCORE',
             y='SALES',
             data=ATTITUDE_DATA
@@ -108,24 +108,24 @@ def test_correleation_output(method):
 
 def test_triplewise_correlation_z_argument():
     with pytest.raises(ValueError):
-        _TriplewiseCorrelationModel(
+        _TriplewiseCorrelation(
             x='x', y='y', z='z', data=None, method='pearson'
         ).fit()
 
     with pytest.raises(ValueError):
-        _TriplewiseCorrelationModel(
+        _TriplewiseCorrelation(
             x=[1, 2, 3], y=[4, 5, 2], z=[0, 2], data=None, method='pearson'
         ).fit()
 
     with pytest.raises(KeyError):
-        _TriplewiseCorrelationModel(
+        _TriplewiseCorrelation(
             x='x', y='y', z='ZZ', data=pd.DataFrame(
                 data=np.random.rand(10, 3), columns=['x', 'y', 'z']
             )
         ).fit()
 
     with pytest.raises(ValueError):
-        _TriplewiseCorrelationModel(
+        _TriplewiseCorrelation(
             x=[], y='y', z='z', data=pd.DataFrame(
                 columns=['x', 'y', 'z']
             )

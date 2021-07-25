@@ -3,6 +3,7 @@ import abc
 from .. import pyr
 from ..misc import utils
 
+
 class BaseModel(metaclass=abc.ABCMeta):
 
     def __init__(self, **kwargs):
@@ -61,7 +62,6 @@ class BaseModel(metaclass=abc.ABCMeta):
 # explicitly pass some information to the results objects (e.g., formula,
 # group vs. repeated variables, etc.).
 class BaseResults:
-
     columns_rename = {}
     returned_columns = []
 
@@ -85,4 +85,6 @@ class BaseResults:
     def _reformat_r_output_df(self):
         df = self._get_r_output_df().copy()
         df.rename(columns=self.columns_rename, inplace=True)
+
+
         return df[self.returned_columns]

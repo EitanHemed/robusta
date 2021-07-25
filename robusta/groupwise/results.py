@@ -99,7 +99,7 @@ class AnovaResults(GroupwiseResults):
     def _tidy_results(self):
         # TODO - this is an ugly hack. The problem is that up until now we didn't have the auto convertsion to recarray
         #  that removes the rownames. This needs to be fixed.
-        return pyr.rpackages.afex.nice(self.r_results)
+        return pyr.rpackages.afex.nice(self.r_results, es='pes')
 
         # anova_table = utils.convert_df(
         #     pyr.rpackages.stats.anova(
@@ -113,6 +113,15 @@ class AnovaResults(GroupwiseResults):
         _dofs = pd.DataFrame(df['df'].str.split(', ').tolist(), columns=ANOVA_DF_COLUMNS,
                              index=df.index)
         df = pd.concat([df, _dofs], axis=1)
+
+        # TODO - Refactor this.
+        df['F'] = df['F'].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
+        df['p-value'] = df['p-value'].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
+        df['df1'] = df['df1'].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
+        df['df2'] = df['df2'].str.extract(r'(\d*\.\d+|\d+)').astype(float).values
+
+        #df[[]]apply(lambda s: s.str.extract(r'(\d*\.\d+|\d+)').astype(float)).values
+
         return df[self.returned_columns + ANOVA_DF_COLUMNS]
 
 class KruskalWallisTestResults(GroupwiseResults):

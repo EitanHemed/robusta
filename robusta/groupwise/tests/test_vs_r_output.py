@@ -40,13 +40,13 @@ class FauxInf:
 def test_t2samples(paired, tail):
     data = rst.load_dataset('sleep')
     m = rst.groupwise.T2Samples(data=data,
-                                              independent='group',
-                                              dependent='extra',
-                                              subject='ID',
-                                              paired=paired,
-                                              tail=tail,
-                                              assume_equal_variance=False
-                                              )
+                                independent='group',
+                                dependent='extra',
+                                subject='ID',
+                                paired=paired,
+                                tail=tail,
+                                assume_equal_variance=False
+                                )
     m.fit()
 
     r_res = rst.misc.utils.convert_df(r(
@@ -71,8 +71,8 @@ def test_t2samples(paired, tail):
 def test_t1sample(mu, tail):
     sleep = rst.load_dataset('sleep')
     m = rst.groupwise.T1Sample(data=sleep.loc[sleep['group'] == '1'],
-                                             dependent='extra', subject='ID',
-                                             independent='group', mu=mu, tail=tail)
+                               dependent='extra', subject='ID',
+                               independent='group', mu=mu, tail=tail)
     m.fit()
     res = m._results._get_r_output_df()
     r_res = rst.misc.utils.convert_df(r(
@@ -384,7 +384,7 @@ def test_anova_between(between_vars):
 
 def test_anova_within():
     m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time',
-                                          dependent='score', subject='id')
+                            dependent='score', subject='id')
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -432,11 +432,9 @@ def test_anova_mixed():
         """
     )
 
-    m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time', between='group',
-                                          dependent='score', subject='id')
+    m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time', between='group', dependent='score', subject='id')
     m.fit()
     res = m._results._get_r_output_df()
-
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r('anova_table')))
 
@@ -482,7 +480,6 @@ def test_bayes_anova_between(between_vars, include_subject):
         include_subject=include_subject)
     m.fit()
     res = m._results._get_r_output_df()
-
 
     formula = between_vars[1]
     if include_subject:
@@ -543,7 +540,7 @@ def test_bayes_anova_between(between_vars, include_subject):
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_within(within_vars, include_subject):
     m = rst.groupwise.BayesAnova(data=ANXIETY_DATASET, within='time',
-                                               dependent='score', subject='id')
+                                 dependent='score', subject='id')
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -600,7 +597,7 @@ def test_bayes_anova_within(within_vars, include_subject):
 @pytest.mark.parametrize('include_subject', [False])
 def test_bayes_anova_mixed(include_subject):
     m = rst.groupwise.BayesAnova(data=ANXIETY_DATASET, within='time', between='group',
-                                               dependent='score', subject='id')
+                                 dependent='score', subject='id')
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -670,9 +667,9 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
     df = pd.DataFrame(data=np.array([weight_diff, group]).T,
                       columns=['weight', 'group']).reset_index()
     m = rst.groupwise.Wilcoxon1Sample(data=df, independent='group',
-                                                    subject='index',
-                                                    dependent='weight', mu=mu, tail=tail,
-                                                    p_exact=p_exact, p_correction=p_correction)
+                                      subject='index',
+                                      dependent='weight', mu=mu, tail=tail,
+                                      p_exact=p_exact, p_correction=p_correction)
     m.fit()
     res = m._results._get_r_output_df()
 
@@ -774,7 +771,7 @@ def test_friedman_test():
             regex='^t[1-3]$').stack().reset_index().rename(
             columns={0: 'score', 'level_2': 'time'})
         m = rst.groupwise.FriedmanTest(data=df, within='time', dependent='score',
-                                                     subject='id')
+                                       subject='id')
         m.fit()
         res = m._results._get_r_output_df()
         pd.testing.assert_frame_equal(res, r_res)

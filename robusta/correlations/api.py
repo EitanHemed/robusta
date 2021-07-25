@@ -10,20 +10,20 @@ __all__ = [
 
 
 def chisquare(**kwargs):
-    return ChiSquareModel(**kwargs)
+    return ChiSquare(**kwargs)
 
 
 def correlation(**kwargs):
-    return CorrelationModel(**kwargs)
+    return Correlation(**kwargs)
 
 
 def bayes_correlation(**kwargs):
-    return BayesCorrelationModel(**kwargs)
+    return BayesCorrelation(**kwargs)
 
 
 def part_correlation(**kwargs):
-    return PartCorrelationModel(**kwargs)
+    return PartCorrelation(**kwargs)
 
 
 def partial_correlation(**kwargs):
-    return PartialCorrelationModel(**kwargs)
+    return PartialCorrelation(**kwargs)

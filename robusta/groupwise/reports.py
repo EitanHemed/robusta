@@ -19,8 +19,8 @@ BAYES_SWITCH_TO_SCIENTIFIC = 1e4
 
 WILCOXON_CLAUSE = 'Z(df:.0f) = {statistic:.2f}, ' + P_VALUE_CLAUSE
 
-ANOVA_TERM_CLAUSE = ('{term} F({df1:.0f}, '
-                     '{df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
+ANOVA_TERM_CLAUSE = ('{Term} F({df1:.0f}, '
+                     '{df2:.0f}) = {F:.2f}, ' + P_VALUE_CLAUSE)
 BAYES_ANOVA_TERM_CLAUSE_DEC_NOTATION = 'model - ' + BAYES_T_CLAUSE_DEC_NOTATION
 BAYES_ANOVA_TERM_CLAUSE_SCI_NOTATION = 'model - ' + BAYES_T_CLAUSE_SCI_NOTATION
 
@@ -29,14 +29,14 @@ KRUSKSAL_WALLIS_CLAUSE = ('H({df1:.0f}, '
 FRIEDMAN_CLAUSE = ('Z({df1:.0f}, '
                    '{df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
 
-# Due to a circular import we have to put this below the top level.
-if __name__ == '__main__':
-    FREQUENTIST_ANOVA_LIKE_CLAUSE_DICT = {
-        models.AlignedRanksTest: ANOVA_TERM_CLAUSE,
-        models.Anova: ANOVA_TERM_CLAUSE,
-        models.FriedmanTest: FRIEDMAN_CLAUSE,
-        models.KruskalWallisTest: KRUSKSAL_WALLIS_CLAUSE
-    }
+# # Due to a circular import we have to put this below the top level.
+# if __name__ == '__main__':
+#     FREQUENTIST_ANOVA_LIKE_CLAUSE_DICT = {
+#         models.AlignedRanksTest: ANOVA_TERM_CLAUSE,
+#         models.Anova: ANOVA_TERM_CLAUSE,
+#         models.FriedmanTest: FRIEDMAN_CLAUSE,
+#         models.KruskalWallisTest: KRUSKSAL_WALLIS_CLAUSE
+#     }
 
 
 # TODO - consider removing this class as it doesn't seem that we need the reporter
@@ -58,6 +58,10 @@ class Reporter:
                         (models.T1Sample,
                          models.T2Samples)):
             return self._populate_t_test_clause(model)
+        elif isinstance(model, models.KruskalWallisTest):
+            return self._populate_anova_like_clauses(model, KRUSKSAL_WALLIS_CLAUSE)
+        elif isinstance(model, models.FriedmanTest):
+            return self._populate_anova_like_clauses(model, FRIEDMAN_CLAUSE)
         elif isinstance(model, models.Anova):
             return self._populate_anova_like_clauses(model)
         elif isinstance(model, models.BayesAnova):
@@ -67,10 +71,7 @@ class Reporter:
 
     def _populate_t_test_clause(self, model):
         t_dict = model.report_table().to_dict('records')[0]
-        if t_dict['p-value'] >= .001:
-            t_dict['pvalue_operator'] = '='
-        else:
-            t_dict['pvalue_operator'] = '<'
+        t_dict['p_operator'] = '<' if t_dict['p.value'] < .001 else '='
         return FREQ_T_CLAUSE.format(**t_dict)
 
     def _populate_bayes_t_test_clause(self, model):
@@ -86,9 +87,10 @@ class Reporter:
         w_dict['p_operator'] = '<' if w_dict['p.value'] < .001 else '='
         return WILCOXON_CLAUSE.format(**w_dict)
 
-    def _populate_anova_like_clauses(self, model):
-        clause = FREQUENTIST_ANOVA_LIKE_CLAUSE_DICT[type(model)]
-        anova_terms = model.report_table().to_dict('records')
+    def _populate_anova_like_clauses(self, model, clause=ANOVA_TERM_CLAUSE):
+        df = model.report_table()
+        df['pvalue_operator'] = np.where(df['p-value'] < 0.001, '<', '=')
+        anova_terms = df.to_dict('records')
         return '. '.join([clause.format(**f) for f in anova_terms])
 
     def _populate_bayes_anova_clauses(self, model):

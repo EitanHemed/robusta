@@ -5,7 +5,6 @@ coefficients.
 import typing
 import warnings
 
-# import custom_inherit # ?
 import numpy as np
 import pandas as pd
 
@@ -13,8 +12,8 @@ from . import results
 from .. import pyr
 from ..misc import base
 
-__all__ = ['ChiSquareModel', 'CorrelationModel', 'PartCorrelationModel',
-           'PartialCorrelationModel', 'BayesCorrelationModel']
+__all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
+           'PartialCorrelation', 'BayesCorrelation']
 
 CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
 DEFAULT_CORRELATION_METHOD = 'pearson'
@@ -22,7 +21,7 @@ REDUNDANT_BAYES_RESULT_COLS = ['time', 'code']
 DEFAULT_CORRELATION_NULL_INTERVAL = pyr.rinterface.NULL  # [-1, 1]
 
 
-class _PairwiseCorrelationModel(base.BaseModel):
+class _PairwiseCorrelation(base.BaseModel):
     """
     Parameters
     ----------
@@ -139,7 +138,7 @@ class _PairwiseCorrelationModel(base.BaseModel):
 
 
 # @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
-class ChiSquareModel(_PairwiseCorrelationModel):
+class ChiSquare(_PairwiseCorrelation):
     """ Run a frequentist Chi-Square \u03C7\u00B2 test of independence.
 
     .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/chisq.test
@@ -163,7 +162,7 @@ class ChiSquareModel(_PairwiseCorrelationModel):
         super().__init__(**kwargs)
 
     def _select_input_data(self):
-        super(ChiSquareModel, self)._select_input_data()
+        super(ChiSquare, self)._select_input_data()
         self._crosstab_data()
 
     def _validate_input_data(self):
@@ -189,7 +188,7 @@ class ChiSquareModel(_PairwiseCorrelationModel):
 
 
 # @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
-class CorrelationModel(_PairwiseCorrelationModel):
+class Correlation(_PairwiseCorrelation):
     """Calculate correlation coefficient in one of several methods.
 
     Parameters
@@ -223,7 +222,7 @@ class CorrelationModel(_PairwiseCorrelationModel):
 
 
 # @custom_inherit.doc_inherit(Correlation, "numpy_with_merge")
-class _TriplewiseCorrelationModel(CorrelationModel):
+class _TriplewiseCorrelation(Correlation):
     """
     A base class for correlation between two variables while controlling for
     some or all of the effect of a third vriable. Used as base for
@@ -279,7 +278,7 @@ class _TriplewiseCorrelationModel(CorrelationModel):
 
 
 # @custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
-class PartialCorrelationModel(_TriplewiseCorrelationModel):
+class PartialCorrelation(_TriplewiseCorrelation):
     """
     Calculates partial correlation.
 
@@ -300,7 +299,7 @@ class PartialCorrelationModel(_TriplewiseCorrelationModel):
 
 
 # @custom_inherit.doc_inherit(_TriplewiseCorrelation, "numpy_with_merge")
-class PartCorrelationModel(_TriplewiseCorrelationModel):
+class PartCorrelation(_TriplewiseCorrelation):
     """
     Calculates part (Semi-partial) correlation.
 
@@ -322,7 +321,7 @@ class PartCorrelationModel(_TriplewiseCorrelationModel):
 
 # TODO - see what other
 # @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
-class BayesCorrelationModel(_PairwiseCorrelationModel):
+class BayesCorrelation(_PairwiseCorrelation):
     """
     Calculates Bayes factor or returns posterior samples for correlation.
 
