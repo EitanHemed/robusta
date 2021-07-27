@@ -19,6 +19,7 @@ BAYES_SWITCH_TO_SCIENTIFIC = 1e4
 
 WILCOXON_CLAUSE = 'Z(df:.0f) = {statistic:.2f}, ' + P_VALUE_CLAUSE
 
+# TODO Currently the class would always report ANOVA effect size using PES rather than an option to get GES.
 ANOVA_TERM_CLAUSE = ('{Term}'
                      ' ['
                      'F({df1:.0f}, '
@@ -35,18 +36,11 @@ FRIEDMAN_CLAUSE = ('Z({df1:.0f}, '
                    '{df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
 
 
-# # Due to a circular import we have to put this below the top level.
-# if __name__ == '__main__':
-#     FREQUENTIST_ANOVA_LIKE_CLAUSE_DICT = {
-#         models.AlignedRanksTest: ANOVA_TERM_CLAUSE,
-#         models.Anova: ANOVA_TERM_CLAUSE,
-#         models.FriedmanTest: FRIEDMAN_CLAUSE,
-#         models.KruskalWallisTest: KRUSKSAL_WALLIS_CLAUSE
-#     }
-
 
 # TODO - consider removing this class as it doesn't seem that we need the reporter
 #  objcet. Everything here can be static.
+
+
 class Reporter:
 
     def __init__(self):
@@ -55,30 +49,42 @@ class Reporter:
     def report_table(self, model):
         return model._get_r_output_df()
 
-    def report_text(self, model):
+    def report_text(self, model, as_list=False):
+
+        # Bayesian Models
         if isinstance(model,
                       (models.BayesT1Sample,
                        models.BayesT2Samples)):
             return self._populate_bayes_t_test_clause(model)
+        elif isinstance(model, models.BayesAnova):
+            return self._populate_bayes_anova_clauses(model, as_list=as_list)
+        # Frequentist Models
         elif isinstance(model,
                         (models.T1Sample,
                          models.T2Samples)):
-            return self._populate_t_test_clause(model)
+            return self._populate_frequentist_clause(model, FREQ_T_CLAUSE)
         elif isinstance(model, models.KruskalWallisTest):
-            return self._populate_anova_like_clauses(model, KRUSKSAL_WALLIS_CLAUSE)
+            return self._populate_frequentist_clause(model, KRUSKSAL_WALLIS_CLAUSE)
         elif isinstance(model, models.FriedmanTest):
-            return self._populate_anova_like_clauses(model, FRIEDMAN_CLAUSE)
-        elif isinstance(model, models.BayesAnova):
-            return self._populate_bayes_anova_clauses(model)
+            return self._populate_frequentist_clause(model, FRIEDMAN_CLAUSE)
         elif isinstance(model, models.Anova):
-            return self._populate_anova_like_clauses(model)
+            return self._populate_frequentist_clause(model, ANOVA_TERM_CLAUSE, as_list=as_list)
         else:
             raise NotImplementedError
 
-    def _populate_t_test_clause(self, model):
-        t_dict = model.report_table().to_dict('records')[0]
-        t_dict['p_operator'] = '<' if t_dict['p.value'] < .001 else '='
-        return FREQ_T_CLAUSE.format(**t_dict)
+    def _populate_frequentist_clause(self, model, clause, as_list):
+        df = model.report_table()
+        df['pvalue_operator'] = np.where(df['p-value'] < 0.001, '<', '=')
+        terms = [clause.format(**f) for f in df.to_dict('records')]
+        if as_list:
+            return terms
+        return '. '.join(terms)
+    #
+    #
+    # def _populate_t_test_clause(self, model):
+    #     t_dict = model.report_table().to_dict('records')[0]
+    #     t_dict['p_operator'] = '<' if t_dict['p.value'] < .001 else '='
+    #     return FREQ_T_CLAUSE.format(**t_dict)
 
     def _populate_bayes_t_test_clause(self, model):
         b_dict = model.report_table().to_dict('records')[0]
@@ -88,18 +94,22 @@ class Reporter:
             return BAYES_T_CLAUSE_SCI_NOTATION.format(**b_dict)
         return BAYES_T_CLAUSE_DEC_NOTATION.format(**b_dict)
 
-    def _populate_wilcoxon_test_clause(self, model):
-        w_dict = model.report_table().to_dict('records')[0]
-        w_dict['p_operator'] = '<' if w_dict['p.value'] < .001 else '='
-        return WILCOXON_CLAUSE.format(**w_dict)
+    # def _populate_wilcoxon_test_clause(self, model):
+    #     w_dict = model.report_table().to_dict('records')[0]
+    #     w_dict['p_operator'] = '<' if w_dict['p.value'] < .001 else '='
+    #     return WILCOXON_CLAUSE.format(**w_dict)
 
-    def _populate_anova_like_clauses(self, model, clause=ANOVA_TERM_CLAUSE):
-        df = model.report_table()
-        df['pvalue_operator'] = np.where(df['p-value'] < 0.001, '<', '=')
-        anova_terms = df.to_dict('records')
-        return '. '.join([clause.format(**f) for f in anova_terms])
+    # def _populate_anova_like_clauses(self, model, as_list, clause=ANOVA_TERM_CLAUSE):
+    #     df = model.report_table()
+    #     df['pvalue_operator'] = np.where(df['p-value'] < 0.001, '<', '=')
+    #     anova_terms = df.to_dict('records')
+    #     terms = [clause.format(**f) for f in anova_terms]
+    #
+    #     if as_list:
+    #         return terms
+    #     return '. '.join(terms)
 
-    def _populate_bayes_anova_clauses(self, model):
+    def _populate_bayes_anova_clauses(self, model, as_list):
         bayes_terms = model.report_table().to_dict('records')
         terms = []
         for b_dict in bayes_terms:
@@ -110,4 +120,6 @@ class Reporter:
                 terms.append(
                     BAYES_ANOVA_TERM_CLAUSE_SCI_NOTATION.format(**b_dict))
             terms.append(BAYES_ANOVA_TERM_CLAUSE_DEC_NOTATION.format(**b_dict))
+        if as_list:
+            return terms
         return '. '.join(terms)

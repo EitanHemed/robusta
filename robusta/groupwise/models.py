@@ -746,7 +746,6 @@ class Anova(GroupwiseModel):
             # within=self.within,
             # between=self.between,
             data=self._r_input_data,
-            es=self.effect_size,
             correction=self.sphericity_correction))
         # TODO: Add reliance on aov_ez aggregation functionality.
         # TODO: Add this functionality - sig_symbols=

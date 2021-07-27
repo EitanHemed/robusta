@@ -85,6 +85,4 @@ class BaseResults:
     def _reformat_r_output_df(self):
         df = self._get_r_output_df().copy()
         df.rename(columns=self.columns_rename, inplace=True)
-
-
         return df[self.returned_columns]

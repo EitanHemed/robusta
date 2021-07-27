@@ -352,17 +352,8 @@ def test_anova_between(between_vars):
         rownames_to_column(ToothGrowth, 'dataset_rownames')
     
         data.frame(
-            nice(
-                anova(
-                    aov_4(
-                    data=rownames_to_column(ToothGrowth, 'dataset_rownames'),
-                    formula=len ~ {between_vars[1]} + (1|dataset_rownames),
-                    es='pes')
-                    #id='dataset_rownames', between=,
-                    #        dv='len'
-                    )
-                )
-        )
+            nice(aov_4(data=rownames_to_column(ToothGrowth, 'dataset_rownames'), formula=len ~ {between_vars[1]} 
+            + (1|dataset_rownames)), es='pes'))
         """))
 
     m.fit()
@@ -396,8 +387,7 @@ def test_anova_within():
         library(datarium)
         data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
 
-        data.frame(nice(anova(aov_4(score ~ (time|id), data=data_long,
-                ))))
+        data.frame(nice(aov_4(score ~ (time|id), data=data_long), es='pes'))
         """
     ))
 
@@ -422,7 +412,7 @@ def test_anova_mixed():
         data_long <- gather(anxiety, 'time', 'score', t1:t3, factor_key=TRUE)
 
         a1 = aov_4(score~(time|id) + group, data=data_long)
-        anova_table = data.frame(nice(anova(a1)))
+        anova_table = data.frame(nice(a1, es='pes'))
         interaction_margins = data.frame(emmeans(a1, specs=c('group', 'time'),
          type='response'))
         time_margins = data.frame(emmeans(a1, specs=c('time'),
