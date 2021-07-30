@@ -22,8 +22,8 @@ numpy2ri.activate()
 # TODO - Write names of imported libraries alphabetically,
 #  Avoid re-imports (e.g., use a set).
 
-r_libraries_to_include = ['BayesFactor', 'Matrix', 'afex',
-                          'backports', 'base', 'broom', 'datarium', 'datasets',
+required_r_libraries = ['BayesFactor', 'Matrix', 'afex',
+                          'base', 'broom', 'datarium', 'datasets', 'backports',
                           'dplyr', 'effsize', 'emmeans', 'generics', 'lme4',
                           'ppcor', 'psych', 'stats', 'tibble', 'tidyr', 'utils',
                           'ARTool'
@@ -34,16 +34,18 @@ class PyRIO:
     # TODO - find out if we can use an existing singelton implementation
     instances_count = 0  # This is a static counter
 
-    def __init__(self,
-                 required_packs=None, cran_mirror_idx=1):
+    required_packs = required_r_libraries
+
+    def __init__(self, cran_mirror_idx=1):
         """
         @rtype: A singleton:
         Python-R I/O. Used throughout robusta to pass objects to R/Python
         from Python/R.
         """
+        print("Initializing robusta. Please wait.")
+
         self.cran_mirror_idx = cran_mirror_idx
-        if required_packs is None:
-            required_packs = r_libraries_to_include
+
         if PyRIO.instances_count == 1:  # Check if the number of instances present are more than one.
             # del self
             warnings.warn(
@@ -54,13 +56,14 @@ class PyRIO:
         self.rpackages = packages
         self.rinterface = rinterface
         self._get_r_utils()
-        self.required_rpacks = required_packs
-        print("Initializing robusta. Please wait.")
-        self._get_required_rpackages()
+        self.get_required_rpackages()
 
-    def _get_required_rpackages(self):
-        [setattr(self.rpackages, pack, self._import_r_package(pack)) for
-         pack in self.required_rpacks]
+    def get_required_rpackages(self):
+        for pkg in self.required_packs:
+            self.import_package(pkg)
+
+    def import_package(self, pkg):
+        setattr(self.rpackages, pkg, self._import_r_package(pkg))
 
     def _import_r_package(self, pack):
         """This utility checks whether the package is installed and only then imports the package"""

@@ -5,36 +5,31 @@ from . import models
 P_VALUE_CLAUSE = 'p {pvalue_operator} {p-value:.3f}'
 
 FREQ_T_CLAUSE = (
-        't({dof:.0f}) = {t:.2f}, ' + P_VALUE_CLAUSE)
+        't({df:.0f}) = {t:.2f}, ' + P_VALUE_CLAUSE)
 COHEN_D_CLAUSE = "Cohen's d = {cohen_d:.2f}"
 COHEN_D_INTERVAL_CLAUSE = '({low:.2f, high:.2f})'
 
 # FREQ_T_DIFFERENCE_CLAUSE = "Mean Difference = {mean_diff:.2f}"
 
 BAYES_T_CLAUSE_DEC_NOTATION = ('BF1:0 = {bf:.2f}, '
-                               'Error {error_operator} {error:.3f}%')
+                               'Error = {error:.3f}%')
 BAYES_T_CLAUSE_SCI_NOTATION = ('BF1:0 = {bf:.2E}, '
-                               'Error {error_operator} {error:.3f}')
+                               'Error = {error:.3f}')
 BAYES_SWITCH_TO_SCIENTIFIC = 1e4
 
-WILCOXON_CLAUSE = 'Z(df:.0f) = {statistic:.2f}, ' + P_VALUE_CLAUSE
+WILCOXON_CLAUSE = 'Z = {Z:.2f}, ' + P_VALUE_CLAUSE
 
 # TODO Currently the class would always report ANOVA effect size using PES rather than an option to get GES.
-ANOVA_TERM_CLAUSE = ('{Term}'
-                     ' ['
-                     'F({df1:.0f}, '
-                     '{df2:.0f}) = {F:.2f}, '
-                     + P_VALUE_CLAUSE
-                     + ', Partial Eta-Sq. = {Partial Eta-Squared:.2f}'
-                     ']')
+GENERAL_F_CLAUSE = ('{Term} [F({df1:.0f}, {df2:.0f}) = {F:.2f}, ')
+ETA_SQ_CLAUSE = ', Partial Eta-Sq. = {Partial Eta-Squared:.2f}'
+ANOVA_TERM_CLAUSE = (GENERAL_F_CLAUSE + P_VALUE_CLAUSE + ETA_SQ_CLAUSE + ']')
+ART_TERM_CLAUSE = (GENERAL_F_CLAUSE + P_VALUE_CLAUSE + ']')
+
 BAYES_ANOVA_TERM_CLAUSE_DEC_NOTATION = 'model - ' + BAYES_T_CLAUSE_DEC_NOTATION
 BAYES_ANOVA_TERM_CLAUSE_SCI_NOTATION = 'model - ' + BAYES_T_CLAUSE_SCI_NOTATION
 
-KRUSKSAL_WALLIS_CLAUSE = ('H({df1:.0f}, '
-                          '{df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
-FRIEDMAN_CLAUSE = ('Z({df1:.0f}, '
-                   '{df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
-
+KRUSKSAL_WALLIS_CLAUSE = ('H({df1:.0f}, {df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
+FRIEDMAN_CLAUSE = ('Z({df1:.0f}, {df2:.0f}) = {statistic:.2f}, ' + P_VALUE_CLAUSE)
 
 
 # TODO - consider removing this class as it doesn't seem that we need the reporter
@@ -58,37 +53,40 @@ class Reporter:
             return self._populate_bayes_t_test_clause(model)
         elif isinstance(model, models.BayesAnova):
             return self._populate_bayes_anova_clauses(model, as_list=as_list)
-        # Frequentist Models
-        elif isinstance(model,
-                        (models.T1Sample,
-                         models.T2Samples)):
-            return self._populate_frequentist_clause(model, FREQ_T_CLAUSE)
+
+        # Frequentist Models (these are children classes, so they are tested for first)
+
+        elif isinstance(model, (models.Wilcoxon1Sample, models.Wilcoxon2Samples)):
+            return self._populate_frequentist_clause(model, WILCOXON_CLAUSE)
         elif isinstance(model, models.KruskalWallisTest):
             return self._populate_frequentist_clause(model, KRUSKSAL_WALLIS_CLAUSE)
         elif isinstance(model, models.FriedmanTest):
             return self._populate_frequentist_clause(model, FRIEDMAN_CLAUSE)
+
+        # Frequentist Models (these are mostly parent classes, so they are tested for later)
+        elif isinstance(model, (models.T1Sample, models.T2Samples)):
+            return self._populate_frequentist_clause(model, FREQ_T_CLAUSE)
+        elif isinstance(model, models.AlignedRanksTest):
+            return self._populate_frequentist_clause(model, ART_TERM_CLAUSE, as_list=as_list)
         elif isinstance(model, models.Anova):
             return self._populate_frequentist_clause(model, ANOVA_TERM_CLAUSE, as_list=as_list)
         else:
             raise NotImplementedError
 
-    def _populate_frequentist_clause(self, model, clause, as_list):
+    def _populate_frequentist_clause(self, model, clause, as_list=False):
         df = model.report_table()
         df['pvalue_operator'] = np.where(df['p-value'] < 0.001, '<', '=')
+        df.loc[df['p-value'] < 0.001, 'p-value'] = 0.001
         terms = [clause.format(**f) for f in df.to_dict('records')]
         if as_list:
             return terms
         return '. '.join(terms)
-    #
-    #
-    # def _populate_t_test_clause(self, model):
-    #     t_dict = model.report_table().to_dict('records')[0]
-    #     t_dict['p_operator'] = '<' if t_dict['p.value'] < .001 else '='
-    #     return FREQ_T_CLAUSE.format(**t_dict)
 
     def _populate_bayes_t_test_clause(self, model):
         b_dict = model.report_table().to_dict('records')[0]
         b_dict['error_operator'] = '=' if b_dict['error'] > 0.001 else '<'
+        df.loc[df['p-value'] < 0.001, 'p-value'] = 0.001
+
         if np.any(np.array(
                 [b_dict['bf'], 1 / b_dict['bf']]) > BAYES_SWITCH_TO_SCIENTIFIC):
             return BAYES_T_CLAUSE_SCI_NOTATION.format(**b_dict)

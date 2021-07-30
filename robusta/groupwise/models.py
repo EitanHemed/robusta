@@ -24,11 +24,11 @@ All classes have at least these postestimation methods:
 import typing
 import warnings
 from dataclasses import dataclass
+import re
 
 import numpy as np
 import pandas as pd
 
-# from . import groupwise_reports
 from . import results, reports
 from .. import pyr
 from ..misc import utils, formula_tools, base
@@ -165,21 +165,6 @@ class GroupwiseModel(base.BaseModel):
         #    return []
         return utils.to_list(ind_vars)
 
-        # """Make sure that the you have a list of independent variables"""
-        # if isinstance(ind_vars, list):
-        #     return ind_vars
-        # if isinstance(ind_vars, (tuple, set)):
-        #     return list(ind_vars)
-        # if ind_vars is None:
-        #     return []
-        # if isinstance(ind_vars, str):
-        #     if ind_vars == '':
-        #         return []
-        #     return [ind_vars]
-        # if isinstance(self, T1SampleModel):
-        #     return []
-        # raise TypeError
-
     def _select_input_data(self):
         try:
             data = self.data[
@@ -230,12 +215,6 @@ class GroupwiseModel(base.BaseModel):
             self._input_data = self._aggregate_data()
 
         self._r_input_data = utils.convert_df(self._input_data.copy())
-
-    # def _verify_independent_vars(self):
-    #
-    #     for i in self.independent:
-    #         utils.verify_levels(self._input_data[self.independent],
-    #                                 self.min_levels, self.max_levels)
 
     def _aggregate_data(self):
         return self._input_data.groupby(
@@ -341,42 +320,26 @@ class T2Samples(GroupwiseModel):
         kwargs['max_levels'] = 2
         kwargs['min_levels'] = 2
 
-        # if kwargs.get('formula') is None:
-        #
-        #     if paired is not None:
-        #         # If independent is specified, try to set between/within based on independent and paired
-        #         if independent is not None:
-        #             kwargs[{False: 'between', True: 'within'}[paired]] = independent
-        #         # If no independent variable is specified, try to use paired and between/within to infer independent
-        #         if independent is None:
-        #             kwargs['independent'] = {False: 'between', True: 'within'}[paired]
-        #     else:
-        #         # try to infer paired and independent from between/within
-        #         if kwargs['between'] is not None:
-        #             kwargs['independent'] = kwargs['between']
-        #             paired = False
-        #         elif kwargs['within'] is not None:
-        #             kwargs['independent'] = kwargs['within']
-        #             paired = True
-        #         else:
-        #             raise ValueError
-
         # TODO - refactor this
         if kwargs.get('formula') is None:
             # If independent is specified, try to set between/within based on independent and paired
             # If no independent variable is specified, try to use paired and between/within to infer independent
+
             if paired is None:
-                pass
+                raise RuntimeError("`paired` specification missing")
             else:
                 if independent is None:
-                    if paired is True:
-                        kwargs['independent'] = kwargs['within']
-                    else:
-                        kwargs['independent'] = kwargs['between']
+                    kwargs['independent'] = kwargs[{False: 'between', True: 'within'}[paired]]
                 if independent is not None:
                     kwargs[{False: 'between', True: 'within'}[paired]] = independent
 
+        else:
+            # What happens if there is formula and no specification of paired/unpaired
+            # TODO - refactor this
+            self.paired = bool(not re.search(r'\+\s*1\s*\|', kwargs['formula']))
+
         super().__init__(**kwargs)
+
 
     def _select_input_data(self):
         super()._select_input_data()
@@ -468,23 +431,6 @@ class BayesT2Samples(T2Samples):
                 raise ValueError
         super().__init__(**kwargs)
 
-    # def re_analyze(self, x=np.nan, y=np.nan, paired=np.nan,
-    #                sample_from_posterior=np.nan):
-    #     kwargs = {
-    #         'x': self.x if x is np.nan else x,
-    #         'y': self.y if y is np.nan else y,
-    #         'paired': self.paired if paired is np.nan else paired,
-    #         'nullInterval': self.null_interval,
-    #         'iterations': self.iterations,
-    #         'posterior': self.sample_from_posterior if sample_from_posterior is np.nan else sample_from_posterior,
-    #         'rscale': self.prior_scale,
-    #         'mu': self.mu
-    #     }
-    #
-    #     pyr.rpackages.base.data_frame(
-    #         pyr.rpackages.BayesFactor.ttestBF(
-    #             **kwargs
-    #         ))
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.ttestBF(
@@ -643,10 +589,8 @@ class BayesT1Sample(T1Sample):
             rscale=self.prior_scale,
             mu=self.mu
         )
-        # with ro.conversion.localconverter(ro.default_converter + ro.pandas2ri.converter):
-        #    z = ro.conversion.rpy2py(pyr.rpackages.base.data_frame(b))
         self._results = results.BayesResults(b,
-                                                     mode='posterior' if self.sample_from_posterior else 'bf')
+                                             mode='posterior' if self.sample_from_posterior else 'bf')
 
 
 class Wilcoxon1Sample(T1Sample):
@@ -675,7 +619,7 @@ class Wilcoxon1Sample(T1Sample):
 
 class Wilcoxon2Samples(T2Samples):
 
-    def __init__(self, paired: bool = True, p_exact: bool = True,
+    def __init__(self, paired=None, p_exact: bool = True,
                  p_correction: bool = True, ci: int = 95, **kwargs):
         self.paired = paired
         self.p_exact = p_exact
@@ -796,50 +740,6 @@ class Anova(GroupwiseModel):
                 _r_margins))
 
         return margins
-
-        # self.margins_results[tuple(margins_term)] = {
-        #    'margins': margins, 'r_margins': _r_margins}
-
-        # if self.margins_results is not None and overwrite is False:
-        #     raise RuntimeError(
-        #         'Margins already defined. To re-run, get_margins'
-        #         'with `overwrite` kwarg set to True')
-        #
-        # if margins_term is None:
-        #     if self.margins_term is None:
-        #         raise RuntimeError('No margins term defined')
-        # else:
-        #     self.margins_term = margins_term
-        #
-        #
-        # # TODO Currently this does not support integer arguments if we would
-        # #  get those. Also we need to make sure that we get a list or array
-        # #  as RPy2 doesn't take tuples. Probably should go with array as this
-        # #  might save time on checking whether the margins term is in the model,
-        # #  without making sure we are not comparing a string and a list.
-        # if isinstance(margins_term, str):
-        #     margins_term = [margins_term]
-        # margins_term = np.array(margins_term)
-        # if not all(
-        #         term in self.get_df()['term'].values for term in
-        #         margins_term):
-        #     raise RuntimeError(
-        #         f'Margins term: {[i for i in margins_term]}'
-        #         'not included in model')
-        #
-        # _r_margins = pyr.rpackages.emmeans.emmeans(
-        #     self.r_results,
-        #     specs=margins_term,
-        #     type='response',
-        #     level=ci,
-        # )
-        # margins = utils.convert_df(
-        #     pyr.rpackages.emmeans.as_data_frame_emmGrid(
-        #         _r_margins))
-        #
-        # self.margins_results[tuple(margins_term)] = {
-        #     'margins': margins, 'r_margins': _r_margins}
-        # return margins
 
     def get_pairwise(self,
                      margins_term: typing.Optional[typing.Union[str]] = None,
@@ -1024,11 +924,6 @@ class KruskalWallisTest(Anova):
         if self.within != []:
             raise ValueError('A within subject factor has been defined')
 
-    # def _set_formula_from_vars(self):
-    #     super()._set_formula_from_vars()
-    #     self.formula = f"{self.dependent} ~ {''.join(self.between)}"
-    #     self._r_formula = pyr.rpackages.stats.formula(self.formula)
-
     def _set_formula_from_vars(self):
         self.formula = utils.bayes_style_formula_from_vars(
             self.dependent, self.between, self.within,
@@ -1061,11 +956,6 @@ class FriedmanTest(Anova):
             raise RuntimeError('More than one within subject factors defined')
         if self.between != []:
             raise RuntimeError('A between subject factor has been defined')
-
-    # def _set_formula_from_vars(self):
-    #     super()._set_formula_from_vars()
-    #     self.formula = f"{self.dependent} ~ {''.join(self.within)}"
-    #     self._r_formula = pyr.rpackages.stats.formula(self.formula)
 
     def _set_formula_from_vars(self):
         self.formula = utils.bayes_style_formula_from_vars(

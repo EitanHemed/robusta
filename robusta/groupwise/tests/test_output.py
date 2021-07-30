@@ -18,7 +18,8 @@ WEIGHTLOSS = rst.load_dataset('weightloss').set_index(
     columns={0: 'score',
              'level_3': 'time'}
 )
-
+MICE2 = rst.load_dataset('mice2').set_index('id')[['before', 'after']].stack().reset_index().rename(
+    columns={'level_1': 'time', 0: 'weight'})
 
 PERFORMANCE = rst.load_dataset('performance').set_index(
     ['id', 'gender', 'stress']).filter(
@@ -27,28 +28,55 @@ PERFORMANCE = rst.load_dataset('performance').set_index(
              'level_3': 'time'}
 )
 
-def test_t2samples_between():
+
+def test_t2samples_paired_output():
+    m = rst.groupwise.models.T2Samples(data=MICE2, formula='weight~time|id')
+    m.fit()
+    assert m.report_text() == 't(9) = 25.55, p < 0.001'
+
+
+def test_t2samples_unpaired_output():
+    m = rst.groupwise.models.T2Samples(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='greater')
+    m.fit()
+    assert m.report_text() == "t(29) = 5.49, p < 0.001"
+
+
+def test_t1sample_output():
     pass
 
 
-def test_t1sample():
+def test_bayes_t2samples_output():
     pass
 
 
-def test_bayes_t2samples():
+def test_bayes_t1sample_output():
     pass
 
 
-def test_bayes_t1sample():
-    pass
+def test_wilcoxon_2samples_output():
+    x = np.array([0.80, 0.83, 1.89, 1.04, 1.45, 1.38, 1.91, 1.64, 0.73, 1.46])
+    y = np.array([1.15, 0.88, 0.90, 0.74, 1.21])
+    group = np.concatenate([np.zeros(x.size), np.ones(y.size)])
+    df = pd.DataFrame(data=np.array([np.concatenate([x, y]), group]).T,
+                      columns=['score', 'group']).reset_index()
+
+    m = rst.groupwise.models.Wilcoxon2Samples(formula='score~group + 1|index', tail="greater", data=df, mu=0.1)
+    m.fit()
+
+    assert m.report_text() == 'Z = 35.00, p = 0.127'
 
 
-def test_wilcoxon_2samples():
-    pass
+def test_wilcoxon_1sample_output():
+    x = (1.83, 0.50, 1.62, 2.48, 1.68, 1.88, 1.55, 3.06, 1.30)
+    y = (0.878, 0.647, 0.598, 2.05, 1.06, 1.29, 1.06, 3.14, 1.29)
+    weight_diff = np.array(x) - np.array(y)
+    group = np.repeat(0, len(weight_diff))
+    df = pd.DataFrame(data=np.array([weight_diff, group]).T,
+                      columns=['score', 'group']).reset_index()
 
-
-def test_wilcoxon_1sample():
-    pass
+    m = rst.groupwise.models.Wilcoxon1Sample(formula='score~(group|index)', tail="greater", data=df)
+    m.fit()
+    assert m.report_text() == 'Z = 40.00, p = 0.020'
 
 
 def test_oneway_between_anova_output():
@@ -83,6 +111,7 @@ def test_threeway_within_anova_output():
         'diet:time [F(1, 15) = 0.60, p = 0.501, Partial Eta-Sq. = 0.05]. '
         'exercises:time [F(2, 17) = 20.83, p = 0.001, Partial Eta-Sq. = 0.65]. '
         'diet:exercises:time [F(2, 21) = 14.25, p = 0.001, Partial Eta-Sq. = 0.56]')
+
 
 def test_threeway_mixed_anova_output():
     m = rst.groupwise.Anova(formula='score~gender*stress+(time|id)', data=PERFORMANCE)
