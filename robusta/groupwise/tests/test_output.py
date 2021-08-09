@@ -7,6 +7,10 @@ from collections import namedtuple
 
 MTCARS = rst.load_dataset('mtcars')
 PLANTS = rst.load_dataset('PlantGrowth')
+CHICK_WEIGHT = rst.load_dataset('chickwts')
+CHICK_WEIGHT = CHICK_WEIGHT.assign(feed=CHICK_WEIGHT['feed'].astype(str).values).loc[
+    CHICK_WEIGHT['feed'].isin(["horsebean", "linseed"])]
+
 SELFESTEEM = rst.load_dataset('selfesteem').set_index(
     ['id']).filter(
     regex='^t[1-3]$').stack().reset_index().rename(
@@ -42,15 +46,24 @@ def test_t2samples_unpaired_output():
 
 
 def test_t1sample_output():
-    pass
+    m = rst.groupwise.models.T1Sample(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='less', mu=3.5)
+    m.fit()
+    assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
 
 def test_bayes_t2samples_output():
-    pass
+    m = rst.groupwise.models.BayesT2Samples(data=CHICK_WEIGHT, formula='weight~feed+1|dataset_rownames', paired=False)
+    m.fit()
+    assert m.report_text() == 'Alt., r=0.707 [BF1:0 = 5.98, Error = 0.001%]'
 
 
 def test_bayes_t1sample_output():
-    pass
+    m = rst.groupwise.models.BayesT1Sample(
+        data=MTCARS.assign(wt=2.5 - MTCARS['wt'].values), formula='wt~am+1|dataset_rownames',
+        tail='less', null_interval=[-np.Inf, 0])
+    m.fit()
+    assert m.report_text() == ('Alt., r=0.707 -Inf<d<0 [BF1:0 = 230.25, Error = 0.001%]. '
+                               'Alt., r=0.707 !(-Inf<d<0) [BF1:0 = 0.04, Error = 0.001%]')
 
 
 def test_wilcoxon_2samples_output():

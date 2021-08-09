@@ -340,12 +340,16 @@ class T2Samples(GroupwiseModel):
 
         super().__init__(**kwargs)
 
-
     def _select_input_data(self):
         super()._select_input_data()
-        self.x, self.y = self._input_data.groupby(
-            getattr(self, 'independent'))[getattr(self, 'dependent')].apply(
-            lambda s: s.values)
+        try:
+            self.x, self.y = self._input_data.groupby(
+                getattr(self, 'independent'))[getattr(self, 'dependent')].apply(
+                lambda s: s.values)
+        except ValueError as e:
+            print("Input data has more than two categories. Use pd.Series.cat.remove_unused_categories"
+                  "or change `independent` column into non-category.")
+            raise e
 
     def _analyze(self):
         self._results = results.TTestResults(
@@ -430,7 +434,6 @@ class BayesT2Samples(T2Samples):
             if mu != 0:
                 raise ValueError
         super().__init__(**kwargs)
-
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.ttestBF(

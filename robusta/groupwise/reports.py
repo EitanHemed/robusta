@@ -9,12 +9,8 @@ FREQ_T_CLAUSE = (
 COHEN_D_CLAUSE = "Cohen's d = {cohen_d:.2f}"
 COHEN_D_INTERVAL_CLAUSE = '({low:.2f, high:.2f})'
 
-# FREQ_T_DIFFERENCE_CLAUSE = "Mean Difference = {mean_diff:.2f}"
-
-BAYES_T_CLAUSE_DEC_NOTATION = ('BF1:0 = {bf:.2f}, '
-                               'Error = {error:.3f}%')
-BAYES_T_CLAUSE_SCI_NOTATION = ('BF1:0 = {bf:.2E}, '
-                               'Error = {error:.3f}')
+BAYES_T_CLAUSE_DEC_NOTATION = ('{model} [BF1:0 = {bf:.2f}, Error = {error:.3f}%]')
+BAYES_T_CLAUSE_SCI_NOTATION = ('{model} [BF1:0 = {bf:.2E}, Error = {error:.3f}]')
 BAYES_SWITCH_TO_SCIENTIFIC = 1e4
 
 WILCOXON_CLAUSE = 'Z = {Z:.2f}, ' + P_VALUE_CLAUSE
@@ -82,15 +78,24 @@ class Reporter:
             return terms
         return '. '.join(terms)
 
-    def _populate_bayes_t_test_clause(self, model):
-        b_dict = model.report_table().to_dict('records')[0]
-        b_dict['error_operator'] = '=' if b_dict['error'] > 0.001 else '<'
-        df.loc[df['p-value'] < 0.001, 'p-value'] = 0.001
+    def _populate_bayes_t_test_clause(self, model, as_list=False):
+
+        df = model.report_table()
+
+        df['error_operator'] = np.where(df['error'] < 0.001, '<', '=')
+        df.loc[df['error'] < 0.001, 'error'] = 0.001
 
         if np.any(np.array(
-                [b_dict['bf'], 1 / b_dict['bf']]) > BAYES_SWITCH_TO_SCIENTIFIC):
-            return BAYES_T_CLAUSE_SCI_NOTATION.format(**b_dict)
-        return BAYES_T_CLAUSE_DEC_NOTATION.format(**b_dict)
+                [df['bf'], 1 / df['bf']]) > BAYES_SWITCH_TO_SCIENTIFIC):
+            clause = BAYES_T_CLAUSE_SCI_NOTATION
+        else:
+            clause = BAYES_T_CLAUSE_DEC_NOTATION
+
+        terms = [clause.format(**f) for f in df.to_dict('records')]
+
+        if as_list:
+            return terms
+        return '. '.join(terms)
 
     # def _populate_wilcoxon_test_clause(self, model):
     #     w_dict = model.report_table().to_dict('records')[0]
@@ -107,17 +112,17 @@ class Reporter:
     #         return terms
     #     return '. '.join(terms)
 
-    def _populate_bayes_anova_clauses(self, model, as_list):
-        bayes_terms = model.report_table().to_dict('records')
-        terms = []
-        for b_dict in bayes_terms:
-            b_dict['error_operator'] = '=' if b_dict['error'] > 0.001 else '<'
-            if np.any(np.array(
-                    [b_dict['bf'],
-                     1 / b_dict['bf']]) > BAYES_SWITCH_TO_SCIENTIFIC):
-                terms.append(
-                    BAYES_ANOVA_TERM_CLAUSE_SCI_NOTATION.format(**b_dict))
-            terms.append(BAYES_ANOVA_TERM_CLAUSE_DEC_NOTATION.format(**b_dict))
-        if as_list:
-            return terms
-        return '. '.join(terms)
+    # def _populate_bayes_anova_clauses(self, model, as_list):
+    #     bayes_terms = model.report_table().to_dict('records')
+    #     terms = []
+    #     for b_dict in bayes_terms:
+    #         b_dict['error_operator'] = '=' if b_dict['error'] > 0.001 else '<'
+    #         if np.any(np.array(
+    #                 [b_dict['bf'],
+    #                  1 / b_dict['bf']]) > BAYES_SWITCH_TO_SCIENTIFIC):
+    #             terms.append(
+    #                 BAYES_ANOVA_TERM_CLAUSE_SCI_NOTATION.format(**b_dict))
+    #         terms.append(BAYES_ANOVA_TERM_CLAUSE_DEC_NOTATION.format(**b_dict))
+    #     if as_list:
+    #         return terms
+    #     return '. '.join(terms)

@@ -22,10 +22,13 @@ numpy2ri.activate()
 # TODO - Write names of imported libraries alphabetically,
 #  Avoid re-imports (e.g., use a set).
 
-required_r_libraries = ['BayesFactor', 'Matrix', 'afex',
-                          'base', 'broom', 'datarium', 'datasets', 'backports',
-                          'dplyr', 'effsize', 'emmeans', 'generics', 'lme4',
-                          'ppcor', 'psych', 'stats', 'tibble', 'tidyr', 'utils',
+required_r_libraries = ['base', 'datasets', 'stats', 'utils', 'generics', 'broom',
+                       #'dplyr',  'tibble', 'tidyr',
+                        #'Matrix', 'backports',
+                        'afex', 'BayesFactor',
+                         'datarium',
+                         'effsize', 'emmeans', 'lme4',
+                          'ppcor', 'psych',
                           'ARTool'
                           ]
 
