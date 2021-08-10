@@ -5,11 +5,11 @@ import robusta as rst
 
 from collections import namedtuple
 
+SLEEP = rst.load_dataset('sleep')
 MTCARS = rst.load_dataset('mtcars')
 PLANTS = rst.load_dataset('PlantGrowth')
 CHICK_WEIGHT = rst.load_dataset('chickwts')
-CHICK_WEIGHT = CHICK_WEIGHT.assign(feed=CHICK_WEIGHT['feed'].astype(str).values).loc[
-    CHICK_WEIGHT['feed'].isin(["horsebean", "linseed"])]
+
 
 SELFESTEEM = rst.load_dataset('selfesteem').set_index(
     ['id']).filter(
@@ -52,7 +52,9 @@ def test_t1sample_output():
 
 
 def test_bayes_t2samples_output():
-    m = rst.groupwise.models.BayesT2Samples(data=CHICK_WEIGHT, formula='weight~feed+1|dataset_rownames', paired=False)
+    _data = CHICK_WEIGHT.assign(feed=CHICK_WEIGHT['feed'].astype(str).values).loc[
+    CHICK_WEIGHT['feed'].isin(["horsebean", "linseed"])]
+    m = rst.groupwise.models.BayesT2Samples(data=_data, formula='weight~feed+1|dataset_rownames', paired=False)
     m.fit()
     assert m.report_text() == 'Alt., r=0.707 [BF1:0 = 5.98, Error = 0.001%]'
 
@@ -138,3 +140,9 @@ def test_threeway_mixed_anova_output():
         'stress:time [F(2, 54) = 1.82, p = 0.172, Partial Eta-Sq. = 0.06]. '
         'gender:stress:time [F(2, 54) = 6.10, p = 0.004, Partial Eta-Sq. = 0.18]'
     )
+
+
+def test_oneway_within_bayes_anova_output():
+    m = rst.groupwise.models.BayesAnova(formula='weight~feed+1|dataset_rownames', data=CHICK_WEIGHT)
+    m.fit()
+    assert m.report_text() == 'feed [BF1:0 = 1.41E+07, Error = 0.001]'

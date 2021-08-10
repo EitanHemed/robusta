@@ -45,10 +45,12 @@ class Reporter:
         # Bayesian Models
         if isinstance(model,
                       (models.BayesT1Sample,
-                       models.BayesT2Samples)):
+                       models.BayesT2Samples,
+                       models.BayesAnova
+                       )):
             return self._populate_bayes_t_test_clause(model)
-        elif isinstance(model, models.BayesAnova):
-            return self._populate_bayes_anova_clauses(model, as_list=as_list)
+        #elif isinstance(model, models.BayesAnova):
+        #    return self._populate_bayes_anova_clauses(model, as_list=as_list)
 
         # Frequentist Models (these are children classes, so they are tested for first)
 

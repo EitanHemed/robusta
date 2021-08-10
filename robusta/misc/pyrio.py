@@ -9,7 +9,7 @@ pyrio is in charge of the following:
     - Transferring objects into the R environment and back.
 """
 import warnings
-
+from tqdm import tqdm
 from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface
 from rpy2.robjects.conversion import localconverter
 
@@ -62,7 +62,7 @@ class PyRIO:
         self.get_required_rpackages()
 
     def get_required_rpackages(self):
-        for pkg in self.required_packs:
+        for pkg in tqdm(self.required_packs):
             self.import_package(pkg)
 
     def import_package(self, pkg):
