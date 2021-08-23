@@ -21,6 +21,18 @@ Let's import rosbusta. This could take up to 10 seconds as many R libraries are 
 
 
 ```python
+import robusta as rst
+```
+
+    Initializing robusta. Please wait.
+
+
+    100%|██████████| 15/15 [00:21<00:00,  1.42s/it]
+
+
+
+```python
+# Define a helper function, to pretty-print output of DFs when converting the notebook to .md
 # https://gist.github.com/rgerkin/af5b27a0e30531c30f2bf628aa41a553
 from tabulate import tabulate
 import IPython.display as d
@@ -32,84 +44,23 @@ def md_print_df(df):
     return result
 ```
 
-
-```python
-import robusta as rst
-```
-
-    Initializing robusta. Please wait.
-
-
-    100%|██████████| 15/15 [00:13<00:00,  1.10it/s]
-
-
 First off, we need data. Using robusta we can import R built-in and some imported datasets. You can get a full list of the datasets, similarly to calling to `data()` with no input arguments in R.
 
 
 ```python
-rst.get_available_datasets().tail()
+md_print_df(rst.get_available_datasets().tail())
 ```
 
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Package</th>
-      <th>Item</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>285</th>
-      <td>ARTool</td>
-      <td>Higgins1990Table5</td>
-      <td>Split-plot Experiment Examining Effect of Mois...</td>
-    </tr>
-    <tr>
-      <th>286</th>
-      <td>ARTool</td>
-      <td>Higgins1990Table1.art</td>
-      <td>Aligned Rank Transformed Version of Higgins199...</td>
-    </tr>
-    <tr>
-      <th>287</th>
-      <td>ARTool</td>
-      <td>Higgins1990Table1</td>
-      <td>Synthetic 3x3 Factorial Randomized Experiment</td>
-    </tr>
-    <tr>
-      <th>288</th>
-      <td>ARTool</td>
-      <td>ElkinABC</td>
-      <td>Synthetic 2x2x2 Within-Subjects Experiment</td>
-    </tr>
-    <tr>
-      <th>289</th>
-      <td>ARTool</td>
-      <td>ElkinAB</td>
-      <td>Synthetic 2x2 Within-Subjects Experiment</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+|     | Package   | Item                  | Description                                                                                  |
+|----:|:----------|:----------------------|:---------------------------------------------------------------------------------------------|
+| 285 | ARTool    | Higgins1990Table5     | Split-plot Experiment Examining Effect of Moisture and Fertilizer on Dry Matter in Peat Pots |
+| 286 | ARTool    | Higgins1990Table1.art | Aligned Rank Transformed Version of Higgins1990Table1                                        |
+| 287 | ARTool    | Higgins1990Table1     | Synthetic 3x3 Factorial Randomized Experiment                                                |
+| 288 | ARTool    | ElkinABC              | Synthetic 2x2x2 Within-Subjects Experiment                                                   |
+| 289 | ARTool    | ElkinAB               | Synthetic 2x2 Within-Subjects Experiment                                                     |
 
 
 
@@ -118,87 +69,19 @@ We can import a dataset using `rst.load_dataset`
 
 ```python
 iris = rst.load_dataset('iris')
-iris.head()
+md_print_df(iris.head())
 ```
 
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>dataset_rownames</th>
-      <th>Sepal.Length</th>
-      <th>Sepal.Width</th>
-      <th>Petal.Length</th>
-      <th>Petal.Width</th>
-      <th>Species</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>1</td>
-      <td>5.1</td>
-      <td>3.5</td>
-      <td>1.4</td>
-      <td>0.2</td>
-      <td>setosa</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>2</td>
-      <td>4.9</td>
-      <td>3.0</td>
-      <td>1.4</td>
-      <td>0.2</td>
-      <td>setosa</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>3</td>
-      <td>4.7</td>
-      <td>3.2</td>
-      <td>1.3</td>
-      <td>0.2</td>
-      <td>setosa</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>4</td>
-      <td>4.6</td>
-      <td>3.1</td>
-      <td>1.5</td>
-      <td>0.2</td>
-      <td>setosa</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>5</td>
-      <td>5.0</td>
-      <td>3.6</td>
-      <td>1.4</td>
-      <td>0.2</td>
-      <td>setosa</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+|  |   dataset_rownames |   Sepal.Length |   Sepal.Width |   Petal.Length |   Petal.Width | Species   |
+|---:|-------------------:|---------------:|--------------:|---------------:|--------------:|:----------|
+|  0 |                  1 |            5.1 |           3.5 |            1.4 |           0.2 | setosa    |
+|  1 |                  2 |            4.9 |           3   |            1.4 |           0.2 | setosa    |
+|  2 |                  3 |            4.7 |           3.2 |            1.3 |           0.2 | setosa    |
+|  3 |                  4 |            4.6 |           3.1 |            1.5 |           0.2 | setosa    |
+|  4 |                  5 |            5   |           3.6 |            1.4 |           0.2 | setosa    |
 
 
 
@@ -272,35 +155,57 @@ As shown above, see also `rst.t1sample`. Relatedly, see non-parametric variation
 
 
 ```python
-m = rst.api.bayes_t2samples(
+m = rst.groupwise.BayesT2Samples(
         data=rst.load_dataset('mtcars'), subject='dataset_rownames',
         dependent='mpg', independent='am', prior_scale=0.5,
         paired=False)
 m.fit()
-print(m.report_table())
+md_print_df(m.report_table())
+```
 
+
+
+
+|  | model       |      bf |       error |
+|---:|:------------|--------:|------------:|
+|  0 | Alt., r=0.5 | 71.3861 | 3.96597e-09 |
+
+
+
+
+```python
 # Test different null intervals and prior values:
 m.reset(prior_scale=0.1, null_interval=[0, 0.5])
 m.fit()
-print(m.report_table())
-
-print(m.report_text())
-
+print(f'{m.report_text()}\n\n')
+md_print_df(m.report_table())
 
 ```
 
-             model         bf         error
-    0  Alt., r=0.5  71.386051  3.965971e-09
-                        model         bf     error
-    0     Alt., r=0.1 0<d<0.5   0.463808  0.000002
-    1  Alt., r=0.1 !(0<d<0.5)  32.759791  0.000001
-    BF1:0 = 0.46, Error < 0.000%
+    Alt., r=0.1 0<d<0.5 [BF1:0 = 0.46, Error = 0.001%]. Alt., r=0.1 !(0<d<0.5) [BF1:0 = 32.76, Error = 0.001%]
+    
+    
 
+
+
+
+
+|  | model                  |        bf |       error |
+|---:|:-----------------------|----------:|------------:|
+|  0 | Alt., r=0.1 0<d<0.5    |  0.463808 | 1.6519e-06  |
+|  1 | Alt., r=0.1 !(0<d<0.5) | 32.7598   | 1.11604e-06 |
+
+
+
+
+```python
+
+```
 
 #### Analysis of variance
-use `anova` to run between, within or mixed-design ANOVA, we load the anxiety dataset for the next demonstrations. 
+use `Anova` to run between, within or mixed-design ANOVA, we load the anxiety dataset for the next demonstrations. 
 
-For non-parametric ANOVAs see `kruskal_wallis_test`, `friedman_test` and `aligned_ranks_test`
+For non-parametric ANOVAs see `KruskalWallisTest`, `FriedmanTest` and `AlignedRanksTest`
 
 
 
@@ -310,86 +215,30 @@ anxiety = rst.load_dataset('anxiety').set_index(['id', 'group']
                                            ).filter(regex='^t[1-3]$').stack().reset_index().rename(
     columns={0: 'score',
              'level_2': 'time'})
-anxiety.head()
+md_print_df(anxiety.head())
 
 ```
 
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>id</th>
-      <th>group</th>
-      <th>time</th>
-      <th>score</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>1</td>
-      <td>grp1</td>
-      <td>t1</td>
-      <td>14.1</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>1</td>
-      <td>grp1</td>
-      <td>t2</td>
-      <td>14.4</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>1</td>
-      <td>grp1</td>
-      <td>t3</td>
-      <td>14.1</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>2</td>
-      <td>grp1</td>
-      <td>t1</td>
-      <td>14.5</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>2</td>
-      <td>grp1</td>
-      <td>t2</td>
-      <td>14.6</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+|  |   id | group   | time   |   score |
+|---:|-----:|:--------|:-------|--------:|
+|  0 |    1 | grp1    | t1     |    14.1 |
+|  1 |    1 | grp1    | t2     |    14.4 |
+|  2 |    1 | grp1    | t3     |    14.1 |
+|  3 |    2 | grp1    | t1     |    14.5 |
+|  4 |    2 | grp1    | t2     |    14.6 |
 
 
 
 
 ```python
-m = rst.api.anova(
+m = rst.groupwise.Anova(
         data=anxiety, subject='id',
         dependent='score', between='group', within='time')
 m.fit()
-m.report_table()
+md_print_df(m.report_table())
 ```
 
     R[write to console]: Contrasts set to contr.sum for the following variables: group
@@ -397,33 +246,14 @@ m.report_table()
 
 
 
-    ---------------------------------------------------------------------------
-
-    AttributeError                            Traceback (most recent call last)
-
-    <ipython-input-5-af99e6cb941a> in <module>
-          3         dependent='score', between='group', within='time')
-          4 m.fit()
-    ----> 5 m.report_table()
-    
-
-    ~/Projects/robusta/robusta/robusta/groupwise/groupwise_models.py in report_table(self)
-        273 
-        274     def report_table(self):
-    --> 275         return self._results.get_df()
-        276 
-        277     def report_text(self):
 
 
-    ~/Projects/robusta/robusta/robusta/misc/base.py in get_df(self)
-         69 
-         70     def get_df(self):
-    ---> 71         return self.results_df.copy()
-         72 
-         73     def _reformat_r_output_df(self):
+|  | Term       |   p-value |   Partial Eta-Squared |      F |   df1 |   df2 |
+|---:|:-----------|----------:|----------------------:|-------:|------:|------:|
+|  0 | group      |     0.019 |                 0.172 |   4.35 |  2    | 42    |
+|  1 | time       |     0.001 |                 0.904 | 394.91 |  1.79 | 75.24 |
+|  2 | group:time |     0.001 |                 0.84  | 110.19 |  3.58 | 75.24 |
 
-
-    AttributeError: 'NoneType' object has no attribute 'copy'
 
 
 Similarly, we run the model usign only the between subject term (`group`). As the model was already generated we can simpyl drop the within-subject term:
@@ -431,7 +261,8 @@ Similarly, we run the model usign only the between subject term (`group`). As th
 
 ```python
 m.reset(within=None)
-m.fit().get_df()
+m.fit()
+md_print_df(m.report_table())
 ```
 
     R[write to console]: Contrasts set to contr.sum for the following variables: group
@@ -441,45 +272,9 @@ m.fit().get_df()
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Effect</th>
-      <th>df</th>
-      <th>MSE</th>
-      <th>F</th>
-      <th>ges</th>
-      <th>p.value</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>group</td>
-      <td>2, 42</td>
-      <td>2.37</td>
-      <td>4.35 *</td>
-      <td>.172</td>
-      <td>.019</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+|  | Term   |   p-value |   Partial Eta-Squared |    F |   df1 |   df2 |
+|---:|:-------|----------:|----------------------:|-----:|------:|------:|
+|  0 | group  |     0.019 |                 0.172 | 4.35 |     2 |    42 |
 
 
 
@@ -488,52 +283,17 @@ R and many other statistical packages (e.g., [statsmodels](https://www.statsmode
 
 ```python
 m.reset(formula='score~time|id')
-res = m.fit()
-res.get_df()
+m.fit()
+md_print_df(m.report_table())
+
 ```
 
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Effect</th>
-      <th>df</th>
-      <th>MSE</th>
-      <th>F</th>
-      <th>ges</th>
-      <th>p.value</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>time</td>
-      <td>1.15, 50.55</td>
-      <td>0.88</td>
-      <td>66.23 ***</td>
-      <td>.141</td>
-      <td>&lt;.001</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+|  | Term   |   p-value |   Partial Eta-Squared |     F |   df1 |   df2 |
+|---:|:-------|----------:|----------------------:|------:|------:|------:|
+|  0 | time   |     0.001 |                 0.601 | 66.23 |  1.15 | 50.55 |
 
 
 
@@ -541,117 +301,36 @@ Analysis of variance also gives us access to estimated marginal means, as a post
 
 
 ```python
-res.get_margins('time')
+md_print_df(m.get_margins('time'))
 ```
 
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>time</th>
-      <th>emmean</th>
-      <th>SE</th>
-      <th>df</th>
-      <th>lower.CL</th>
-      <th>upper.CL</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>t1</td>
-      <td>16.915556</td>
-      <td>0.261236</td>
-      <td>55.026178</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>t2</td>
-      <td>16.135556</td>
-      <td>0.261236</td>
-      <td>55.026178</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>t3</td>
-      <td>15.197778</td>
-      <td>0.261236</td>
-      <td>55.026178</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+|  | time   |   emmean |       SE |      df |   lower.CL |   upper.CL |
+|---:|:-------|---------:|---------:|--------:|-----------:|-----------:|
+|  0 | t1     |  16.9156 | 0.261236 | 55.0262 |        nan |        nan |
+|  1 | t2     |  16.1356 | 0.261236 | 55.0262 |        nan |        nan |
+|  2 | t3     |  15.1978 | 0.261236 | 55.0262 |        nan |        nan |
 
 
 
-We can also run a similar, bayesian ANOVA using `bayes_anova` comparing the specified terms to the null model:
+We can also run a similar, bayesian ANOVA using `BayesAnova` comparing the specified terms to the null model:
 
 
 ```python
-m = rst.api.bayes_anova(data=anxiety, within='time',
+m = rst.groupwise.BayesAnova(data=anxiety, within='time',
                         dependent='score', subject='id')
-m.fit().get_df()
+m.fit()
+md_print_df(m.report_table())
 ```
 
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>model</th>
-      <th>bf</th>
-      <th>error</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>time</td>
-      <td>496.128677</td>
-      <td>0.000078</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+|  | model   |      bf |       error |
+|---:|:--------|--------:|------------:|
+|  0 | time    | 496.129 | 7.82496e-05 |
 
 
 
@@ -671,7 +350,7 @@ robusta includes several other features that are either under development or pla
 
 ## Documentation
 
-Mostly docstrings at the moment. But you can help by contributing to robusta in helping make one!
+Mostly docstrings at the moment. Some are very outdated. But you can help by contributing to robusta in helping make one!
 
 ## Contributing
 
