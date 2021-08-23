@@ -10,7 +10,6 @@ MTCARS = rst.load_dataset('mtcars')
 PLANTS = rst.load_dataset('PlantGrowth')
 CHICK_WEIGHT = rst.load_dataset('chickwts')
 
-
 SELFESTEEM = rst.load_dataset('selfesteem').set_index(
     ['id']).filter(
     regex='^t[1-3]$').stack().reset_index().rename(
@@ -53,7 +52,7 @@ def test_t1sample_output():
 
 def test_bayes_t2samples_output():
     _data = CHICK_WEIGHT.assign(feed=CHICK_WEIGHT['feed'].astype(str).values).loc[
-    CHICK_WEIGHT['feed'].isin(["horsebean", "linseed"])]
+        CHICK_WEIGHT['feed'].isin(["horsebean", "linseed"])]
     m = rst.groupwise.models.BayesT2Samples(data=_data, formula='weight~feed+1|dataset_rownames', paired=False)
     m.fit()
     assert m.report_text() == 'Alt., r=0.707 [BF1:0 = 5.98, Error = 0.001%]'
@@ -142,7 +141,18 @@ def test_threeway_mixed_anova_output():
     )
 
 
-def test_oneway_within_bayes_anova_output():
+def test_oneway_between_bayes_anova_output():
     m = rst.groupwise.models.BayesAnova(formula='weight~feed+1|dataset_rownames', data=CHICK_WEIGHT)
     m.fit()
     assert m.report_text() == 'feed [BF1:0 = 1.41E+07, Error = 0.001]'
+
+
+def test_mixed_bayes_anova_output():
+    m = rst.groupwise.models.BayesAnova(formula='score~gender*stress+(time|id)', data=PERFORMANCE,
+                                        which_models='bottom')
+    m.fit()
+    assert m.report_text() == (
+        'gender [BF1:0 = 4.14E-01, Error = 0.001]. stress [BF1:0 = 2.09E+05, Error = 0.001]. '
+        'time [BF1:0 = 1.98E-01, Error = 0.001]. gender:stress [BF1:0 = 2.97E-01, Error = 0.001]. '
+        'gender:time [BF1:0 = 7.89E-01, Error = 0.001]. stress:time [BF1:0 = 3.20E-01, Error = 0.001]. '
+        'gender:stress:time [BF1:0 = 3.27E+00, Error = 0.001]')

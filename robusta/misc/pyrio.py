@@ -19,12 +19,11 @@ numpy2ri.activate()
 # TODO - add functionality to list R envirnoment and select based on others.
 # TODO - add error handling of importing a missing library?
 # TODO - limit 'doMC' to non-windows OS
-# TODO - Write names of imported libraries alphabetically,
 #  Avoid re-imports (e.g., use a set).
 
 required_r_libraries = ['base', 'datasets', 'stats', 'utils', 'generics', 'broom',
-                       #'dplyr',  'tibble', 'tidyr',
-                        #'Matrix', 'backports',
+                       # 'dplyr',  'tibble', 'tidyr', 'Matrix',
+                        # 'backports',
                         'afex', 'BayesFactor',
                          'datarium',
                          'effsize', 'emmeans', 'lme4',

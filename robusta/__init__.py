@@ -16,7 +16,7 @@ __author_email__ = 'Eitan.Hemed@gmail.com'
 from .misc.pyrio import PyRIO
 pyr = PyRIO()
 
-from . import groupwise, correlations, regressions
+from . import groupwise #, correlations, regressions
 #from . import api
 from .misc.datasets import get_available_datasets, load_dataset
 
