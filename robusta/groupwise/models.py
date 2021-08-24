@@ -37,6 +37,8 @@ import rpy2.robjects as ro
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
+DEFAULT_TTEST_VARIABLE_NAMES = ['DEPENDENT', 'SUBJECT', 'INDEPENDENT']
+
 __all__ = [
     "Anova", "BayesAnova",
     "T1Sample", "T2Samples",
@@ -97,10 +99,6 @@ class GroupwiseModel(base.BaseModel):
 
         self._results = None
         self._fitted = False
-
-        # TODO - on the new structure nothing is run on init, so do we really
-        #  need the call to super here?
-        # super().__init__()
 
     def _pre_process(self):
         """
@@ -197,6 +195,7 @@ class GroupwiseModel(base.BaseModel):
                 if self.max_levels is not None else pd.Series())
         _s = ''
         if not low.empty:
+            pass
             _s += ("The following variable:levels pairs have"
                    f" less than {self.min_levels} levels: {low.to_dict()}.\n")
         if not high.empty:
@@ -314,34 +313,66 @@ class T2Samples(GroupwiseModel):
                  y=None,
                  correct=False,
                  **kwargs):
+        self.x = x
+        self.y = y
         self.paired = paired
+
         self.tail = tail
         self.assume_equal_variance = assume_equal_variance
         kwargs['max_levels'] = 2
         kwargs['min_levels'] = 2
 
+
         # TODO - refactor this
-        if kwargs.get('formula') is None:
-            # If independent is specified, try to set between/within based on independent and paired
-            # If no independent variable is specified, try to use paired and between/within to infer independent
 
-            if paired is None:
-                raise RuntimeError("`paired` specification missing")
+        if self.x is None:
+            if kwargs.get('formula') is None:
+                # If independent is specified, try to set between/within based on independent and paired
+                # If no independent variable is specified, try to use paired and between/within to infer independent
+
+                if paired is None:
+                    raise RuntimeError("`paired` specification missing")
+                else:
+                    if independent is None:
+                        kwargs['independent'] = kwargs[{False: 'between', True: 'within'}[paired]]
+                    if independent is not None:
+                        kwargs[{False: 'between', True: 'within'}[paired]] = independent
+
             else:
-                if independent is None:
-                    kwargs['independent'] = kwargs[{False: 'between', True: 'within'}[paired]]
-                if independent is not None:
-                    kwargs[{False: 'between', True: 'within'}[paired]] = independent
-
-        else:
-            # What happens if there is formula and no specification of paired/unpaired
-            # TODO - refactor this
-            self.paired = bool(not re.search(r'\+\s*1\s*\|', kwargs['formula']))
+                # What happens if there is formula and no specification of paired/unpaired
+                # TODO - refactor this
+                self.paired = bool(not re.search(r'\+\s*1\s*\|', kwargs['formula']))
 
         super().__init__(**kwargs)
 
+    def _set_model_controllers(self):
+
+        if self.x is not None:
+            self.dependent, self.subject, self.independent = DEFAULT_TTEST_VARIABLE_NAMES
+
+            if self.data is not None:
+                # We assume that x and y are two columns in the dataframe
+                self.x, self.y = self.data[[self.x, self.y]].values.T
+
+            # No data, we need to build one from from the x and y entered arrays
+            # TODO - check that x and y are arrays/lists and not strings
+            self.data = self._form_dataframe()
+
+        super()._set_model_controllers()
+
+    def _form_dataframe(self):
+
+        dependent = np.hstack([self.x, self.y])
+        x_len, y_len = len(self.x), len(self.y)
+        subject = np.hstack([range(x_len), range(y_len)])
+        independent = np.repeat(['X', 'Y'], repeats=[x_len, y_len])
+
+        return pd.DataFrame(data=zip(dependent, subject, independent),
+                            columns=DEFAULT_TTEST_VARIABLE_NAMES)
+
     def _select_input_data(self):
         super()._select_input_data()
+
         try:
             self.x, self.y = self._input_data.groupby(
                 getattr(self, 'independent'))[getattr(self, 'dependent')].apply(
@@ -350,6 +381,14 @@ class T2Samples(GroupwiseModel):
             print("Input data has more than two categories. Use pd.Series.cat.remove_unused_categories"
                   "or change `independent` column into non-category.")
             raise e
+
+    def _set_variables(self):
+        if self.x is not None:
+            if self.paired:
+                self.within = self.independent
+            else:
+                self.between = self.independent
+        super()._set_variables()
 
     def _analyze(self):
         self._results = results.TTestResults(
@@ -360,6 +399,12 @@ class T2Samples(GroupwiseModel):
                    'var.equal': self.assume_equal_variance,
                    })
         )
+
+    def reset(self, **kwargs):
+        self.x = None
+        self.y = None
+
+        super().reset()
 
 
 class BayesT2Samples(T2Samples):
@@ -487,12 +532,19 @@ class T1Sample(T2Samples):
     def __init__(self,
                  tail='two.sided',
                  mu=DEFAULT_MU,
+                 x=None,
+                 y=None,
                  **kwargs):
         kwargs['paired'] = True
         kwargs['tail'] = tail
         kwargs['max_levels'] = 1
         kwargs['min_levels'] = 1
+
+        kwargs['x'] = x
+        kwargs['y'] = y
+
         self.mu = mu
+
         # self.max_levels = 1
         # self.min_levels = 1
         super().__init__(**kwargs)
@@ -502,14 +554,27 @@ class T1Sample(T2Samples):
         GroupwiseModel._select_input_data(self)
         self.x = self._input_data[getattr(self, 'dependent')].values
 
+        if self.mu is not None:
+            self.y = self.mu
+
+
     def _analyze(self):
         self._results = results.TTestResults(pyr.rpackages.stats.t_test(
             x=self.x,
-            mu=self.mu,
+            mu=self.y,
             alternative=self.tail
         )
         )
 
+    def _form_dataframe(self):
+
+        dependent = self.x
+        x_len = len(self.x)
+        subject = range(x_len)
+        independent = np.repeat('X', repeats=[x_len])
+
+        return pd.DataFrame(data=zip(dependent, subject, independent),
+                            columns=DEFAULT_TTEST_VARIABLE_NAMES)
 
 class BayesT1Sample(T1Sample):
     """
@@ -614,7 +679,7 @@ class Wilcoxon1Sample(T1Sample):
     def _analyze(self):
         self._results = results.WilcoxonResults(
             pyr.rpackages.stats.wilcox_test(
-                x=self.x, mu=self.mu, alternative=self.tail,
+                x=self.x, mu=self.y, alternative=self.tail,
                 exact=self.p_exact, correct=self.p_correction,
                 conf_int=self.ci
             ))
@@ -737,6 +802,8 @@ class Anova(GroupwiseModel):
             level=ci,
             by=by_terms
         )
+
+        return _r_margins
 
         margins = utils.convert_df(
             pyr.rpackages.emmeans.as_data_frame_emmGrid(

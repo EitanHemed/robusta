@@ -37,18 +37,35 @@ def test_t2samples_paired_output():
     m.fit()
     assert m.report_text() == 't(9) = 25.55, p < 0.001'
 
+    x, y = MICE2.groupby('time')['weight'].apply(lambda s: s.values)
+    m = rst.groupwise.models.T2Samples(x=x, y=y, tail='greater', paired=True)
+    m.fit()
+    assert m.report_text() == 't(9) = 25.55, p < 0.001'
+
+
 
 def test_t2samples_unpaired_output():
     m = rst.groupwise.models.T2Samples(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='greater')
     m.fit()
     assert m.report_text() == "t(29) = 5.49, p < 0.001"
 
+    x, y = MTCARS.groupby('am')['wt'].apply(lambda s: s.values)
+    m = rst.groupwise.models.T2Samples(x=x, y=y, tail='greater', paired=False)
+    m.fit()
+    assert m.report_text() == "t(29) = 5.49, p < 0.001"
+
+
 
 def test_t1sample_output():
     m = rst.groupwise.models.T1Sample(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='less', mu=3.5)
     m.fit()
+    print(11111111)
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
+    m = rst.groupwise.models.T1Sample(x=MTCARS['wt'], tail='less', mu=3.5)
+    m.fit()
+    print(2222222)
+    assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
 def test_bayes_t2samples_output():
     _data = CHICK_WEIGHT.assign(feed=CHICK_WEIGHT['feed'].astype(str).values).loc[
@@ -66,6 +83,13 @@ def test_bayes_t1sample_output():
     assert m.report_text() == ('Alt., r=0.707 -Inf<d<0 [BF1:0 = 230.25, Error = 0.001%]. '
                                'Alt., r=0.707 !(-Inf<d<0) [BF1:0 = 0.04, Error = 0.001%]')
 
+    m = rst.groupwise.models.BayesT1Sample(
+        x=(2.5 - MTCARS['wt']),
+        tail='less', null_interval=[-np.Inf, 0])
+    m.fit()
+    assert m.report_text() == ('Alt., r=0.707 -Inf<d<0 [BF1:0 = 230.25, Error = 0.001%]. '
+                               'Alt., r=0.707 !(-Inf<d<0) [BF1:0 = 0.04, Error = 0.001%]')
+
 
 def test_wilcoxon_2samples_output():
     x = np.array([0.80, 0.83, 1.89, 1.04, 1.45, 1.38, 1.91, 1.64, 0.73, 1.46])
@@ -76,8 +100,12 @@ def test_wilcoxon_2samples_output():
 
     m = rst.groupwise.models.Wilcoxon2Samples(formula='score~group + 1|index', tail="greater", data=df, mu=0.1)
     m.fit()
-
     assert m.report_text() == 'Z = 35.00, p = 0.127'
+
+    m = rst.groupwise.models.Wilcoxon2Samples(x=x, y=y, mu=0.1, paired=False, tail="greater")
+    m.fit()
+    assert m.report_text() == 'Z = 35.00, p = 0.127'
+
 
 
 def test_wilcoxon_1sample_output():

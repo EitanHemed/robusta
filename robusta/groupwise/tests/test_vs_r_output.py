@@ -7,8 +7,6 @@ import robusta as rst
 
 from robusta.groupwise.results import BF_COLUMNS
 
-# TODO - when rst is installed as a package, remove the following line
-# sys.path.append('./')
 
 ANXIETY_DATASET = rst.load_dataset('anxiety').set_index(
     ['id', 'group']).filter(
