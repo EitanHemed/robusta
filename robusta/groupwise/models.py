@@ -37,7 +37,8 @@ import rpy2.robjects as ro
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
-DEFAULT_TTEST_VARIABLE_NAMES = ['DEPENDENT', 'SUBJECT', 'INDEPENDENT']
+DEFAULT_TTEST_VARIABLE_NAMES = dict(zip(['DEPENDENT', 'SUBJECT', 'INDEPENDENT'],
+                                        ['DEPENDENT', 'SUBJECT', 'INDEPENDENT']))
 
 __all__ = [
     "Anova", "BayesAnova",
@@ -322,7 +323,6 @@ class T2Samples(GroupwiseModel):
         kwargs['max_levels'] = 2
         kwargs['min_levels'] = 2
 
-
         # TODO - refactor this
 
         if self.x is None:
@@ -348,7 +348,7 @@ class T2Samples(GroupwiseModel):
     def _set_model_controllers(self):
 
         if self.x is not None:
-            self.dependent, self.subject, self.independent = DEFAULT_TTEST_VARIABLE_NAMES
+            self.dependent, self.subject, self.independent = DEFAULT_TTEST_VARIABLE_NAMES.values()
 
             if self.data is not None:
                 # We assume that x and y are two columns in the dataframe
@@ -367,8 +367,12 @@ class T2Samples(GroupwiseModel):
         subject = np.hstack([range(x_len), range(y_len)])
         independent = np.repeat(['X', 'Y'], repeats=[x_len, y_len])
 
-        return pd.DataFrame(data=zip(dependent, subject, independent),
-                            columns=DEFAULT_TTEST_VARIABLE_NAMES)
+        df = pd.DataFrame(data=zip(dependent, subject, independent),
+                          columns=DEFAULT_TTEST_VARIABLE_NAMES)
+        df[DEFAULT_TTEST_VARIABLE_NAMES['INDEPENDENT']] = (
+            df[DEFAULT_TTEST_VARIABLE_NAMES['INDEPENDENT']].astype('category').values)
+
+        return df
 
     def _select_input_data(self):
         super()._select_input_data()
@@ -557,7 +561,6 @@ class T1Sample(T2Samples):
         if self.mu is not None:
             self.y = self.mu
 
-
     def _analyze(self):
         self._results = results.TTestResults(pyr.rpackages.stats.t_test(
             x=self.x,
@@ -567,14 +570,20 @@ class T1Sample(T2Samples):
         )
 
     def _form_dataframe(self):
-
         dependent = self.x
         x_len = len(self.x)
         subject = range(x_len)
         independent = np.repeat('X', repeats=[x_len])
 
-        return pd.DataFrame(data=zip(dependent, subject, independent),
-                            columns=DEFAULT_TTEST_VARIABLE_NAMES)
+        df = pd.DataFrame(data=zip(dependent, subject, independent),
+                          columns=DEFAULT_TTEST_VARIABLE_NAMES)
+
+        # To sildence R's warnings
+        df[DEFAULT_TTEST_VARIABLE_NAMES['INDEPENDENT']] = df[DEFAULT_TTEST_VARIABLE_NAMES['INDEPENDENT']].astype(
+            'category').values
+
+        return df
+
 
 class BayesT1Sample(T1Sample):
     """

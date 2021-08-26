@@ -43,7 +43,6 @@ def test_t2samples_paired_output():
     assert m.report_text() == 't(9) = 25.55, p < 0.001'
 
 
-
 def test_t2samples_unpaired_output():
     m = rst.groupwise.models.T2Samples(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='greater')
     m.fit()
@@ -55,17 +54,15 @@ def test_t2samples_unpaired_output():
     assert m.report_text() == "t(29) = 5.49, p < 0.001"
 
 
-
 def test_t1sample_output():
     m = rst.groupwise.models.T1Sample(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='less', mu=3.5)
     m.fit()
-    print(11111111)
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
     m = rst.groupwise.models.T1Sample(x=MTCARS['wt'], tail='less', mu=3.5)
     m.fit()
-    print(2222222)
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
+
 
 def test_bayes_t2samples_output():
     _data = CHICK_WEIGHT.assign(feed=CHICK_WEIGHT['feed'].astype(str).values).loc[
@@ -107,7 +104,6 @@ def test_wilcoxon_2samples_output():
     assert m.report_text() == 'Z = 35.00, p = 0.127'
 
 
-
 def test_wilcoxon_1sample_output():
     x = (1.83, 0.50, 1.62, 2.48, 1.68, 1.88, 1.55, 3.06, 1.30)
     y = (0.878, 0.647, 0.598, 2.05, 1.06, 1.29, 1.06, 3.14, 1.29)
@@ -117,6 +113,10 @@ def test_wilcoxon_1sample_output():
                       columns=['score', 'group']).reset_index()
 
     m = rst.groupwise.models.Wilcoxon1Sample(formula='score~(group|index)', tail="greater", data=df)
+    m.fit()
+    assert m.report_text() == 'Z = 40.00, p = 0.020'
+
+    m = rst.groupwise.models.Wilcoxon1Sample(x=weight_diff, y=0, tail="greater")
     m.fit()
     assert m.report_text() == 'Z = 40.00, p = 0.020'
 
