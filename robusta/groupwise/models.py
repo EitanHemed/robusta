@@ -54,6 +54,10 @@ PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
 DEFAULT_ITERATIONS: int = 10000
 DEFAULT_MU: float = 0.0
 
+# TODO - find a better variable name
+TEST_TAIL_DICT = {'x<y': 'less', 'x>y': 'greater', 'x=y': 'two.sided'}
+
+
 
 @dataclass
 class GroupwiseModel(base.BaseModel):
@@ -319,6 +323,8 @@ class T2Samples(GroupwiseModel):
         self.paired = paired
 
         self.tail = tail
+        self._r_tail = self._set_r_tail()
+
         self.assume_equal_variance = assume_equal_variance
         kwargs['max_levels'] = 2
         kwargs['min_levels'] = 2
@@ -394,12 +400,29 @@ class T2Samples(GroupwiseModel):
                 self.between = self.independent
         super()._set_variables()
 
+    def _set_r_tail(self):
+
+        original_tail = re.sub(r'\s+', '', self.tail)
+
+        if original_tail in TEST_TAIL_DICT.keys():
+            r_tail = TEST_TAIL_DICT[original_tail]
+        # The fallback is specifying the alternative based on the conventions in R
+        elif original_tail in TEST_TAIL_DICT.values():
+            r_tail = original_tail
+        else:
+            raise ValueError(f"{self.tail} is not a valid tail specification. "
+                             f"Specify using one of the following - {', '.join(TEST_TAIL_DICT.keys())}"
+                             f" or {' ,'.join(TEST_TAIL_DICT.values())}")
+
+        return r_tail
+
+
     def _analyze(self):
         self._results = results.TTestResults(
             pyr.rpackages.stats.t_test(
                 **{'x': self.x, 'y': self.y,
                    'paired': self.paired,
-                   'alternative': self.tail,
+                   'alternative': self._r_tail,
                    'var.equal': self.assume_equal_variance,
                    })
         )
@@ -565,8 +588,8 @@ class T1Sample(T2Samples):
         self._results = results.TTestResults(pyr.rpackages.stats.t_test(
             x=self.x,
             mu=self.y,
-            alternative=self.tail
-        )
+            alternative=self._r_tail
+            )
         )
 
     def _form_dataframe(self):
@@ -688,7 +711,7 @@ class Wilcoxon1Sample(T1Sample):
     def _analyze(self):
         self._results = results.WilcoxonResults(
             pyr.rpackages.stats.wilcox_test(
-                x=self.x, mu=self.y, alternative=self.tail,
+                x=self.x, mu=self.y, alternative=self._r_tail,
                 exact=self.p_exact, correct=self.p_correction,
                 conf_int=self.ci
             ))
@@ -708,7 +731,7 @@ class Wilcoxon2Samples(T2Samples):
         self._results = results.WilcoxonResults(
             pyr.rpackages.stats.wilcox_test(
                 x=self.x, y=self.y, paired=self.paired,
-                alternative=self.tail,
+                alternative=self._r_tail,
                 exact=self.p_exact, correct=self.p_correction,
                 conf_int=self.ci
             ))

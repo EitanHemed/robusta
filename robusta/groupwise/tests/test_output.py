@@ -32,34 +32,44 @@ PERFORMANCE = rst.load_dataset('performance').set_index(
 )
 
 
+@pytest.mark.parametrize('tail_specs', rst.groupwise.models.TEST_TAIL_DICT.items())
+def test_tail_specification(tail_specs):
+    m = rst.groupwise.models.T2Samples(data=MICE2, formula='weight~time|id', tail=tail_specs[0])
+    m.fit()
+    output = m.report_text()
+    m.reset(tail=tail_specs[1])
+    m.fit()
+    assert output == m.report_text()
+
+
 def test_t2samples_paired_output():
     m = rst.groupwise.models.T2Samples(data=MICE2, formula='weight~time|id')
     m.fit()
     assert m.report_text() == 't(9) = 25.55, p < 0.001'
 
     x, y = MICE2.groupby('time')['weight'].apply(lambda s: s.values)
-    m = rst.groupwise.models.T2Samples(x=x, y=y, tail='greater', paired=True)
+    m = rst.groupwise.models.T2Samples(x=x, y=y, tail='x > y', paired=True)
     m.fit()
     assert m.report_text() == 't(9) = 25.55, p < 0.001'
 
 
 def test_t2samples_unpaired_output():
-    m = rst.groupwise.models.T2Samples(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='greater')
+    m = rst.groupwise.models.T2Samples(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='x > y')
     m.fit()
     assert m.report_text() == "t(29) = 5.49, p < 0.001"
 
     x, y = MTCARS.groupby('am')['wt'].apply(lambda s: s.values)
-    m = rst.groupwise.models.T2Samples(x=x, y=y, tail='greater', paired=False)
+    m = rst.groupwise.models.T2Samples(x=x, y=y, tail='x > y', paired=False)
     m.fit()
     assert m.report_text() == "t(29) = 5.49, p < 0.001"
 
 
 def test_t1sample_output():
-    m = rst.groupwise.models.T1Sample(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='less', mu=3.5)
+    m = rst.groupwise.models.T1Sample(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='x < y', mu=3.5)
     m.fit()
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
-    m = rst.groupwise.models.T1Sample(x=MTCARS['wt'], tail='less', mu=3.5)
+    m = rst.groupwise.models.T1Sample(x=MTCARS['wt'], tail='x < y', mu=3.5)
     m.fit()
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
@@ -71,18 +81,23 @@ def test_bayes_t2samples_output():
     m.fit()
     assert m.report_text() == 'Alt., r=0.707 [BF1:0 = 5.98, Error = 0.001%]'
 
+    x, y = _data.groupby(['feed'])['weight'].apply(lambda s: s.values)
+    m = rst.groupwise.models.BayesT2Samples(x=x, y=y, paired=False)
+    m.fit()
+    assert m.report_text() == 'Alt., r=0.707 [BF1:0 = 5.98, Error = 0.001%]'
+
 
 def test_bayes_t1sample_output():
     m = rst.groupwise.models.BayesT1Sample(
         data=MTCARS.assign(wt=2.5 - MTCARS['wt'].values), formula='wt~am+1|dataset_rownames',
-        tail='less', null_interval=[-np.Inf, 0])
+        tail='x < y', null_interval=[-np.Inf, 0])
     m.fit()
     assert m.report_text() == ('Alt., r=0.707 -Inf<d<0 [BF1:0 = 230.25, Error = 0.001%]. '
                                'Alt., r=0.707 !(-Inf<d<0) [BF1:0 = 0.04, Error = 0.001%]')
 
     m = rst.groupwise.models.BayesT1Sample(
         x=(2.5 - MTCARS['wt']),
-        tail='less', null_interval=[-np.Inf, 0])
+        tail='x < y', null_interval=[-np.Inf, 0])
     m.fit()
     assert m.report_text() == ('Alt., r=0.707 -Inf<d<0 [BF1:0 = 230.25, Error = 0.001%]. '
                                'Alt., r=0.707 !(-Inf<d<0) [BF1:0 = 0.04, Error = 0.001%]')
@@ -95,11 +110,11 @@ def test_wilcoxon_2samples_output():
     df = pd.DataFrame(data=np.array([np.concatenate([x, y]), group]).T,
                       columns=['score', 'group']).reset_index()
 
-    m = rst.groupwise.models.Wilcoxon2Samples(formula='score~group + 1|index', tail="greater", data=df, mu=0.1)
+    m = rst.groupwise.models.Wilcoxon2Samples(formula='score~group + 1|index', tail="x > y", data=df, mu=0.1)
     m.fit()
     assert m.report_text() == 'Z = 35.00, p = 0.127'
 
-    m = rst.groupwise.models.Wilcoxon2Samples(x=x, y=y, mu=0.1, paired=False, tail="greater")
+    m = rst.groupwise.models.Wilcoxon2Samples(x=x, y=y, mu=0.1, paired=False, tail="x > y")
     m.fit()
     assert m.report_text() == 'Z = 35.00, p = 0.127'
 
@@ -112,11 +127,11 @@ def test_wilcoxon_1sample_output():
     df = pd.DataFrame(data=np.array([weight_diff, group]).T,
                       columns=['score', 'group']).reset_index()
 
-    m = rst.groupwise.models.Wilcoxon1Sample(formula='score~(group|index)', tail="greater", data=df)
+    m = rst.groupwise.models.Wilcoxon1Sample(formula='score~(group|index)', tail="x > y", data=df)
     m.fit()
     assert m.report_text() == 'Z = 40.00, p = 0.020'
 
-    m = rst.groupwise.models.Wilcoxon1Sample(x=weight_diff, y=0, tail="greater")
+    m = rst.groupwise.models.Wilcoxon1Sample(x=weight_diff, y=0, tail="x > y")
     m.fit()
     assert m.report_text() == 'Z = 40.00, p = 0.020'
 
