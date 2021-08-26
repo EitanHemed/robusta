@@ -14,8 +14,8 @@ ANXIETY_DATASET = rst.load_dataset('anxiety').set_index(
     columns={0: 'score',
              'level_2': 'time'})
 
+# TODO - add tests against rst.groupwise.models.TEST_TAIL_DICT.keys ('x<y', etc.)
 TAILS = ["two.sided", "less", "greater"]
-
 
 class FauxInf:
     """The sole purpose of this class is to have an object that it's __repr__
