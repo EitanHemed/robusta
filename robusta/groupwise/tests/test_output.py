@@ -32,7 +32,7 @@ PERFORMANCE = rst.load_dataset('performance').set_index(
 )
 
 
-@pytest.mark.parametrize('tail_specs', rst.groupwise.models.TEST_TAIL_DICT.items())
+@pytest.mark.parametrize('tail_specs', rst.groupwise.models.R_FREQUENTIST_TEST_TAILS_SPECS.items())
 def test_tail_specification(tail_specs):
     m = rst.groupwise.models.T2Samples(data=MICE2, formula='weight~time|id', tail=tail_specs[0])
     m.fit()

@@ -22,6 +22,7 @@ All classes have at least these postestimation methods:
 # TODO - define __repr__ and __str__ for all classes
 
 import typing
+import collections
 import warnings
 from dataclasses import dataclass
 import re
@@ -34,11 +35,6 @@ from .. import pyr
 from ..misc import utils, formula_tools, base
 
 import rpy2.robjects as ro
-
-BF_COLUMNS = ['model', 'bf', 'error']
-
-DEFAULT_TTEST_VARIABLE_NAMES = dict(zip(['DEPENDENT', 'SUBJECT', 'INDEPENDENT'],
-                                        ['DEPENDENT', 'SUBJECT', 'INDEPENDENT']))
 
 __all__ = [
     "Anova", "BayesAnova",
@@ -55,8 +51,14 @@ DEFAULT_ITERATIONS: int = 10000
 DEFAULT_MU: float = 0.0
 
 # TODO - find a better variable name
-TEST_TAIL_DICT = {'x<y': 'less', 'x>y': 'greater', 'x=y': 'two.sided'}
+ROBUSTA_TEST_TAILS_SPECS = ['x<y', 'x>y', 'x=y']
+R_FREQUENTIST_TEST_TAILS_SPECS = dict(zip(ROBUSTA_TEST_TAILS_SPECS, ['less', 'greater', 'two.sided']))
+R_BAYES_TEST_TAILS_DICT = dict(zip(ROBUSTA_TEST_TAILS_SPECS, [[-np.inf, 0], [0, np.inf], [np.inf, np.inf]]))
 
+BF_COLUMNS = ['model', 'bf', 'error']
+
+DEFAULT_TTEST_VARIABLE_NAMES = dict(zip(['DEPENDENT', 'SUBJECT', 'INDEPENDENT'],
+                                        ['DEPENDENT', 'SUBJECT', 'INDEPENDENT']))
 
 
 @dataclass
@@ -312,7 +314,7 @@ class T2Samples(GroupwiseModel):
     def __init__(self,
                  paired: bool = None,
                  independent: bool = None,
-                 tail: str = 'two.sided',
+                 tail: str = 'x=y',
                  assume_equal_variance: bool = False,
                  x=None,
                  y=None,
@@ -323,6 +325,8 @@ class T2Samples(GroupwiseModel):
         self.paired = paired
 
         self.tail = tail
+        if not hasattr(self, '_tails_dict'):
+            self._tails_dict = R_FREQUENTIST_TEST_TAILS_SPECS
         self._r_tail = self._set_r_tail()
 
         self.assume_equal_variance = assume_equal_variance
@@ -404,18 +408,17 @@ class T2Samples(GroupwiseModel):
 
         original_tail = re.sub(r'\s+', '', self.tail)
 
-        if original_tail in TEST_TAIL_DICT.keys():
-            r_tail = TEST_TAIL_DICT[original_tail]
+        if original_tail in self._tails_dict.keys():
+            r_tail = self._tails_dict[original_tail]
         # The fallback is specifying the alternative based on the conventions in R
-        elif original_tail in TEST_TAIL_DICT.values():
+        elif original_tail in self._tails_dict.values():
             r_tail = original_tail
         else:
             raise ValueError(f"{self.tail} is not a valid tail specification. "
-                             f"Specify using one of the following - {', '.join(TEST_TAIL_DICT.keys())}"
-                             f" or {' ,'.join(TEST_TAIL_DICT.values())}")
+                             f"Specify using one of the following - {list(self._tails_dict.keys())}"
+                             f" or {list(self._tails_dict.values())}")
 
         return r_tail
-
 
     def _analyze(self):
         self._results = results.TTestResults(
@@ -431,7 +434,7 @@ class T2Samples(GroupwiseModel):
         self.x = None
         self.y = None
 
-        super().reset()
+        super().reset(**kwargs)
 
 
 class BayesT2Samples(T2Samples):
@@ -502,6 +505,9 @@ class BayesT2Samples(T2Samples):
         self.sample_from_posterior = sample_from_posterior
         self.iterations = iterations
         self.mu = mu
+
+        self._tails_dict = R_BAYES_TEST_TAILS_DICT
+
         if kwargs['paired'] is False:
             if mu != 0:
                 raise ValueError
@@ -512,7 +518,7 @@ class BayesT2Samples(T2Samples):
             x=self.x,
             y=self.y,
             paired=self.paired,
-            nullInterval=self.null_interval,
+            nullInterval=self._r_tail,
             iterations=self.iterations,
             posterior=self.sample_from_posterior,
             rscale=self.prior_scale,
@@ -553,11 +559,10 @@ class T1Sample(T2Samples):
         Direction of the tested hypothesis. Optional values are 'two.sided'
         (H1: x != mu), 'less' (H1: x < mu) and 'greater' (H1: x > mu).
         Default value is 'two.sided'.
-        TODO allow translation of x != y, x > y, x < y
     """
 
     def __init__(self,
-                 tail='two.sided',
+                 tail: str = 'x=y',
                  mu=DEFAULT_MU,
                  x=None,
                  y=None,
@@ -589,7 +594,7 @@ class T1Sample(T2Samples):
             x=self.x,
             mu=self.y,
             alternative=self._r_tail
-            )
+        )
         )
 
     def _form_dataframe(self):
@@ -677,13 +682,15 @@ class BayesT1Sample(T1Sample):
         self.sample_from_posterior = sample_from_posterior
         self.iterations = iterations
         kwargs['mu'] = mu
+        self._tails_dict = R_BAYES_TEST_TAILS_DICT
+
         super().__init__(**kwargs)
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.ttestBF(
             x=self.x,
             y=pyr.rinterface.NULL,
-            nullInterval=self.null_interval,
+            nullInterval=self._r_tail,
             iterations=self.iterations,
             posterior=self.sample_from_posterior,
             rscale=self.prior_scale,
