@@ -28,7 +28,7 @@ required_r_libraries = ['base', 'datasets', 'stats', 'utils', 'generics', 'broom
                          'datarium',
                          'effsize', 'emmeans', 'lme4',
                           'ppcor', 'psych',
-                          'ARTool'
+                          'ARTool', 'rstatix'
                           ]
 
 

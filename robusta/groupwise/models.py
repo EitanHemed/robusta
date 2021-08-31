@@ -45,15 +45,18 @@ __all__ = [
     "AlignedRanksTest"
 ]
 
+
+# TODO - find a better variable name
+ROBUSTA_TEST_TAILS_SPECS = ['x<y', 'x>y', 'x=y']
+R_FREQUENTIST_TEST_TAILS_SPECS = dict(zip(ROBUSTA_TEST_TAILS_SPECS, ['less', 'greater', 'two.sided']))
+R_BAYES_TEST_TAILS_DICT = dict(zip(ROBUSTA_TEST_TAILS_SPECS, [[-np.inf, 0], [0, np.inf], [-np.inf, np.inf]]))
+
+DEFAULT_GROUPWISE_TAIL = 'x=y'
 DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
 PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
 DEFAULT_ITERATIONS: int = 10000
 DEFAULT_MU: float = 0.0
 
-# TODO - find a better variable name
-ROBUSTA_TEST_TAILS_SPECS = ['x<y', 'x>y', 'x=y']
-R_FREQUENTIST_TEST_TAILS_SPECS = dict(zip(ROBUSTA_TEST_TAILS_SPECS, ['less', 'greater', 'two.sided']))
-R_BAYES_TEST_TAILS_DICT = dict(zip(ROBUSTA_TEST_TAILS_SPECS, [[-np.inf, 0], [0, np.inf], [np.inf, np.inf]]))
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
@@ -259,7 +262,7 @@ class GroupwiseModel(base.BaseModel):
     def report_table(self):
         return self._results.get_df()
 
-    def report_text(self):
+    def report_text(self, ):
         # TODO - remake this into a visitor pattern
         visitor = reports.Reporter()
         return visitor.report_text(self)
@@ -323,11 +326,11 @@ class T2Samples(GroupwiseModel):
         self.x = x
         self.y = y
         self.paired = paired
-
         self.tail = tail
+
+        # TODO - refactor this
         if not hasattr(self, '_tails_dict'):
             self._tails_dict = R_FREQUENTIST_TEST_TAILS_SPECS
-        self._r_tail = self._set_r_tail()
 
         self.assume_equal_variance = assume_equal_variance
         kwargs['max_levels'] = 2
@@ -354,6 +357,10 @@ class T2Samples(GroupwiseModel):
                 self.paired = bool(not re.search(r'\+\s*1\s*\|', kwargs['formula']))
 
         super().__init__(**kwargs)
+
+    def _pre_process(self):
+        self._set_r_tail()
+        super()._pre_process()
 
     def _set_model_controllers(self):
 
@@ -418,7 +425,7 @@ class T2Samples(GroupwiseModel):
                              f"Specify using one of the following - {list(self._tails_dict.keys())}"
                              f" or {list(self._tails_dict.values())}")
 
-        return r_tail
+        self._r_tail = r_tail
 
     def _analyze(self):
         self._results = results.TTestResults(
@@ -436,6 +443,9 @@ class T2Samples(GroupwiseModel):
 
         super().reset(**kwargs)
 
+    def report_text(self, effect_size=False):
+        visitor = reports.Reporter()
+        return visitor.report_text(self, effect_size=effect_size)
 
 class BayesT2Samples(T2Samples):
     """
@@ -493,7 +503,7 @@ class BayesT2Samples(T2Samples):
 
     def __init__(
             self,
-            null_interval=DEFAULT_GROUPWISE_NULL_INTERVAL,
+            null_interval=None, #DEFAULT_GROUPWISE_NULL_INTERVAL,
             prior_scale: str = 'medium',
             sample_from_posterior: bool = False,
             iterations: int = DEFAULT_ITERATIONS,
@@ -508,10 +518,16 @@ class BayesT2Samples(T2Samples):
 
         self._tails_dict = R_BAYES_TEST_TAILS_DICT
 
-        if kwargs['paired'] is False:
-            if mu != 0:
-                raise ValueError
+        # TODO - see what this
+        # if self.paired is False:
+        #     if self.mu != 0:
+        #         raise ValueError
+
+
         super().__init__(**kwargs)
+
+        if self.null_interval != None:
+            warnings.warn("null_interval will soon be deprecated, use tail", warnings.DeprecationWarning)
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.ttestBF(
@@ -671,7 +687,8 @@ class BayesT1Sample(T1Sample):
 
     def __init__(
             self,
-            null_interval=(-np.inf, np.inf),
+            # null_interval=(-np.inf, np.inf),
+            null_interval=None,
             prior_scale: typing.Union[str, float] = 1 / np.sqrt(2),
             sample_from_posterior: bool = False,
             iterations: int = 10000,
@@ -685,6 +702,9 @@ class BayesT1Sample(T1Sample):
         self._tails_dict = R_BAYES_TEST_TAILS_DICT
 
         super().__init__(**kwargs)
+
+        if self.null_interval != None:
+            warnings.warn("null_interval will soon be deprecated, use tail", warnings.DeprecationWarning)
 
     def _analyze(self):
         b = pyr.rpackages.BayesFactor.ttestBF(
@@ -877,6 +897,10 @@ class Anova(GroupwiseModel):
         return utils.convert_df(pyr.rpackages.emmeans.pairs(
             self.margins_results[margins_term]['r_margins']))
 
+    def report_text(self, as_list=False):
+        # TODO - remake this into a visitor pattern
+        visitor = reports.Reporter()
+        return visitor.report_text(self, as_list=as_list)
 
 class BayesAnova(Anova):
     # TODO - Formula specification will be using the lme4 syntax and variables

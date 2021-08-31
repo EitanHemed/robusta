@@ -6,22 +6,28 @@ from rpy2.robjects import r
 import robusta as rst
 
 from robusta.groupwise.results import BF_COLUMNS
+# TODO - add tests against rst.groupwise.models.TEST_TAIL_DICT.keys ('x<y', etc.)
+from robusta.groupwise.models import (R_BAYES_TEST_TAILS_DICT, R_FREQUENTIST_TEST_TAILS_SPECS)
 
-
+SLEEP_DATASET = rst.load_dataset('sleep')
+MTCARS_DATASET = rst.load_dataset('mtcars')
+IRIS_DATASET = rst.load_dataset('iris')
+TOOTH_GROWTH_DATASET = rst.load_dataset('ToothGrowth')
+PLANT_GROWTH_DATASET = rst.load_dataset('PlantGrowth')
 ANXIETY_DATASET = rst.load_dataset('anxiety').set_index(
     ['id', 'group']).filter(
     regex='^t[1-3]$').stack().reset_index().rename(
     columns={0: 'score',
              'level_2': 'time'})
-
-# TODO - add tests against rst.groupwise.models.TEST_TAIL_DICT.keys ('x<y', etc.)
-TAILS = ["two.sided", "less", "greater"]
+SELF_ESTEEM_DATASET = rst.load_dataset('selfesteem').set_index(
+    'id').filter(
+    regex='^t[1-3]$').stack().reset_index().rename(
+    columns={0: 'score', 'level_2': 'time'})
 
 class FauxInf:
     """The sole purpose of this class is to have an object that it's __repr__
     return Inf (or -Inf) when you format the R string (in case you need an
     Inf value when specifying prior distribution)."""
-
     def __init__(self, sign: str = ''):
         if sign not in ['-', '']:
             raise ValueError
@@ -34,15 +40,14 @@ class FauxInf:
 # TODO - this is messy, separate into two tests
 # @pytest.mark.parametrize('assume_equal_variance', [True, False])
 @pytest.mark.parametrize('paired', [True, False])
-@pytest.mark.parametrize('tail', TAILS)
+@pytest.mark.parametrize('tail', R_FREQUENTIST_TEST_TAILS_SPECS.items())
 def test_t2samples(paired, tail):
-    data = rst.load_dataset('sleep')
-    m = rst.groupwise.T2Samples(data=data,
+    m = rst.groupwise.T2Samples(data=SLEEP_DATASET,
                                 independent='group',
                                 dependent='extra',
                                 subject='ID',
                                 paired=paired,
-                                tail=tail,
+                                tail=tail[0],
                                 assume_equal_variance=False
                                 )
     m.fit()
@@ -52,7 +57,7 @@ def test_t2samples(paired, tail):
         library(broom)
         data.frame(tidy(t.test(
             extra~group, data=sleep, paired={'TRUE' if paired else 'FALSE'}, 
-            alternative='{tail}',
+            alternative='{tail[1]}',
             var.equal=FALSE)
         ))
         """))
@@ -65,12 +70,11 @@ def test_t2samples(paired, tail):
 
 
 @pytest.mark.parametrize('mu', [0, 2.33, 4.66])
-@pytest.mark.parametrize('tail', TAILS)
+@pytest.mark.parametrize('tail', R_FREQUENTIST_TEST_TAILS_SPECS.items())
 def test_t1sample(mu, tail):
-    sleep = rst.load_dataset('sleep')
-    m = rst.groupwise.T1Sample(data=sleep.loc[sleep['group'] == '1'],
+    m = rst.groupwise.T1Sample(data=SLEEP_DATASET.loc[SLEEP_DATASET['group'] == '1'],
                                dependent='extra', subject='ID',
-                               independent='group', mu=mu, tail=tail)
+                               independent='group', mu=mu, tail=tail[0])
     m.fit()
     res = m._results._get_r_output_df()
     r_res = rst.misc.utils.convert_df(r(
@@ -79,7 +83,7 @@ def test_t1sample(mu, tail):
         data.frame(tidy(t.test(
             x=sleep[sleep$group == 1, 'extra'],
             mu={mu},
-            alternative='{tail}')))
+            alternative='{tail[1]}')))
         """
     ))
     pd.testing.assert_frame_equal(res, r_res)
@@ -96,20 +100,19 @@ def test_t1sample(mu, tail):
 @pytest.mark.integtest
 @pytest.mark.parametrize('iterations', [1e4, 1e5])
 @pytest.mark.parametrize('prior_scale', [0.5, 0.707])
-@pytest.mark.parametrize('null_interval',
-                         [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
+@pytest.mark.parametrize('null_interval', R_BAYES_TEST_TAILS_DICT.items())
+# [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
 @pytest.mark.parametrize('sample_from_posterior', [False])  # , True])
 def test_bayes_t2samples_independent(
         null_interval,
         prior_scale,
         sample_from_posterior,
         iterations):
-    data = rst.load_dataset('mtcars')
 
     m = rst.groupwise.BayesT2Samples(
-        data=data, subject='dataset_rownames',
+        data=MTCARS_DATASET, subject='dataset_rownames',
         dependent='mpg', independent='am',
-        null_interval=null_interval,
+        tail=null_interval[0],
         prior_scale=prior_scale,
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, paired=False)
@@ -150,7 +153,7 @@ def test_bayes_t2samples_independent(
     r
     """.format(
         tuple([{-np.inf: FauxInf('-'), np.inf: FauxInf()}.get(i, 0) for i in
-               null_interval]),
+               null_interval[1]]),
         prior_scale,
         'TRUE' if sample_from_posterior else 'FALSE',
         iterations,
@@ -171,8 +174,8 @@ def test_bayes_t2samples_independent(
 
 @pytest.mark.parametrize('iterations', [1e4, 1e5])
 @pytest.mark.parametrize('prior_scale', [0.5, 0.707])
-@pytest.mark.parametrize('null_interval',
-                         [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
+@pytest.mark.parametrize('null_interval', R_BAYES_TEST_TAILS_DICT.items())
+# [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
 @pytest.mark.parametrize('sample_from_posterior', [False])  # , True])
 @pytest.mark.parametrize('mu', [0, -2, 3.5])
 def test_bayes_t2samples_dependent(
@@ -181,12 +184,10 @@ def test_bayes_t2samples_dependent(
         null_interval,
         sample_from_posterior,
         mu):
-    data = rst.load_dataset('sleep')
-
     m = rst.groupwise.BayesT2Samples(
-        data=data, subject='ID',
+        data=SLEEP_DATASET, subject='ID',
         dependent='extra', independent='group',
-        null_interval=null_interval,
+        tail=null_interval[0],
         prior_scale=prior_scale,
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, paired=True, mu=mu)
@@ -227,7 +228,7 @@ def test_bayes_t2samples_dependent(
     r
     """.format(
         tuple([{-np.inf: FauxInf('-'), np.inf: FauxInf()}.get(i, 0) for i in
-               null_interval]),
+               null_interval[1]]),
         prior_scale,
         'TRUE' if sample_from_posterior else 'FALSE',
         iterations,
@@ -254,8 +255,8 @@ def test_bayes_t2samples_dependent(
 
 @pytest.mark.parametrize('iterations', [1e4, 1e5])
 @pytest.mark.parametrize('prior_scale', [0.5, 0.707])
-@pytest.mark.parametrize('null_interval',
-                         [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
+@pytest.mark.parametrize('null_interval', R_BAYES_TEST_TAILS_DICT.items())
+# [[-np.inf, 0], [-np.inf, np.inf], [0, np.inf]])
 @pytest.mark.parametrize('sample_from_posterior', [False])  # , True])
 @pytest.mark.parametrize('mu', [0, -2, 3.5])
 def test_bayes_t1sample(
@@ -264,13 +265,12 @@ def test_bayes_t1sample(
         null_interval,
         sample_from_posterior,
         mu):
-    data = rst.load_dataset('iris')
-    data = data.loc[data['Species'] == 'setosa']
+    data = IRIS_DATASET.loc[IRIS_DATASET['Species'] == 'setosa']
 
     m = rst.groupwise.BayesT1Sample(
         data=data, subject='dataset_rownames',
         dependent='Sepal.Width', independent='Species',
-        null_interval=null_interval,
+        tail=null_interval[0],
         prior_scale=prior_scale,
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, mu=mu)
@@ -305,7 +305,7 @@ def test_bayes_t1sample(
     r
     """.format(
         tuple([{-np.inf: FauxInf('-'), np.inf: FauxInf()}.get(i, 0) for i in
-               null_interval]),
+               null_interval[1]]),
         prior_scale,
         'TRUE' if sample_from_posterior else 'FALSE',
         iterations,
@@ -338,7 +338,7 @@ def test_bayes_t1sample(
 ])
 def test_anova_between(between_vars):
     m = rst.groupwise.Anova(
-        data=rst.load_dataset('ToothGrowth'),
+        data=TOOTH_GROWTH_DATASET,
         dependent='len', subject='dataset_rownames',
         between=between_vars[0])
 
@@ -462,7 +462,7 @@ def test_anova_mixed():
                          )
 def test_bayes_anova_between(between_vars, include_subject):
     m = rst.groupwise.BayesAnova(
-        data=rst.load_dataset('ToothGrowth'),
+        data=TOOTH_GROWTH_DATASET,
         dependent='len', subject='dataset_rownames',
         between=between_vars[0], iterations=1e4,
         include_subject=include_subject)
@@ -634,8 +634,21 @@ def test_bayes_anova_mixed(include_subject):
 @pytest.mark.parametrize('p_exact', [False, True])
 @pytest.mark.parametrize('p_correction', [False, True])
 @pytest.mark.parametrize('mu', [-10, -3])
-@pytest.mark.parametrize('tail', TAILS)
+@pytest.mark.parametrize('tail', R_FREQUENTIST_TEST_TAILS_SPECS.items())
 def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
+    x = (38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
+    y = (67.8, 60, 63.4, 76, 89.4, 73.3, 67.3, 61.3, 62.4)
+    weight_diff = np.array(x) - np.array(y)
+    group = np.repeat(0, len(weight_diff))
+    df = pd.DataFrame(data=np.array([weight_diff, group]).T,
+                      columns=['weight', 'group']).reset_index()
+    m = rst.groupwise.Wilcoxon1Sample(data=df, independent='group',
+                                      subject='index',
+                                      dependent='weight', mu=mu, tail=tail[0],
+                                      p_exact=p_exact, p_correction=p_correction)
+    m.fit()
+    res = m._results._get_r_output_df()
+
     r_res = rst.misc.utils.convert_df(r(
         f"""
         # Example from http://www.sthda.com/english/wiki/unpaired-two-samples-wilcoxon-test-in-r
@@ -645,21 +658,8 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
         weight_diff <- x - y
         data.frame(tidy(wilcox.test(weight_diff,
             exact={str(p_exact)[0]}, 
-            correct={str(p_correction)[0]}, mu={mu}, alternative='{tail}')))
+            correct={str(p_correction)[0]}, mu={mu}, alternative='{tail[1]}')))
         """))
-
-    x = (38.9, 61.2, 73.3, 21.8, 63.4, 64.6, 48.4, 48.8, 48.5)
-    y = (67.8, 60, 63.4, 76, 89.4, 73.3, 67.3, 61.3, 62.4)
-    weight_diff = np.array(x) - np.array(y)
-    group = np.repeat(0, len(weight_diff))
-    df = pd.DataFrame(data=np.array([weight_diff, group]).T,
-                      columns=['weight', 'group']).reset_index()
-    m = rst.groupwise.Wilcoxon1Sample(data=df, independent='group',
-                                      subject='index',
-                                      dependent='weight', mu=mu, tail=tail,
-                                      p_exact=p_exact, p_correction=p_correction)
-    m.fit()
-    res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res)
 
@@ -672,27 +672,9 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
 
 @pytest.mark.parametrize('p_exact', [False, True])
 @pytest.mark.parametrize('p_correction', [False, True])
-@pytest.mark.parametrize('tail', TAILS)
+@pytest.mark.parametrize('tail', R_FREQUENTIST_TEST_TAILS_SPECS.items())
 @pytest.mark.parametrize('paired', [True, False])
 def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
-    r_res = r(f"""
-        # Example from http://www.sthda.com/english/wiki/paired-samples-wilcoxon-test-in-r
-        library(broom)
-        before = c(200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
-                    193.7)
-        after = c(392.9, 393.2, 345.1, 393, 434, 427.9, 422, 383.9, 392.3,
-                   352.2)
-        # Create a data frame
-        my_data <- data.frame(
-                group = as.factor(rep(c("before", "after"), each = 10)),
-                weight = c(before,  after)
-                )
-        data.frame(tidy(
-            wilcox.test(before, after, paired = {str(paired)[0]},
-            alternative='{tail}',
-            exact={str(p_exact)[0]}, correct={str(p_correction)[0]})))
-        """)
-
     before = (200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
               193.7)
     after = (392.9, 393.2, 345.1, 393, 434, 427.9, 422, 383.9, 392.3,
@@ -707,10 +689,28 @@ def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
     m = rst.groupwise.Wilcoxon2Samples(
         data=df, independent='group', paired=paired,
         dependent='weight', subject='sid',
-        tail=tail, p_correction=p_correction, p_exact=p_exact
+        tail=tail[0], p_correction=p_correction, p_exact=p_exact
     )
     m.fit()
     res = m._results._get_r_output_df()
+
+    r_res = r(f"""
+        # Example from http://www.sthda.com/english/wiki/paired-samples-wilcoxon-test-in-r
+        library(broom)
+        before = c(200.1, 190.9, 192.7, 213, 241.4, 196.9, 172.2, 185.5, 205.2,
+                    193.7)
+        after = c(392.9, 393.2, 345.1, 393, 434, 427.9, 422, 383.9, 392.3,
+                   352.2)
+        # Create a data frame
+        my_data <- data.frame(
+                group = as.factor(rep(c("before", "after"), each = 10)),
+                weight = c(before,  after)
+                )
+        data.frame(tidy(
+            wilcox.test(before, after, paired = {str(paired)[0]},
+            alternative='{tail[1]}',
+            exact={str(p_exact)[0]}, correct={str(p_correction)[0]})))
+        """)
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r_res))
 
@@ -728,7 +728,7 @@ def test_kruskal_wallis_test():
     data.frame(tidy(kruskal.test(weight ~ group, data = PlantGrowth)))
     """))
     m = rst.groupwise.KruskalWallisTest(
-        data=rst.load_dataset('PlantGrowth'),
+        data=PLANT_GROWTH_DATASET,
         between='group',
         dependent='weight', subject='dataset_rownames')
     m.fit()
@@ -742,7 +742,7 @@ def test_kruskal_wallis_test():
 
 
 def test_friedman_test():
-    with pytest.raises(rst.pyr.rinterface.RRuntimeError):
+    with pytest.raises(rst.pyr.rinterface.embedded.RRuntimeError):
         # Until we get rstatix on the environment
         r_res = rst.misc.utils.convert_df(r("""
         # Example from https://www.datanovia.com/en/lessons/friedman-test-in-r/
@@ -754,11 +754,7 @@ def test_friedman_test():
         data.frame(tidy(friedman_test(score ~ time |id, data=data_long)))
         """))
 
-        df = rst.load_dataset('selfesteem').set_index(
-            ['id', 'group']).filter(
-            regex='^t[1-3]$').stack().reset_index().rename(
-            columns={0: 'score', 'level_2': 'time'})
-        m = rst.groupwise.FriedmanTest(data=df, within='time', dependent='score',
+        m = rst.groupwise.FriedmanTest(data=SELF_ESTEEM_DATASET, within='time', dependent='score',
                                        subject='id')
         m.fit()
         res = m._results._get_r_output_df()

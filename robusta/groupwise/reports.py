@@ -6,8 +6,8 @@ P_VALUE_CLAUSE = 'p {pvalue_operator} {p-value:.3f}'
 
 FREQ_T_CLAUSE = (
         't({df:.0f}) = {t:.2f}, ' + P_VALUE_CLAUSE)
-COHEN_D_CLAUSE = "Cohen's d = {cohen_d:.2f}"
-COHEN_D_INTERVAL_CLAUSE = '({low:.2f, high:.2f})'
+COHEN_D_CLAUSE = "Cohen's d = {Cohen-d:.2f}"
+COHEN_D_INTERVAL_CLAUSE = '({Cohen-d Low:.2f}, {Cohen-d High:.2f})'
 
 BAYES_T_CLAUSE_DEC_NOTATION = ('{model} [BF1:0 = {bf:.2f}, Error = {error:.3f}%]')
 BAYES_T_CLAUSE_SCI_NOTATION = ('{model} [BF1:0 = {bf:.2E}, Error = {error:.3f}]')
@@ -40,30 +40,32 @@ class Reporter:
     def report_table(self, model):
         return model._get_r_output_df()
 
-    def report_text(self, model, as_list=False):
+    def report_text(self, model, as_list=False, effect_size=False, es=False):
 
-        # Bayesian Models
+        # Alias effect size
+        effect_size = es if es else effect_size
+
+        # Similar reports on all Bayesian Models
         if isinstance(model,
                       (models.BayesT1Sample,
                        models.BayesT2Samples,
                        models.BayesAnova
                        )):
             return self._populate_bayes_t_test_clause(model)
-        #elif isinstance(model, models.BayesAnova):
-        #    return self._populate_bayes_anova_clauses(model, as_list=as_list)
 
-        # Frequentist Models (these are children classes, so they are tested for first)
-
+        # Frequentist Models (these are children classes, so they are placed first)
         elif isinstance(model, (models.Wilcoxon1Sample, models.Wilcoxon2Samples)):
             return self._populate_frequentist_clause(model, WILCOXON_CLAUSE)
         elif isinstance(model, models.KruskalWallisTest):
             return self._populate_frequentist_clause(model, KRUSKSAL_WALLIS_CLAUSE)
         elif isinstance(model, models.FriedmanTest):
             return self._populate_frequentist_clause(model, FRIEDMAN_CLAUSE)
-
         # Frequentist Models (these are mostly parent classes, so they are tested for later)
         elif isinstance(model, (models.T1Sample, models.T2Samples)):
-            return self._populate_frequentist_clause(model, FREQ_T_CLAUSE)
+            _effect_size_clause = f', {COHEN_D_CLAUSE}, {COHEN_D_INTERVAL_CLAUSE}' if effect_size else ''
+            return self._populate_frequentist_clause(model, FREQ_T_CLAUSE, effect_size_clause=_effect_size_clause)
+
+        # Frequentist Models (these are mostly parent classes, so they are tested for later)
         elif isinstance(model, models.AlignedRanksTest):
             return self._populate_frequentist_clause(model, ART_TERM_CLAUSE, as_list=as_list)
         elif isinstance(model, models.Anova):
@@ -71,11 +73,11 @@ class Reporter:
         else:
             raise NotImplementedError
 
-    def _populate_frequentist_clause(self, model, clause, as_list=False):
+    def _populate_frequentist_clause(self, model, clause, as_list=False, effect_size_clause=''):
         df = model.report_table()
         df['pvalue_operator'] = np.where(df['p-value'] < 0.001, '<', '=')
         df.loc[df['p-value'] < 0.001, 'p-value'] = 0.001
-        terms = [clause.format(**f) for f in df.to_dict('records')]
+        terms = [(clause+effect_size_clause).format(**f) for f in df.to_dict('records')]
         if as_list:
             return terms
         return '. '.join(terms)
