@@ -65,11 +65,11 @@ def test_t2samples_unpaired_output():
 
 
 def test_t1sample_output():
-    m = rst.groupwise.models.T1Sample(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='x < y', mu=3.5)
+    m = rst.groupwise.models.T1Sample(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='x < y', y=3.5)
     m.fit()
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
-    m = rst.groupwise.models.T1Sample(x=MTCARS['wt'], tail='x < y', mu=3.5)
+    m = rst.groupwise.models.T1Sample(x=MTCARS['wt'].values, tail='x < y', y=3.5)
     m.fit()
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
@@ -90,14 +90,14 @@ def test_bayes_t2samples_output():
 def test_bayes_t1sample_output():
     m = rst.groupwise.models.BayesT1Sample(
         data=MTCARS.assign(wt=2.5 - MTCARS['wt'].values), formula='wt~am+1|dataset_rownames',
-        tail='x < y') #, tail=[-np.Inf, 0])
+        tail='x < y')  # , tail=[-np.Inf, 0])
     m.fit()
     assert m.report_text() == ('Alt., r=0.707 -Inf<d<0 [BF1:0 = 230.25, Error = 0.001%]. '
                                'Alt., r=0.707 !(-Inf<d<0) [BF1:0 = 0.04, Error = 0.001%]')
 
     m = rst.groupwise.models.BayesT1Sample(
-        x=(2.5 - MTCARS['wt']),
-        tail='x < y') #, tail=[-np.Inf, 0])
+        x=(2.5 - MTCARS['wt'].values),
+        tail='x < y')  # , tail=[-np.Inf, 0])
     m.fit()
     assert m.report_text() == ('Alt., r=0.707 -Inf<d<0 [BF1:0 = 230.25, Error = 0.001%]. '
                                'Alt., r=0.707 !(-Inf<d<0) [BF1:0 = 0.04, Error = 0.001%]')

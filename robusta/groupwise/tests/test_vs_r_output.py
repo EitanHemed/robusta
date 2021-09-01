@@ -69,12 +69,12 @@ def test_t2samples(paired, tail):
     pd.testing.assert_frame_equal(r_res, m._results._get_r_output_df())
 
 
-@pytest.mark.parametrize('mu', [0, 2.33, 4.66])
+@pytest.mark.parametrize('y', [0, 2.33, 4.66])
 @pytest.mark.parametrize('tail', R_FREQUENTIST_TEST_TAILS_SPECS.items())
-def test_t1sample(mu, tail):
+def test_t1sample(y, tail):
     m = rst.groupwise.T1Sample(data=SLEEP_DATASET.loc[SLEEP_DATASET['group'] == '1'],
                                dependent='extra', subject='ID',
-                               independent='group', mu=mu, tail=tail[0])
+                               independent='group', y=y, tail=tail[0])
     m.fit()
     res = m._results._get_r_output_df()
     r_res = rst.misc.utils.convert_df(r(
@@ -82,7 +82,7 @@ def test_t1sample(mu, tail):
         library(broom)
         data.frame(tidy(t.test(
             x=sleep[sleep$group == 1, 'extra'],
-            mu={mu},
+            mu={y},
             alternative='{tail[1]}')))
         """
     ))

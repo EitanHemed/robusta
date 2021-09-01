@@ -29,6 +29,7 @@ import re
 
 import numpy as np
 import pandas as pd
+import numpy.typing as npt  # Odd but this seems to be the cannonical way, in NumPy docs.
 
 from . import results, reports
 from .. import pyr
@@ -45,18 +46,16 @@ __all__ = [
     "AlignedRanksTest"
 ]
 
-
 # TODO - find a better variable name
-ROBUSTA_TEST_TAILS_SPECS = ['x<y', 'x>y', 'x=y']
+ROBUSTA_TEST_TAILS_SPECS = ['x<y', 'x>y', 'x!=y']
 R_FREQUENTIST_TEST_TAILS_SPECS = dict(zip(ROBUSTA_TEST_TAILS_SPECS, ['less', 'greater', 'two.sided']))
 R_BAYES_TEST_TAILS_DICT = dict(zip(ROBUSTA_TEST_TAILS_SPECS, [[-np.inf, 0], [0, np.inf], [-np.inf, np.inf]]))
 
-DEFAULT_GROUPWISE_TAIL = 'x=y'
+DEFAULT_GROUPWISE_TAIL = 'x!=y'
 DEFAULT_GROUPWISE_NULL_INTERVAL = (-np.inf, np.inf)
 PRIOR_SCALE_STR_OPTIONS = ('medium', 'wide', 'ultrawide')
 DEFAULT_ITERATIONS: int = 10000
 DEFAULT_MU: float = 0.0
-
 
 BF_COLUMNS = ['model', 'bf', 'error']
 
@@ -77,22 +76,53 @@ class GroupwiseModel(base.BaseModel):
     dependent: typing.Union[str, None]
     formula: typing.Union[str, None]
     agg_func: typing.Union[str, typing.Callable]
-    max_levels = None
-    min_levels = 2
+    _max_levels = None
+    _min_levels = 2
 
     def __init__(
             self,
+            formula: typing.Optional[str] = None,
             data: pd.DataFrame = None,
             dependent: str = None,
             between: typing.Optional[str] = None,
             within: typing.Optional[str] = None,
             subject: str = None,
-            formula: typing.Optional[str] = None,
             na_action: typing.Optional[str] = None,
             agg_func: typing.Optional[
                 typing.Union[str, typing.Callable]] = np.mean,
             **kwargs
     ):
+        """
+
+        Parameters
+        ----------
+
+        data :  pd.DataFrame
+            Containing the subject, dependent and independent variables as columns.
+        formula : str, optional
+            An R-style formula describing the statistical model. In the form of
+            (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+            arguments `dependent`, `between`, `within` and `subject`.
+        dependent : key in data, optional
+            The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+            column data type should be numeric or a string that can be coerced to numeric.
+            Overriden by `formula` if specified. Required if `formula` is not specified.
+        between : key(s) in data (str or array-like), optional
+            The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+            Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+            Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+            is specified.
+        within : key(s) in data (str or array-like), optional
+            The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+            Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+            Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+            is specified.
+        subject : str or key in data, optional
+            The name of the column identifying the sampling unit in the data (i.e., subject).
+            Overriden by `formula` if specified. Required if `formula` is not specified.
+        agg_func : str (name of pandas aggregation function) or callable, optional
+            Specified how to aggregate observations within sampling
+        """
 
         vars(self).update(
             data=data,
@@ -103,8 +133,8 @@ class GroupwiseModel(base.BaseModel):
             subject=subject,
             agg_func=agg_func,
             na_action=na_action,
-            max_levels=kwargs.get('max_levels', None),
-            min_levels=kwargs.get('min_levels', 2)
+            _max_levels=kwargs.get('_max_levels', None),
+            _min_levels=kwargs.get('_min_levels', 2)
         )
 
         self._results = None
@@ -199,19 +229,19 @@ class GroupwiseModel(base.BaseModel):
         _n_levels = (
             self._input_data[self.independent].apply(
                 lambda s: s.unique().size))
-        low = _n_levels.loc[_n_levels.values < self.min_levels]
-        # It is likely that there will be a max_levels argument
-        high = (_n_levels.loc[self.max_levels < _n_levels]
-                if self.max_levels is not None else pd.Series())
+        low = _n_levels.loc[_n_levels.values < self._min_levels]
+        # It is likely that there will be a _max_levels argument
+        high = (_n_levels.loc[self._max_levels < _n_levels]
+                if self._max_levels is not None else pd.Series())
         _s = ''
         if not low.empty:
             pass
             _s += ("The following variable:levels pairs have"
-                   f" less than {self.min_levels} levels: {low.to_dict()}.\n")
+                   f" less than {self._min_levels} levels: {low.to_dict()}.\n")
         if not high.empty:
             _s += (
                 "The following {variable:levels} pairs have more"
-                f" than {self.max_levels} levels: {high.to_dict()}.")
+                f" than {self._max_levels} levels: {high.to_dict()}.")
         if _s:
             # TODO - this should be a ValueError
             warnings.warn(_s)
@@ -274,67 +304,67 @@ class GroupwiseModel(base.BaseModel):
 
 
 class T2Samples(GroupwiseModel):
-    """
-    Run a frequentist dependent or independent-samples t-test.
-
-    To run a model either specify the dependent, independent and subject
-    variables, or enter a formula (SPECIFY FORM HERE).
-
+    """Run a Student t-test, either dependent or independent samples.
 
     .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
 
-    Parameters
-    ----------
-    data :  pd.DataFrame
-        Containing the subject, dependent and independent variables as columns
-        (usually not in a 'long file' format).
-    paired : bool
-        Whether the test is dependent/paired-samples (True) or
-        independent-samples (False). Default is True.
-    dependent : str, optional
-        The name of the column identifying the dependent variable in the data.
-        The column data type should be numeric.
-    independent : str, optional
-        The name of the column identifying the independent variable in the data.
-        The column could be either numeric or object, but can contain up to two
-        unique values. Alias for `within` for paired, `between` for unpaired.
-    subject : str, optional
-        The name of the column identifying the subject variable in the data.
-    formula : str, optional
-        TODO fill this out
-    tail: str, optional
-        Direction of the tested hypothesis. Optional values are 'two.sided'
-        (H1: x != y), 'less' (H1: x < y) and 'greater' (H1: x > y).
-        Default value is 'two.sided'.
-    assume_equal_variance : bool, optional
-        Applicable only to independent samples t-test. Whether to assume that
-        the two samples have equal variance. If True runs regular two-sample,
-        if False runs Welch two-sample test. Default is True.
     """
-
-    alternative: str
 
     def __init__(self,
                  paired: bool = None,
+                 x: typing.Union[str, npt.ArrayLike] = None,
+                 y: typing.Union[str, npt.ArrayLike] = None,
                  independent: bool = None,
-                 tail: str = 'x=y',
+                 tail: str = 'x!=y',
                  assume_equal_variance: bool = False,
-                 x=None,
-                 y=None,
-                 correct=False,
+                 ci=95,
                  **kwargs):
+        """
+
+        Parameters
+        ----------
+        paired : bool
+            Whether the test is dependent/paired-samples (True) or independent-samples (False).
+            If not specified, robusta will try to infer based on other input arguments - `formula`, `indpependent`,
+             `between` and `within` (in this order). Default is True.
+        x, y: keys in data or NumPy array of values, optional
+            x and y can be used to specify. If str, both have to be keys to columns in the dataframe (`data`
+            argument). If array-like, have to contain only objects that can be coerced into numeric. If not
+            specified they are inferred based on the following arguments `formula`, and `between` or `within` (in
+            this order).
+        independent : str, optional
+            The name of the column identifying the independent variable in the data. The column could be either
+            numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
+            for unpaired.
+        tail: str, optional
+            Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
+            by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
+            Whitespace characters in the input are ignored. Default value is 'x != y'.
+        assume_equal_variance : bool, default: True
+            Whether to assume that the two samples have equal variance (Applicable only to independent samples
+            t-test). If True runs regular two-sample, if False runs Welch two-sample test. Default is True.
+        ci : int
+            Width of confidence interval around the sample mean difference. Float between 0 and 100.
+            Default value is 95.
+
+        kwargs: mapping, optional
+            Keyward arguments to be passed down to robusta.groupwise.models.GroupwiseModel.
+        """
         self.x = x
         self.y = y
         self.paired = paired
+        # TODO - allow specification by group key (e.g., 'treatment>control'
         self.tail = tail
+        self.ci = ci
+        self._r_ci = self.ci / 100  # R uses a float in the range of 0 to 1 here.
 
         # TODO - refactor this
         if not hasattr(self, '_tails_dict'):
             self._tails_dict = R_FREQUENTIST_TEST_TAILS_SPECS
 
         self.assume_equal_variance = assume_equal_variance
-        kwargs['max_levels'] = 2
-        kwargs['min_levels'] = 2
+        kwargs['_max_levels'] = 2
+        kwargs['_min_levels'] = 2
 
         # TODO - refactor this
 
@@ -434,6 +464,7 @@ class T2Samples(GroupwiseModel):
                    'paired': self.paired,
                    'alternative': self._r_tail,
                    'var.equal': self.assume_equal_variance,
+                   'conf.level': self._r_ci
                    })
         )
 
@@ -447,63 +478,31 @@ class T2Samples(GroupwiseModel):
         visitor = reports.Reporter()
         return visitor.report_text(self, effect_size=effect_size)
 
+
 class BayesT2Samples(T2Samples):
     """
     Run a Bayesian independent-samples t-test.
-
-    To run a model either specify the dependent, independent and subject
-    variables, or enter a formula (SPECIFY FORM HERE).
 
     .. _Implemented R function BayesFactor::ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
 
     Parameters
     ----------
-    data :  pd.DataFrame
-        Containing the subject, dependent and independent variables as columns
-        (usually not in a 'long file' format).
-    dependent : str, optional
-        The name of the column identifying the dependent variable in the data.
-        The column data type should be numeric.
-    independent : str, optional
-        The name of the column identifying the independent variable in the data.
-        The column could be either numeric or object, but can contain up to two
-        unique values.
-    subject : str, optional
-        The name of the column identifying the subject variable in the data.
-    formula : str, optional
-        TODO fill this out
-    null_interval: tuple, optional
-        Predicted interval for standardized effect size to test against the null
-        hypothesis. Optional values for a 'simple' directional test are
-        [-np.inf, np.inf], (H1: ES != 0), [-np.inf, 0] (H1: ES < 0) and
-        [0, np.inf] (H1: ES > 0). However, it is better to confine null_interval
-        specification to a narrower range (e.g., [0.2, 0.5], if you expect
-        a positive small standardized effect size), if you have a prior belief
-        regarding the expected effect size.
-        Default value is [-np.inf, np.inf].
-    return_both : bool, optional
-        If True returns Bayes factor for both H1 and H0, else, returns only for
-        H1. Used only on directional hypothesis. Default is False.
-        TODO - implement return of both bayes factors.
     scale_prior : float, optional
-        Controls the scale of the prior distribution. Default value is 1.0 which
-        yields a standard Cauchy prior. It is also possible to pass 'medium',
-        'wide' or 'ultrawide' as input arguments instead of a float (matching
-        the values of :math:`\\frac{\\sqrt{2}}{2}, 1, \\sqrt{2}`,
-        respectively).
+        Controls the scale (width) of the prior distribution. Default value is 1.0 which yields a standard Cauchy
+        prior. It is also possible to pass 'medium', 'wide' or 'ultrawide' as input arguments instead of a
+        float (matching the values of :math:`\\frac{\\sqrt{2}}{2}, 1, \\sqrt{2}`, respectively).
         TODO - limit str input values.
     sample_from_posterior : bool, optional
-        If True return samples from the posterior, if False returns Bayes
-        factor. Default is False.
+        If True return samples from the posterior, if False returns Bayes factor. Default is False.
     iterations : int, optional
-        Number of samples used to estimate Bayes factor or posterior. Default
-        is 1000.
-        # mu (on dependent Bayesian t-test)
+        Number of samples used to estimate Bayes factor or posterior. Default is 1000.
+    kwargs : mapiing, optional
+        Keyword arguments passed down to robusta.groupwise.models.T2Samples.
     """
 
     def __init__(
             self,
-            null_interval=None, #DEFAULT_GROUPWISE_NULL_INTERVAL,
+            null_interval=None,  # DEFAULT_GROUPWISE_NULL_INTERVAL,
             prior_scale: str = 'medium',
             sample_from_posterior: bool = False,
             iterations: int = DEFAULT_ITERATIONS,
@@ -522,7 +521,6 @@ class BayesT2Samples(T2Samples):
         # if self.paired is False:
         #     if self.mu != 0:
         #         raise ValueError
-
 
         super().__init__(**kwargs)
 
@@ -549,7 +547,7 @@ class BayesT2Samples(T2Samples):
 
 class T1Sample(T2Samples):
     """
-    Run a frequentist one-sample t-test.
+    Run a Student one-sample t-test.
 
     To run a model either specify the dependent and subject
     variables, or enter a formula (SPECIFY FORM HERE).
@@ -558,60 +556,43 @@ class T1Sample(T2Samples):
 
     Parameters
     ----------
-    data :  pd.DataFrame
-        Containing the subject, dependent and independent variables as columns
-        (usually not in a 'long file' format).
-    dependent : str, optional
-        The name of the column identifying the dependent variable in the data.
-        The column data type should be numeric.
-    subject : str, optional
-        The name of the column identifying the subject variable in the data.
-    formula : str, optional
-        TODO fill this out based on whether we will depractate the formula
-            functionality or not.
+    y : float, optional:
+        Value of the population to compare the sample (`x`) to. Default is 0.
     mu :  float, optional
-        Population mean value to text x against. Default value is 0.
-    tail: str, optional
-        Direction of the tested hypothesis. Optional values are 'two.sided'
-        (H1: x != mu), 'less' (H1: x < mu) and 'greater' (H1: x > mu).
-        Default value is 'two.sided'.
+        Population mean value to text x against. Overriden by `y` is specified. Default value is 0.
     """
 
     def __init__(self,
-                 tail: str = 'x=y',
+                 tail: str = 'x!=y',
                  mu=DEFAULT_MU,
                  x=None,
                  y=None,
                  **kwargs):
         kwargs['paired'] = True
         kwargs['tail'] = tail
-        kwargs['max_levels'] = 1
-        kwargs['min_levels'] = 1
+        kwargs['_max_levels'] = 1
+        kwargs['_min_levels'] = 1
 
         kwargs['x'] = x
         kwargs['y'] = y
 
         self.mu = mu
 
-        # self.max_levels = 1
-        # self.min_levels = 1
         super().__init__(**kwargs)
 
     def _select_input_data(self):
         # Skip the method implemented by parent (T2Samples)
         GroupwiseModel._select_input_data(self)
-        self.x = self._input_data[getattr(self, 'dependent')].values
 
-        if self.mu is not None:
+        if self.x is None:
+            self.x = self._input_data[getattr(self, 'dependent')].values
+
+        if self.y is None:
             self.y = self.mu
 
     def _analyze(self):
         self._results = results.TTestResults(pyr.rpackages.stats.t_test(
-            x=self.x,
-            mu=self.y,
-            alternative=self._r_tail
-        )
-        )
+            x=self.x, mu=self.y, alternative=self._r_tail))
 
     def _form_dataframe(self):
         dependent = self.x
@@ -725,11 +706,9 @@ class Wilcoxon1Sample(T1Sample):
     def __init__(self,
                  p_exact: bool = True,
                  p_correction: bool = True,
-                 ci: int = 95,
                  **kwargs):
         self.p_exact = p_exact
         self.p_correction = p_correction
-        self.ci = ci
 
         super().__init__(paired=True, **kwargs)
 
@@ -901,6 +880,7 @@ class Anova(GroupwiseModel):
         # TODO - remake this into a visitor pattern
         visitor = reports.Reporter()
         return visitor.report_text(self, as_list=as_list)
+
 
 class BayesAnova(Anova):
     # TODO - Formula specification will be using the lme4 syntax and variables
