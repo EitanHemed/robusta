@@ -1,24 +1,8 @@
 """
-ttest_and_anova contains classes used to run statistical tests in which a
-central tendency measure of groups is compared:
-- Anova, BayesAnovaBS: Between/Within/Mixed n-way analysis of variance
-    (frequentist and Bayesian)
-- T2Samples, BayesT2Samples: Independent/Dependent samples t-test
-    (Frequentist and Bayesian)
-- T1Sample, BayesT1Sample: One-Sample t-test (Frequentist and Bayesian)
-
-Additionally, there are classes for running non-parametric tests such as:
-- Wilcoxon1Sample, Wilcoxon2Sample: One- and two-sample variations of the
- Wilcoxon signed rank test
-- KruskalWalisTest, FriedmanTest: The Kruskal-Walis test and Friedman test
-    are used as non parametric analysis of variance for between-subject and
-    within-subject designs, respectively.
-
-All classes have at least these postestimation methods:
-- get_results(): Returns a pandas dataframe with the results of the analysis.
-- get_text_report(): Returns a textual report of the analysis.
+Models for fitting statistical models where central tendencies of groups (eg., mean, median) are compared.
 """
 
+# TODO add examples to individual classes
 # TODO - define __repr__ and __str__ for all classes
 
 import typing
@@ -34,8 +18,6 @@ import numpy.typing as npt  # Odd but this seems to be the cannonical way, in Nu
 from . import results, reports
 from .. import pyr
 from ..misc import utils, formula_tools, base
-
-import rpy2.robjects as ro
 
 __all__ = [
     "Anova", "BayesAnova",
@@ -62,13 +44,11 @@ BF_COLUMNS = ['model', 'bf', 'error']
 DEFAULT_TTEST_VARIABLE_NAMES = dict(zip(['DEPENDENT', 'SUBJECT', 'INDEPENDENT'],
                                         ['DEPENDENT', 'SUBJECT', 'INDEPENDENT']))
 
+DEFAULT_POPULATION_MEAN = 0
+
 
 @dataclass
 class GroupwiseModel(base.BaseModel):
-    """
-    A basic class to handle pre-requisites of T-Tests and ANOVAs.
-
-    """
     data: typing.Type[pd.DataFrame]
     subject: typing.Union[str, None]
     between = typing.Union[str, list, None]
@@ -78,6 +58,54 @@ class GroupwiseModel(base.BaseModel):
     agg_func: typing.Union[str, typing.Callable]
     _max_levels = None
     _min_levels = 2
+
+    """
+    A basic class to handle pre-requisites of T-Tests and ANOVAs.
+
+
+    Parameters
+    ----------
+
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of
+        (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+        arguments `dependent`, `between`, `within` and `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling
+    fit : bool, optional
+        Whether to run the statistical test on object creation. Default is True. 
+        
+    Methods
+    -------
+    fit()
+        Run the corresponding statistical test. 
+    reset(**kwargs)
+        Reset the Model object and remove the current test results. `kwargs` will be used to update the object 
+        attributes, e.g., model's `formula`. 
+    report_table()
+        Return a tabular report formatted report of the statistical test's results.  
+    report_text()
+        Return a string reporting the results of the statistical test. 
+    """
 
     def __init__(
             self,
@@ -90,39 +118,9 @@ class GroupwiseModel(base.BaseModel):
             na_action: typing.Optional[str] = None,
             agg_func: typing.Optional[
                 typing.Union[str, typing.Callable]] = np.mean,
+            fit=True,
             **kwargs
     ):
-        """
-
-        Parameters
-        ----------
-
-        data :  pd.DataFrame
-            Containing the subject, dependent and independent variables as columns.
-        formula : str, optional
-            An R-style formula describing the statistical model. In the form of
-            (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
-            arguments `dependent`, `between`, `within` and `subject`.
-        dependent : key in data, optional
-            The name of the column identifying the dependent variable (i.e., response variable) in the data. The
-            column data type should be numeric or a string that can be coerced to numeric.
-            Overriden by `formula` if specified. Required if `formula` is not specified.
-        between : key(s) in data (str or array-like), optional
-            The name of the column identifying the independent variable (i.e., predictor variable) in the data.
-            Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
-            Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
-            is specified.
-        within : key(s) in data (str or array-like), optional
-            The name of the column identifying the independent variable in the data (i.e., predictor variable). The
-            Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
-            Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
-            is specified.
-        subject : str or key in data, optional
-            The name of the column identifying the sampling unit in the data (i.e., subject).
-            Overriden by `formula` if specified. Required if `formula` is not specified.
-        agg_func : str (name of pandas aggregation function) or callable, optional
-            Specified how to aggregate observations within sampling
-        """
 
         vars(self).update(
             data=data,
@@ -139,6 +137,9 @@ class GroupwiseModel(base.BaseModel):
 
         self._results = None
         self._fitted = False
+
+        if fit:
+            self.fit()
 
     def _pre_process(self):
         """
@@ -266,8 +267,16 @@ class GroupwiseModel(base.BaseModel):
 
     def fit(self):
         """
-        This method runs the model defined by the input.
-        @return:
+        Fit the statistical model.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RunTimeError
+            If model was already fitted, raises RunTimeError.
         """
         if self._fitted is True:
             raise RuntimeError("Model was already run. Use `reset()` method"
@@ -276,7 +285,21 @@ class GroupwiseModel(base.BaseModel):
         self._pre_process()
         self._analyze()
 
-    def reset(self, **kwargs):
+    def reset(self, refit=True, **kwargs):
+        """
+        Updates the Model object state and removes current test results.
+
+        Parameters
+        ----------
+        refit
+            Whether to fit the statistical test after resetting parameters. Default is True.
+        kwargs
+            Any keyword arguments of parameters to be updated.
+
+        Returns
+        -------
+        None
+        """
 
         if self.formula is not None and kwargs.get('formula', None) is None:
             # We assume that the user aimed to specify the model using variables
@@ -289,10 +312,26 @@ class GroupwiseModel(base.BaseModel):
         self._fitted = False
         self._results = None
 
+        if refit is True:
+            self.fit()
+
     def report_table(self):
+        """
+
+        Returns
+        -------
+        pd.DataFrame
+            Formatted tabular report of the statistical test results.
+        """
         return self._results.get_df()
 
     def report_text(self, ):
+        """
+        Returns
+        -------
+        str
+            Formatted string report of statistical test results.
+        """
         # TODO - remake this into a visitor pattern
         visitor = reports.Reporter()
         return visitor.report_text(self)
@@ -306,8 +345,38 @@ class GroupwiseModel(base.BaseModel):
 class T2Samples(GroupwiseModel):
     """Run a Student t-test, either dependent or independent samples.
 
-    .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
+    Parameters
+    ----------
+    paired : bool
+        Whether the test is dependent/paired-samples (True) or independent-samples (False).
+        If not specified, robusta will try to infer based on other input arguments - `formula`, `indpependent`,
+         `between` and `within` (in this order). Default is True.
+    x, y: keys in data or NumPy array of values, optional
+        x and y can be used to specify. If str, both have to be keys to columns in the dataframe (`data`
+        argument). If array-like, have to contain only objects that can be coerced into numeric. If not
+        specified they are inferred based on the following arguments `formula`, and `between` or `within` (in
+        this order).
+    independent : str, optional
+        The name of the column identifying the independent variable in the data. The column could be either
+        numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
+        for unpaired.
+    tail: str, optional
+        Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
+        by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
+        Whitespace characters in the input are ignored. Default value is 'x != y'.
+    assume_equal_variance : bool, default: True
+        Whether to assume that the two samples have equal variance (Applicable only to independent samples
+        t-test). If True runs regular two-sample, if False runs Welch two-sample test. Default is True.
+    ci : int
+        Width of confidence interval around the sample mean difference. Float between 0 and 100.
+        Default value is 95.
 
+    kwargs: mapping, optional
+        Keyward arguments to be passed down to robusta.groupwise.models.GroupwiseModel.
+
+    Notes
+    -----
+    R function - t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
     """
 
     def __init__(self,
@@ -319,37 +388,6 @@ class T2Samples(GroupwiseModel):
                  assume_equal_variance: bool = False,
                  ci=95,
                  **kwargs):
-        """
-
-        Parameters
-        ----------
-        paired : bool
-            Whether the test is dependent/paired-samples (True) or independent-samples (False).
-            If not specified, robusta will try to infer based on other input arguments - `formula`, `indpependent`,
-             `between` and `within` (in this order). Default is True.
-        x, y: keys in data or NumPy array of values, optional
-            x and y can be used to specify. If str, both have to be keys to columns in the dataframe (`data`
-            argument). If array-like, have to contain only objects that can be coerced into numeric. If not
-            specified they are inferred based on the following arguments `formula`, and `between` or `within` (in
-            this order).
-        independent : str, optional
-            The name of the column identifying the independent variable in the data. The column could be either
-            numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
-            for unpaired.
-        tail: str, optional
-            Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
-            by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
-            Whitespace characters in the input are ignored. Default value is 'x != y'.
-        assume_equal_variance : bool, default: True
-            Whether to assume that the two samples have equal variance (Applicable only to independent samples
-            t-test). If True runs regular two-sample, if False runs Welch two-sample test. Default is True.
-        ci : int
-            Width of confidence interval around the sample mean difference. Float between 0 and 100.
-            Default value is 95.
-
-        kwargs: mapping, optional
-            Keyward arguments to be passed down to robusta.groupwise.models.GroupwiseModel.
-        """
         self.x = x
         self.y = y
         self.paired = paired
@@ -475,6 +513,17 @@ class T2Samples(GroupwiseModel):
         super().reset(**kwargs)
 
     def report_text(self, effect_size=False):
+        """
+
+        Parameters
+        ----------
+        effect_size, bool : optional
+            Should Cohen's d effect size should be reported as well. Default is False.
+
+        Returns
+        -------
+
+        """
         visitor = reports.Reporter()
         return visitor.report_text(self, effect_size=effect_size)
 
@@ -482,8 +531,6 @@ class T2Samples(GroupwiseModel):
 class BayesT2Samples(T2Samples):
     """
     Run a Bayesian independent-samples t-test.
-
-    .. _Implemented R function BayesFactor::ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
 
     Parameters
     ----------
@@ -496,8 +543,19 @@ class BayesT2Samples(T2Samples):
         If True return samples from the posterior, if False returns Bayes factor. Default is False.
     iterations : int, optional
         Number of samples used to estimate Bayes factor or posterior. Default is 1000.
+    mu :  float, optional
+        The hypothesized mean of the differences between the samples, default is 0.
     kwargs : mapiing, optional
         Keyword arguments passed down to robusta.groupwise.models.T2Samples.
+
+    Notes
+    -----
+    R function - ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
+    from the BayesFactor[1] package
+
+    References
+    ----------
+    .. [1] Morey, R. D., Rouder, J. N., Jamil, T., & Morey, M. R. D. (2015). Package ‘bayesfactor’.
     """
 
     def __init__(
@@ -507,8 +565,7 @@ class BayesT2Samples(T2Samples):
             sample_from_posterior: bool = False,
             iterations: int = DEFAULT_ITERATIONS,
             mu: float = 0,
-            **kwargs
-    ):
+            **kwargs):
         self.null_interval = np.array(null_interval)
         self.prior_scale = prior_scale
         self.sample_from_posterior = sample_from_posterior
@@ -549,35 +606,34 @@ class T1Sample(T2Samples):
     """
     Run a Student one-sample t-test.
 
-    To run a model either specify the dependent and subject
-    variables, or enter a formula (SPECIFY FORM HERE).
-
-    .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
-
     Parameters
     ----------
-    y : float, optional:
-        Value of the population to compare the sample (`x`) to. Default is 0.
     mu :  float, optional
-        Population mean value to text x against. Overriden by `y` is specified. Default value is 0.
+        Value of the population to compare the sample (`x`) to. Default is None. `y` is an alias, superseded by `mu`.
+    y :  float, optional
+        `y` is an alias of `mu`, superseded by `mu`.
+
+    Notes
+    -----
+    .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
+
+    If `x` is left `None`, the sample values will be the values under the column in `data` that is specified by
+    `independent`.
     """
 
     def __init__(self,
                  tail: str = 'x!=y',
-                 mu=DEFAULT_MU,
                  x=None,
+                 mu=None,
                  y=None,
                  **kwargs):
         kwargs['paired'] = True
         kwargs['tail'] = tail
         kwargs['_max_levels'] = 1
         kwargs['_min_levels'] = 1
-
         kwargs['x'] = x
         kwargs['y'] = y
-
         self.mu = mu
-
         super().__init__(**kwargs)
 
     def _select_input_data(self):
@@ -587,12 +643,12 @@ class T1Sample(T2Samples):
         if self.x is None:
             self.x = self._input_data[getattr(self, 'dependent')].values
 
-        if self.y is None:
-            self.y = self.mu
+        if self.mu is None and self.y is not None:
+            self.mu = self.y
 
     def _analyze(self):
         self._results = results.TTestResults(pyr.rpackages.stats.t_test(
-            x=self.x, mu=self.y, alternative=self._r_tail))
+            x=self.x, mu=self.mu, alternative=self._r_tail))
 
     def _form_dataframe(self):
         dependent = self.x
@@ -612,29 +668,13 @@ class T1Sample(T2Samples):
 
 class BayesT1Sample(T1Sample):
     """
-    Run a frequentist independent-samples t-test.
-
-    To run a model either specify the dependent, independent and subject
-    variables, or enter a formula (SPECIFY FORM HERE).
+    Run a Bayesian One-sample t-test.
 
     .. _Implemented R function BayesFactor::ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
 
     Parameters
     ----------
-    data :  pd.DataFrame
-        Containing the subject, dependent and independent variables as columns
-        (usually not in a 'long file' format).
-    dependent : str, optional
-        The name of the column identifying the dependent variable in the data.
-        The column data type should be numeric.
-    independent : str, optional
-        The name of the column identifying the independent variable in the data.
-        The column could be either numeric or object, but can contain up to two
-        unique values.
-    subject : str, optional
-        The name of the column identifying the subject variable in the data.
-    formula : str, optional
-        TODO fill this out
+
     null_interval: tuple, optional
         Predicted interval for standardized effect size to test against the null
         hypothesis. Optional values for a 'simple' directional test are
@@ -701,37 +741,30 @@ class BayesT1Sample(T1Sample):
                                              mode='posterior' if self.sample_from_posterior else 'bf')
 
 
-class Wilcoxon1Sample(T1Sample):
-
-    def __init__(self,
-                 p_exact: bool = True,
-                 p_correction: bool = True,
-                 **kwargs):
-        self.p_exact = p_exact
-        self.p_correction = p_correction
-
-        super().__init__(paired=True, **kwargs)
-
-    """Mann-Whitney"""
-
-    def _analyze(self):
-        self._results = results.WilcoxonResults(
-            pyr.rpackages.stats.wilcox_test(
-                x=self.x, mu=self.y, alternative=self._r_tail,
-                exact=self.p_exact, correct=self.p_correction,
-                conf_int=self.ci
-            ))
-
-
 class Wilcoxon2Samples(T2Samples):
+    """
+    Run a Wilcoxon rank sum test - non-parametric independent-samples t-test alternative.
 
-    def __init__(self, paired=None, p_exact: bool = True,
-                 p_correction: bool = True, ci: int = 95, **kwargs):
-        self.paired = paired
+    Parameters
+    ----------
+    p_exact :  bool, optional
+        Whether to compute exact p-value or approximate it. Default is False.
+    p_exact :  bool, optional
+        FILL THIS. Default is False.
+
+    Notes
+    -----
+    Calling Wilcoxon2Samples with `Wilcoxon1Sample(x=x, y=y, paired=True)` is the same as
+     `Wilcoxon1Sample(x=x-y, y=0)`.
+
+    R function - https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/wilcox.test
+    """
+
+    def __init__(self, p_exact: bool = True,
+                 p_correction: bool = True, **kwargs):
         self.p_exact = p_exact
         self.p_correction = p_correction
-        self.ci = ci
-        super().__init__(paired=self.paired, **kwargs)
+        super().__init__(**kwargs)
 
     def _analyze(self):
         self._results = results.WilcoxonResults(
@@ -743,39 +776,63 @@ class Wilcoxon2Samples(T2Samples):
             ))
 
 
-class Anova(GroupwiseModel):
+class Wilcoxon1Sample(T1Sample):
     """
-    Run a mixed (between + within) frequentist ANOVA.
-
-    To run a model either specify the dependent, independent and subject
-    variables, or enter a formula (SPECIFY FORM HERE).
-
-    .. _Implemented R function afex::aov_4: https://www.rdocumentation.org/packages/afex/versions/0.27-2/topics/aov_car
+    Run a Wilcoxon signed rank test - non-parametric one-sample t-test alternative.
 
     Parameters
     ----------
-    data :  pd.DataFrame
-        Containing the subject, dependent and independent variable(s) as
-        columns.
-    dependent : str, optional
-        The name of the column identifying the dependent variable in the data.
-        The column data type should be numeric.
-    between, within : list[str], optional
-        For both `between` and `within` - Either a string or a list with the
-        name(s) of the independent variables in the data. The column data type
-         should be preferebly be string or category.
-    subject : str, optional
-        The name of the column identifying the subject variable in the data.
+    p_exact :  bool, optional
+        Whether to compute exact p-value or approximate it. Default is False.
+    p_exact :  bool, optional
+        FILL THIS. Default is False.
+
+    Notes
+    -----
+    R function - https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/wilcox.test
+    """
+
+    def __init__(self,
+                 p_exact: bool = False,
+                 p_correction: bool = True,
+                 **kwargs):
+        self.p_exact = p_exact
+        self.p_correction = p_correction
+
+        super().__init__(paired=True, **kwargs)
+
+    def _analyze(self):
+        self._results = results.WilcoxonResults(
+            pyr.rpackages.stats.wilcox_test(
+                x=self.x, mu=self.mu, alternative=self._r_tail,
+                exact=self.p_exact, correct=self.p_correction,
+                conf_int=self.ci
+            ))
+
+
+class Anova(GroupwiseModel):
+    """
+    Run a between, within or mixed frequentist ANOVA.
+
+    Parameters
+    ----------
     formula : str, optional
-        An lme4-like formula specifying the model, in the form of
-        dependent ~ (within | subject). See examples.
-        TODO - give a more verbose example
+        An lme4-like formula specifying the model, in the form of dependent ~ (within | subject).
     effect_size: str, optional
         Optional values are 'ges', (:math:`generalized-{\\eta}^2`) 'pes'
         (:math:`partial-{\\eta}^2`) or 'none'. Default value is 'pes'.
     correction: str, optional
-        Sphericity correction method. Possible values are "GG"
-        (Greenhouse-Geisser), "HF" (Hyunh-Feldt) or "none". Default is 'none'.
+        Sphericity correction method. Possible values are "GG" (Greenhouse-Geisser), "HF" (Hyunh-Feldt) or
+        "none". Default is 'none'.
+
+    Notes
+    -----
+    R function aov_4: https://www.rdocumentation.org/packages/afex/versions/0.27-2/topics/aov_car from the
+    afex package [1]
+
+    References
+    ----------
+    .. [1] Singmann, H., Bolker, B., Westfall, J., Aust, F., & Ben-Shachar, M. S. (2015). afex: Analysis of factorial experiments. R package version 0.13–145.
     """
 
     def __init__(self, **kwargs):
@@ -813,6 +870,8 @@ class Anova(GroupwiseModel):
         # TODO - Issue the 'balanced-design' warning etc.
         # TODO - allow for `by` option
         # TODO - implement between and within CI calculation
+
+        raise RuntimeError("The get_margins function is currently under development.")
 
         _terms_to_test = np.array(
             utils.to_list([margins_terms,
@@ -886,31 +945,10 @@ class BayesAnova(Anova):
     # TODO - Formula specification will be using the lme4 syntax and variables
     #  will be parsed from it
     """
-    Run a mixed (between + within) Bayesian ANOVA.
-
-    To run a model either specify the dependent, independent and subject
-    variables, or enter a formula (SPECIFY FORM HERE).
-
-    .. _Implemented R function BayesFactor::anovaBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/anovaBF
+    Run a between, within or mixed Bayesian ANOVA.
 
     Parameters
     ----------
-    data :  pd.DataFrame
-        Containing the subject, dependent and independent variable(s) as
-        columns.
-    dependent : str, optional
-        The name of the column identifying the dependent variable in the data.
-        The column data type should be numeric.
-    between, within : list[str], optional
-        For both `between` and `within` - Either a string or a list with the
-        name(s) of the independent variables in the data. The column data type
-         should be preferebly be string or category.
-    subject : str, optional
-        The name of the column identifying the subject variable in the data.
-    formula : str, optional
-        An lme4-like formula specifying the model, in the form of
-        dependent ~ (within | subject). See examples.
-        TODO - give a more verbose example
     which_models : str, optional
         Setting which_models to 'all' will test all models that can be
         created by including or not including a main effect or interaction.
@@ -921,8 +959,7 @@ class BayesAnova(Anova):
         that if an interaction is included, the corresponding main effects
         are also included. Default value is 'withmain'.
     iterations : int, optional
-        Number of iterations used to estimate Bayes factor. Default value is
-         10000.
+        Number of iterations used to estimate Bayes factor. Default value is 10000.
     scale_prior_fixed : [float, str], optional
         Controls the scale of the prior distribution for fixed factors.
         Default value is 1.0  which yields a standard Cauchy prior.
@@ -937,8 +974,7 @@ class BayesAnova(Anova):
         model, such as participants. Default value is 'nuisance'.
         r_scale_effects=pyr.rinterface.NULL,
     mutli_core : bool, optional
-        Whether to use multiple cores for estimation. Not available on
-        Windows. Default value is False.
+        Whether to use multiple cores for estimation. Not available on Windows. Default value is False.
     method : str, optional
         The method used to estimate the Bayes factor depends on the method
         argument. "simple" is most accurate for small to moderate sample
@@ -958,6 +994,14 @@ class BayesAnova(Anova):
         implemented and may lead to an error.
         TODO test how we would handle `no_sample = True`
 
+    Notes
+    -----
+    R function anovaBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/anovaBF
+    from the BayesFactor packages [1].
+
+    References
+    ----------
+    .. [1] Morey, R. D., Rouder, J. N., Jamil, T., & Morey, M. R. D. (2015). Package ‘bayesfactor’.
     """
 
     def __init__(
@@ -1025,9 +1069,23 @@ class BayesAnova(Anova):
         self._results = results.BayesResults(b)
 
 
+# TODO - merge KruskalWallisTest and Friedman test into a non-parametric Anova class
+
 class KruskalWallisTest(Anova):
-    """Runs a Kruskal-Wallis test, similar to a non-parametric between
-    subject anova.
+    """Runs a Kruskal-Wallis test, similar to a non-parametric between subject anova for one variable.
+
+
+    Raises
+    ------
+    ValueError
+        If a within-subject variable has been specified using `within` argument or formula.
+    ValueError
+        If more than one between-subjects variable was specified using `between` argument or formula.
+
+    Notes
+    -----
+    R function - kruskal.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/kruskal.test
+
     """
 
     def _validate_input_data(self):
@@ -1060,7 +1118,18 @@ class KruskalWallisTest(Anova):
 
 
 class FriedmanTest(Anova):
-    """Runs a Friedman test, similar to a non-parametric within-subject anova.
+    """Runs a Friedman test, similar to a non-parametric between subject anova for one variable.
+
+    Raises
+    ------
+    ValueError
+        If a within-subject variable has been specified using `within` argument or formula.
+    ValueError
+        If more than one between-subjects variable was specified using `between` argument or formula.
+
+    Notes
+    -----
+    R function - friedman.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/friedman.test
     """
 
     def _validate_input_data(self):
@@ -1093,7 +1162,16 @@ class FriedmanTest(Anova):
 
 
 class AlignedRanksTest(Anova):
-    """N-way non-parametric Anova"""
+    """Run Aligned Ranks Transform - a non-parametric n-way ANOVA for a between, within or mixed design.
+
+    Notes
+    -----
+    R function - https://www.rdocumentation.org/packages/ART/versions/1.0/topics/aligned.rank.transform
+
+    References
+    ----------
+    .. [1] Kay M and Wobbrock J (2021). ARTool: Aligned Rank Transform for Nonparametric Factorial ANOVAs. R package version 0.11.0, https://github.com/mjskay/ARTool. DOI: 10.5281/zenodo.594511.
+    """
 
     def _analyze(self):
         self._results = results.AlignedRanksTestResults(

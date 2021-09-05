@@ -50,7 +50,7 @@ def test_t2samples(paired, tail):
                                 tail=tail[0],
                                 assume_equal_variance=False
                                 )
-    m.fit()
+    
 
     r_res = rst.misc.utils.convert_df(r(
         f"""
@@ -64,32 +64,32 @@ def test_t2samples(paired, tail):
     pd.testing.assert_frame_equal(r_res, m._results._get_r_output_df())
 
     m.reset(formula='extra~group+1|ID')
-    m.fit()
+    
 
     pd.testing.assert_frame_equal(r_res, m._results._get_r_output_df())
 
 
-@pytest.mark.parametrize('y', [0, 2.33, 4.66])
+@pytest.mark.parametrize('mu', [0, 2.33, 4.66])
 @pytest.mark.parametrize('tail', R_FREQUENTIST_TEST_TAILS_SPECS.items())
-def test_t1sample(y, tail):
+def test_t1sample(mu, tail):
     m = rst.groupwise.T1Sample(data=SLEEP_DATASET.loc[SLEEP_DATASET['group'] == '1'],
                                dependent='extra', subject='ID',
-                               independent='group', y=y, tail=tail[0])
-    m.fit()
+                               independent='group', mu=mu, tail=tail[0])
+    
     res = m._results._get_r_output_df()
     r_res = rst.misc.utils.convert_df(r(
         f"""
         library(broom)
         data.frame(tidy(t.test(
             x=sleep[sleep$group == 1, 'extra'],
-            mu={y},
+            mu={mu},
             alternative='{tail[1]}')))
         """
     ))
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(formula='extra~group+1|ID')
-    m.fit()
+    
     res = m._results._get_r_output_df()
     pd.testing.assert_frame_equal(res, r_res)
 
@@ -116,7 +116,7 @@ def test_bayes_t2samples_independent(
         prior_scale=prior_scale,
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, paired=False)
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     r_res = rst.misc.utils.convert_df(r("""   
@@ -191,7 +191,7 @@ def test_bayes_t2samples_dependent(
         prior_scale=prior_scale,
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, paired=True, mu=mu)
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     r_res = r("""
@@ -274,7 +274,7 @@ def test_bayes_t1sample(
         prior_scale=prior_scale,
         sample_from_posterior=sample_from_posterior,
         iterations=iterations, mu=mu)
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     r_res = r("""
@@ -354,14 +354,14 @@ def test_anova_between(between_vars):
             + (1|dataset_rownames)), es='pes'))
         """))
 
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(
         formula=f"len ~ {between_vars[1]} + (1|dataset_rownames)")
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     # m = rst.anova(
@@ -374,7 +374,7 @@ def test_anova_between(between_vars):
 def test_anova_within():
     m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time',
                             dependent='score', subject='id')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     r_res = rst.misc.utils.convert_df(r(
@@ -392,7 +392,7 @@ def test_anova_within():
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(formula='score~time|id')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res)
@@ -421,13 +421,13 @@ def test_anova_mixed():
     )
 
     m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time', between='group', dependent='score', subject='id')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r('anova_table')))
 
     m.reset(formula='score ~ group + (time|id)')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r('anova_table')))
@@ -466,7 +466,7 @@ def test_bayes_anova_between(between_vars, include_subject):
         dependent='len', subject='dataset_rownames',
         between=between_vars[0], iterations=1e4,
         include_subject=include_subject)
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     formula = between_vars[1]
@@ -516,7 +516,7 @@ def test_bayes_anova_between(between_vars, include_subject):
     m.reset(
         formula=f"{between_vars[1]} + (1|dataset_rownames)",
         include_subject=include_subject)
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res.head(2), r_res.head(2).reset_index(drop=True))
@@ -529,7 +529,7 @@ def test_bayes_anova_between(between_vars, include_subject):
 def test_bayes_anova_within(within_vars, include_subject):
     m = rst.groupwise.BayesAnova(data=ANXIETY_DATASET, within='time',
                                  dependent='score', subject='id')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     formula = within_vars[1]
@@ -576,7 +576,7 @@ def test_bayes_anova_within(within_vars, include_subject):
     m.reset(
         formula=f"{within_vars[1]} + (1|id)",
         include_subject=include_subject)
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res.reset_index(drop=True))
@@ -586,7 +586,7 @@ def test_bayes_anova_within(within_vars, include_subject):
 def test_bayes_anova_mixed(include_subject):
     m = rst.groupwise.BayesAnova(data=ANXIETY_DATASET, within='time', between='group',
                                  dependent='score', subject='id')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     formula = "score ~ group + time | id"
@@ -625,7 +625,7 @@ def test_bayes_anova_mixed(include_subject):
     m.reset(
         formula=formula,
         include_subject=include_subject)
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res.head(2), r_res.head(2).reset_index(drop=True))
@@ -646,7 +646,7 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
                                       subject='index',
                                       dependent='weight', mu=mu, tail=tail[0],
                                       p_exact=p_exact, p_correction=p_correction)
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     r_res = rst.misc.utils.convert_df(r(
@@ -664,7 +664,7 @@ def test_wilcoxon_1sample(p_exact, p_correction, mu, tail):
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(formula='weight ~ group + 1|index')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, r_res)
@@ -691,7 +691,7 @@ def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
         dependent='weight', subject='sid',
         tail=tail[0], p_correction=p_correction, p_exact=p_exact
     )
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     r_res = r(f"""
@@ -715,7 +715,7 @@ def test_wilcoxon_2samples(p_exact, p_correction, tail, paired):
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r_res))
 
     m.reset(formula='weight ~ group|sid')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r_res))
@@ -731,12 +731,12 @@ def test_kruskal_wallis_test():
         data=PLANT_GROWTH_DATASET,
         between='group',
         dependent='weight', subject='dataset_rownames')
-    m.fit()
+    
     res = m._results._get_r_output_df()
     pd.testing.assert_frame_equal(res, r_res)
 
     m.reset(formula='weight~group+1|dataset_rownames')
-    m.fit()
+    
     res = m._results._get_r_output_df()
     pd.testing.assert_frame_equal(res, r_res)
 
@@ -756,12 +756,12 @@ def test_friedman_test():
 
         m = rst.groupwise.FriedmanTest(data=SELF_ESTEEM_DATASET, within='time', dependent='score',
                                        subject='id')
-        m.fit()
+        
         res = m._results._get_r_output_df()
         pd.testing.assert_frame_equal(res, r_res)
 
         m.reset(formula='score ~ time|id')
-        m.fit()
+        
         res = m._results._get_r_output_df()
         pd.testing.assert_frame_equal(res, r_res)
 
@@ -779,7 +779,7 @@ def test_aligned_ranks_test():
     m = rst.groupwise.AlignedRanksTest(
         data=rst.load_dataset('Higgins1990Table5'),
         formula='DryMatter ~ Moisture*Fertilizer + (1|Tray)')
-    m.fit()
+    
     res = m._results._get_r_output_df()
 
     pd.testing.assert_frame_equal(
@@ -788,7 +788,7 @@ def test_aligned_ranks_test():
 
     m.reset(between=['Moisture', 'Fertilizer'], dependent='DryMatter',
             subject='Tray')
-    m.fit()
+    
     res = m._results._get_r_output_df()
     pd.testing.assert_frame_equal(
         res, rst.misc.utils.convert_df(r("res"))
