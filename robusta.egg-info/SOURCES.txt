@@ -1,4 +1,6 @@
+LICENSE.txt
 README.md
+pyproject.toml
 setup.py
 robusta/__init__.py
 robusta/api.py

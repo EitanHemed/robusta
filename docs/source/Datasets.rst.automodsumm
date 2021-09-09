@@ -1,0 +1,8 @@
+.. currentmodule:: robusta.misc.datasets
+
+.. autosummary::
+    :toctree: api
+
+    get_available_datasets
+    load_dataset
+

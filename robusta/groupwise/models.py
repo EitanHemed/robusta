@@ -92,7 +92,7 @@ class GroupwiseModel(base.BaseModel):
     agg_func : str (name of pandas aggregation function) or callable, optional
         Specified how to aggregate observations within sampling
     fit : bool, optional
-        Whether to run the statistical test on object creation. Default is True. 
+        Whether to run the statistical test upon object creation. Default is True. 
         
     Methods
     -------
@@ -341,25 +341,20 @@ class GroupwiseModel(base.BaseModel):
     #     visitor = groupwise_reports.Reporter()
     #     return visitor.report_table(self._results)
 
-
 class T2Samples(GroupwiseModel):
-    """Run a Student t-test, either dependent or independent samples.
+    """Run a two-samples t-test, either dependent or independent.
 
     Parameters
     ----------
-    paired : bool
-        Whether the test is dependent/paired-samples (True) or independent-samples (False).
-        If not specified, robusta will try to infer based on other input arguments - `formula`, `indpependent`,
-         `between` and `within` (in this order). Default is True.
     x, y: keys in data or NumPy array of values, optional
         x and y can be used to specify. If str, both have to be keys to columns in the dataframe (`data`
         argument). If array-like, have to contain only objects that can be coerced into numeric. If not
         specified they are inferred based on the following arguments `formula`, and `between` or `within` (in
         this order).
-    independent : str, optional
-        The name of the column identifying the independent variable in the data. The column could be either
-        numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
-        for unpaired.
+    paired : bool
+        Whether the test is dependent/paired-samples (True) or independent-samples (False).
+        If not specified, robusta will try to infer based on other input arguments - `formula`, `indpependent`,
+         `between` and `within` (in this order). Default is True.
     tail: str, optional
         Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
         by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
@@ -370,6 +365,38 @@ class T2Samples(GroupwiseModel):
     ci : int
         Width of confidence interval around the sample mean difference. Float between 0 and 100.
         Default value is 95.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data. The column could be either
+        numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
+        for unpaired.
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of
+        (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+        arguments `dependent`, `between`, `within` and `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling
+    fit : bool, optional
+        Whether to run the statistical test upon object creation. Default is True.
+
 
     kwargs: mapping, optional
         Keyward arguments to be passed down to robusta.groupwise.models.GroupwiseModel.
@@ -530,10 +557,58 @@ class T2Samples(GroupwiseModel):
 
 class BayesT2Samples(T2Samples):
     """
-    Run a Bayesian independent-samples t-test.
+    Run a Bayesian two-samples t-test, either dependent or independent.
 
     Parameters
     ----------
+
+    x, y: keys in data or NumPy array of values, optional
+        x and y can be used to specify. If str, both have to be keys to columns in the dataframe (`data`
+        argument). If array-like, have to contain only objects that can be coerced into numeric. If not
+        specified they are inferred based on the following arguments `formula`, and `between` or `within` (in
+        this order).
+    paired : bool
+        Whether the test is dependent/paired-samples (True) or independent-samples (False).
+        If not specified, robusta will try to infer based on other input arguments - `formula`, `indpependent`,
+         `between` and `within` (in this order). Default is True.
+    tail: str, optional
+        Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
+        by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
+        Whitespace characters in the input are ignored. Default value is 'x != y'.
+    ci : int
+        Width of confidence interval around the sample mean difference. Float between 0 and 100.
+        Default value is 95.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data. The column could be either
+        numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
+        for unpaired.
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of
+        (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+        arguments `dependent`, `between`, `within` and `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
+    fit : bool, optional
+        Whether to run the statistical test upon object creation. Default is True.
     scale_prior : float, optional
         Controls the scale (width) of the prior distribution. Default value is 1.0 which yields a standard Cauchy
         prior. It is also possible to pass 'medium', 'wide' or 'ultrawide' as input arguments instead of a
@@ -545,13 +620,14 @@ class BayesT2Samples(T2Samples):
         Number of samples used to estimate Bayes factor or posterior. Default is 1000.
     mu :  float, optional
         The hypothesized mean of the differences between the samples, default is 0.
+
     kwargs : mapiing, optional
         Keyword arguments passed down to robusta.groupwise.models.T2Samples.
 
     Notes
     -----
     R function - ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
-    from the BayesFactor[1] package
+    from the BayesFactor[1]_ package
 
     References
     ----------
@@ -608,14 +684,55 @@ class T1Sample(T2Samples):
 
     Parameters
     ----------
+    x: key in data or NumPy array of values, optional
+        `x` can be used to specify. If str, `x` have to be key to column in `data`. If array-like, have to contain
+        only objects that can be coerced into numeric. If not specified they are inferred based on the following
+        arguments `formula`, and `between` or `within` (in this order).
     mu :  float, optional
-        Value of the population to compare the sample (`x`) to. Default is None. `y` is an alias, superseded by `mu`.
+        Value of the population to compare the sample (`x`) to. Default is None. `y` is an alias.
     y :  float, optional
         `y` is an alias of `mu`, superseded by `mu`.
+    tail: str, optional
+        Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
+        by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
+        Whitespace characters in the input are ignored. Default value is 'x != y'.
+    ci : int
+        Width of confidence interval around the sample mean difference. Float between 0 and 100.
+        Default value is 95.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data. The column could be either
+        numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
+        for unpaired.
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of
+        (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+        arguments `dependent`, `between`, `within` and `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
+
 
     Notes
     -----
-    .. _Implemented R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
+    R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test
 
     If `x` is left `None`, the sample values will be the values under the column in `data` that is specified by
     `independent`.
@@ -670,11 +787,65 @@ class BayesT1Sample(T1Sample):
     """
     Run a Bayesian One-sample t-test.
 
-    .. _Implemented R function BayesFactor::ttestBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/ttestBF
-
     Parameters
     ----------
-
+    x: key in data or NumPy array of values, optional
+        `x` can be used to specify. If str, `x` have to be key to column in `data`. If array-like, have to contain
+        only objects that can be coerced into numeric. If not specified they are inferred based on the following
+        arguments `formula`, and `between` or `within` (in this order).
+    mu : float, optional
+        The null (H0) predicted value for the mean difference compared with the population's mean (mu), in
+        un-standardized effect size (e.g., raw measure units). Default value is 0.
+    y :  float, optional
+        `y` is an alias of `mu`, superseded by `mu`.
+    tail: str, optional
+        Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
+        by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
+        Whitespace characters in the input are ignored. Default value is 'x != y'.
+    ci : int
+        Width of confidence interval around the sample mean difference. Float between 0 and 100.
+        Default value is 95.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data. The column could be either
+        numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
+        for unpaired.
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of
+        (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+        arguments `dependent`, `between`, `within` and `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
+    scale_prior : float, optional
+        Controls the scale of the prior distribution. Default value is 1.0 which
+        yields a standard Cauchy prior. It is also possible to pass 'medium',
+        'wide' or 'ultrawide' as input arguments instead of a float (matching
+        the values of :math:`\\frac{\\sqrt{2}}{2}, 1, \\sqrt{2}`, respectively).
+        TODO - limit str input values.
+    sample_from_posterior : bool, optional
+        If True return samples from the posterior, if False returns Bayes
+        factor. Default is False.
+    iterations : int, optional
+        Number of samples used to estimate Bayes factor or posterior. Default
+        is 1000.
     null_interval: tuple, optional
         Predicted interval for standardized effect size to test against the null
         hypothesis. Optional values for a 'simple' directional test are
@@ -688,22 +859,15 @@ class BayesT1Sample(T1Sample):
         If True returns Bayes factor for both H1 and H0, else, returns only for
         H1. Used only on directional hypothesis. Default is False.
         TODO - implement return of both bayes factors.
-    scale_prior : float, optional
-        Controls the scale of the prior distribution. Default value is 1.0 which
-        yields a standard Cauchy prior. It is also possible to pass 'medium',
-        'wide' or 'ultrawide' as input arguments instead of a float (matching
-        the values of :math:`\\frac{\\sqrt{2}}{2}, 1, \\sqrt{2}`, respectively).
-        TODO - limit str input values.
-    sample_from_posterior : bool, optional
-        If True return samples from the posterior, if False returns Bayes
-        factor. Default is False.
-    iterations : int, optional
-        Number of samples used to estimate Bayes factor or posterior. Default
-        is 1000.
-    mu : float, optional
-        The null (H0) predicted value for the mean difference compared with the
-        population's mean (mu), in un-standardized effect size (e.g., raw
-        measure units). Default value is 0.
+
+    Notes
+    -----
+    R function anovaBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/anovaBF
+    from the BayesFactor packages [1]_.
+
+    References
+    ----------
+    .. [1] Morey, R. D., Rouder, J. N., Jamil, T., & Morey, M. R. D. (2015). Package ‘bayesfactor’.
     """
 
     def __init__(
@@ -747,10 +911,61 @@ class Wilcoxon2Samples(T2Samples):
 
     Parameters
     ----------
+    x, y: keys in data or NumPy array of values, optional
+        x and y can be used to specify. If str, both have to be keys to columns in the dataframe (`data`
+        argument). If array-like, have to contain only objects that can be coerced into numeric. If not
+        specified they are inferred based on the following arguments `formula`, and `between` or `within` (in
+        this order).
+    paired : bool
+        Whether the test is dependent/paired-samples (True) or independent-samples (False).
+        If not specified, robusta will try to infer based on other input arguments - `formula`, `indpependent`,
+         `between` and `within` (in this order). Default is True.
+    tail: str, optional
+        Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
+        by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
+        Whitespace characters in the input are ignored. Default value is 'x != y'.
+    assume_equal_variance : bool, default: True
+        Whether to assume that the two samples have equal variance (Applicable only to independent samples
+        t-test). If True runs regular two-sample, if False runs Welch two-sample test. Default is True.
+    ci : int
+        Width of confidence interval around the sample mean difference. Float between 0 and 100.
+        Default value is 95.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data. The column could be either
+        numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
+        for unpaired.
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of
+        (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+        arguments `dependent`, `between`, `within` and `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling
+    fit : bool, optional
+        Whether to run the statistical test upon object creation. Default is True.
     p_exact :  bool, optional
         Whether to compute exact p-value or approximate it. Default is False.
-    p_exact :  bool, optional
+    p_correction :  bool, optional
         FILL THIS. Default is False.
+
 
     Notes
     -----
@@ -782,6 +997,50 @@ class Wilcoxon1Sample(T1Sample):
 
     Parameters
     ----------
+    x: key in data or NumPy array of values, optional
+        `x` can be used to specify. If str, `x` have to be key to column in `data`. If array-like, have to contain
+        only objects that can be coerced into numeric. If not specified they are inferred based on the following
+        arguments `formula`, and `between` or `within` (in this order).
+    mu :  float, optional
+        Value of the population to compare the sample (`x`) to. Default is None. `y` is an alias.
+    y :  float, optional
+        `y` is an alias of `mu`, superseded by `mu`.
+    tail: str, optional
+        Direction of the tested alternative hypothesis. Optional values are 'x!=y' (Two sided test; aliased
+        by 'two.sided'), 'x<y' (lower tail; aliased by 'less') 'x>y' (upper tail; aliased by 'greater').
+        Whitespace characters in the input are ignored. Default value is 'x != y'.
+    ci : int
+        Width of confidence interval around the sample mean difference. Float between 0 and 100.
+        Default value is 95.
+    independent : str, optional
+        The name of the column identifying the independent variable in the data. The column could be either
+        numeric or object, but can contain up to two unique values. Alias for `within` for paired, `between`
+        for unpaired.
+    data :  pd.DataFrame
+        Containing the subject, dependent and independent variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of
+        (dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+        arguments `dependent`, `between`, `within` and `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
     p_exact :  bool, optional
         Whether to compute exact p-value or approximate it. Default is False.
     p_exact :  bool, optional
@@ -816,11 +1075,34 @@ class Anova(GroupwiseModel):
 
     Parameters
     ----------
+    data :  pd.DataFrame
+        Containing the `subject`, `dependent`, `between' and `within` variables as columns.
     formula : str, optional
-        An lme4-like formula specifying the model, in the form of dependent ~ (within | subject).
+        An R-style formula describing the statistical model. In the form of (dependent ~ between + within | subject).
+        If used, the parsed formula will overrides the following arguments `dependent`, `between`, `within` and
+        `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
     effect_size: str, optional
-        Optional values are 'ges', (:math:`generalized-{\\eta}^2`) 'pes'
-        (:math:`partial-{\\eta}^2`) or 'none'. Default value is 'pes'.
+        Optional values are 'ges', (:math:`generalized-{\\eta}^2`) 'pes' (:math:`partial-{\\eta}^2`) or 'none'.
+        Default value is 'pes'.
     correction: str, optional
         Sphericity correction method. Possible values are "GG" (Greenhouse-Geisser), "HF" (Hyunh-Feldt) or
         "none". Default is 'none'.
@@ -828,7 +1110,7 @@ class Anova(GroupwiseModel):
     Notes
     -----
     R function aov_4: https://www.rdocumentation.org/packages/afex/versions/0.27-2/topics/aov_car from the
-    afex package [1]
+    afex package [1]_
 
     References
     ----------
@@ -949,6 +1231,31 @@ class BayesAnova(Anova):
 
     Parameters
     ----------
+    data :  pd.DataFrame
+        Containing the `subject`, `dependent`, `between' and `within` variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of (dependent ~ between + within | subject).
+        If used, the parsed formula will overrides the following arguments `dependent`, `between`, `within` and
+        `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
     which_models : str, optional
         Setting which_models to 'all' will test all models that can be
         created by including or not including a main effect or interaction.
@@ -973,7 +1280,7 @@ class BayesAnova(Anova):
         in the data that may stem from variables which are irrelevant to the
         model, such as participants. Default value is 'nuisance'.
         r_scale_effects=pyr.rinterface.NULL,
-    mutli_core : bool, optional
+    multi_core : bool, optional
         Whether to use multiple cores for estimation. Not available on Windows. Default value is False.
     method : str, optional
         The method used to estimate the Bayes factor depends on the method
@@ -997,7 +1304,7 @@ class BayesAnova(Anova):
     Notes
     -----
     R function anovaBF: https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/anovaBF
-    from the BayesFactor packages [1].
+    from the BayesFactor packages [1]_.
 
     References
     ----------
@@ -1074,6 +1381,28 @@ class BayesAnova(Anova):
 class KruskalWallisTest(Anova):
     """Runs a Kruskal-Wallis test, similar to a non-parametric between subject anova for one variable.
 
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the `subject`, `dependent` and `between' and variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of (dependent ~ between + 1 | subject).
+        If used, the parsed formula will overrides the following arguments `dependent`, `between`, and
+        `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
 
     Raises
     ------
@@ -1120,6 +1449,32 @@ class KruskalWallisTest(Anova):
 class FriedmanTest(Anova):
     """Runs a Friedman test, similar to a non-parametric between subject anova for one variable.
 
+    Parameters
+    ----------
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the `subject`, `dependent` and `within` variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of (dependent ~ within | subject).
+        If used, the parsed formula will overrides the following arguments `dependent`, `within` and
+        `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
+
     Raises
     ------
     ValueError
@@ -1164,9 +1519,41 @@ class FriedmanTest(Anova):
 class AlignedRanksTest(Anova):
     """Run Aligned Ranks Transform - a non-parametric n-way ANOVA for a between, within or mixed design.
 
+    Parameters
+    ----------
+
+    Parameters
+    ----------
+    data :  pd.DataFrame
+        Containing the `subject`, `dependent`, `between' and `within` variables as columns.
+    formula : str, optional
+        An R-style formula describing the statistical model. In the form of (dependent ~ between + within | subject).
+        If used, the parsed formula will overrides the following arguments `dependent`, `between`, `within` and
+        `subject`.
+    dependent : key in data, optional
+        The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+        column data type should be numeric or a string that can be coerced to numeric.
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    between : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+        Identifies variables that are manipulated between different `subject` units (i.e., exogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `within` is
+        is specified.
+    within : key(s) in data (str or array-like), optional
+        The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+        Identifies variables that are manipulated within different `subject` units (i.e., endogenous variable).
+        Overriden by `formula` if specified. Not required if `formula` is not specified, given `between` is
+        is specified.
+    subject : str or key in data, optional
+        The name of the column identifying the sampling unit in the data (i.e., subject).
+        Overriden by `formula` if specified. Required if `formula` is not specified.
+    agg_func : str (name of pandas aggregation function) or callable, optional
+        Specified how to aggregate observations within sampling.
+
     Notes
     -----
-    R function - https://www.rdocumentation.org/packages/ART/versions/1.0/topics/aligned.rank.transform
+    R function - https://www.rdocumentation.org/packages/ART/versions/1.0/topics/aligned.rank.transform from the
+    ARTool package [1]_
 
     References
     ----------
@@ -1181,10 +1568,3 @@ class AlignedRanksTest(Anova):
             )
         )
 
-
-class PairwiseComparisons:
-    """To be implemented - runs all pairwise comparisons between groups
-    in a dataframe defines by a variable. Used for exploration"""
-
-    def __init__(self, data, correction_method):
-        raise NotImplementedError

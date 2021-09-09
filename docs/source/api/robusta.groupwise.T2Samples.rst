@@ -10,8 +10,10 @@ T2Samples
 
    .. autosummary::
 
-      ~T2Samples.get_text_report
+      ~T2Samples.report_text
+      ~T2Samples.reset
 
    .. rubric:: Methods Documentation
 
-   .. automethod:: get_text_report
+   .. automethod:: report_text
+   .. automethod:: reset

@@ -1,8 +1,8 @@
 """
 `groupwise` contains classes used to run statistical tests in which a central tendency measure (e.g., mean) of smples
- or populations is compared:
+or populations is compared:
 
- - Frequentist, parametric tests:
+- Frequentist, parametric tests:
     - Anova: Between/Within/Mixed n-way ANOVAs
     - T2Samples, T1Sample: Independent\Dependent samples t-test and One-Sample t-tests
 

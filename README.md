@@ -1,5 +1,5 @@
 # ROBUSTA 
-## R-Output-Based-Statistical-Analysis
+
 ### Author: [Eitan Hemed](mailto:Eitan.Hemed@gmail.com)
 
 robusta is a statistics package in Python3 providing an interface to 
@@ -27,7 +27,7 @@ import robusta as rst
     Initializing robusta. Please wait.
 
 
-    100%|██████████| 15/15 [00:21<00:00,  1.42s/it]
+    100%|██████████| 16/16 [00:15<00:00,  1.06it/s]
 
 
 
@@ -97,8 +97,6 @@ Here is a paired-samples t-test using the Students' sleep dataset previously loa
 m = rst.groupwise.T2Samples(
     data=rst.load_dataset('sleep'), independent='group', 
     dependent='extra', subject='ID', paired=True, tail='less')
-# Fit the data
-m.fit()
 
 # Dataframe format of the results
 md_print_df(m.report_table())
@@ -132,7 +130,6 @@ We can reset the models in order to update the model parameters and re-fit it. I
 
 ```python
 m.reset(paired=False, assume_equal_variance=True)
-m.fit()
 md_print_df(m.report_table())
 ```
 
@@ -145,11 +142,6 @@ md_print_df(m.report_table())
 
 
 
-### Supported statistical analyses
-
-#### Frequentist t-tests
-As shown above, see also `rst.t1sample`. Relatedly, see non-parametric variations of t-tests such as `wilcoxon_1sample` and `wilcoxon_2samples`.
-
 #### Bayesian t-tests
 `bayes_t2samples` and `bayes_t1sample` allow you to calculate Bayes factors or sample from the posterior distribution:
 
@@ -159,7 +151,7 @@ m = rst.groupwise.BayesT2Samples(
         data=rst.load_dataset('mtcars'), subject='dataset_rownames',
         dependent='mpg', independent='am', prior_scale=0.5,
         paired=False)
-m.fit()
+
 md_print_df(m.report_table())
 ```
 
@@ -197,11 +189,6 @@ md_print_df(m.report_table())
 
 
 
-
-```python
-
-```
-
 #### Analysis of variance
 use `Anova` to run between, within or mixed-design ANOVA, we load the anxiety dataset for the next demonstrations. 
 
@@ -237,7 +224,6 @@ md_print_df(anxiety.head())
 m = rst.groupwise.Anova(
         data=anxiety, subject='id',
         dependent='score', between='group', within='time')
-m.fit()
 md_print_df(m.report_table())
 ```
 
@@ -261,7 +247,6 @@ Similarly, we run the model usign only the between subject term (`group`). As th
 
 ```python
 m.reset(within=None)
-m.fit()
 md_print_df(m.report_table())
 ```
 
@@ -283,7 +268,6 @@ R and many other statistical packages (e.g., [statsmodels](https://www.statsmode
 
 ```python
 m.reset(formula='score~time|id')
-m.fit()
 md_print_df(m.report_table())
 
 ```
@@ -321,7 +305,6 @@ We can also run a similar, bayesian ANOVA using `BayesAnova` comparing the speci
 ```python
 m = rst.groupwise.BayesAnova(data=anxiety, within='time',
                         dependent='score', subject='id')
-m.fit()
 md_print_df(m.report_table())
 ```
 
@@ -346,11 +329,10 @@ robusta includes several other features that are either under development or pla
 - Sequential analysis plots (inspired by [JASP](https://jasp-stats.org/))
 
 ## Requirements
-
+TODO
 
 ## Documentation
-
-Mostly docstrings at the moment. Some are very outdated. But you can help by contributing to robusta in helping make one!
+TODO
 
 ## Contributing
 

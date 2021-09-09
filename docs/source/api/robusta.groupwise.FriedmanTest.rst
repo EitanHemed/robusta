@@ -1,7 +1,7 @@
-BayesAnova
-==========
+FriedmanTest
+============
 
 .. currentmodule:: robusta.groupwise
 
-.. autoclass:: BayesAnova
+.. autoclass:: FriedmanTest
    :show-inheritance:

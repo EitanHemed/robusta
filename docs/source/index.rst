@@ -6,23 +6,20 @@
 robusta
 *******
 
-robusta is an open-source statistical analysis package in Python. It uses
+robusta is an open-source statistical hypotheses testing package in Python. It uses
 `rpy2 <https://rpy2.github.io/>`_ as a backend. robusta features most of the
-common statistical tests such as:
- * t-tests and ANOVAs
- * correlation coefficients
- * regression and mixed modeling
+common hypotheses tests such as:
+
+* t-tests and ANOVAs
+
+* correlation coefficients
+
+* regression and mixed modeling
 
 Most tests include both parametric and non-parametric versions. Also,
 most tests include both Frequentist and Bayesian versions.
 
-For a full list see :ref:`API <api>`
-
-robusta is designed with two main use cases in mind
-   1. Interactive sessions (teaching, data exploration).
-   2. Pipelining (producing periodic reports, generating publication
-      ready textual reports).
-
+For a full list see :ref:`API <API>`
 
 ===================================
 

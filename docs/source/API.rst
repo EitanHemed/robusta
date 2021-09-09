@@ -1,13 +1,19 @@
-.. _api:
-
-*************
-API Reference
-*************
+.. _API:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   Statistical Tests
-   Additionals
+API reference
+=============
+
+Statistical tests
+--------------------
+:ref:`Group-based analyses <groupwise>`
+
+
+Miscellaneous
+----------------
+:ref:`Datasets <Datasets>`
+
 
 
