@@ -2,7 +2,7 @@
 
 .. currentmodule:: robusta
 
-Group-based analyses
+Group-based analysis
 ====================
 
 

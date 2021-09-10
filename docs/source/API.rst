@@ -8,7 +8,7 @@ API reference
 
 Statistical tests
 --------------------
-:ref:`Group-based analyses <groupwise>`
+:ref:`Group-based analysis <groupwise>`
 
 
 Miscellaneous
