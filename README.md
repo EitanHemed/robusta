@@ -12,12 +12,16 @@ and [RPY2](https://github.com/rpy2/rpy2).
 
 ## Installation
 
-Install with pip using `pip install robusta-stats`
+Install with pip using `pip install robusta-stats`, see also [Installation](https://eitanhemed.github.io/robusta/_build/html/Installation.html).
+
+## Documentation
+
+See [here](https://eitanhemed.github.io/robusta/_build/html/index.html).
 
 ## Usage
 
 ### Importing the library and loading data
-Let's import rosbusta. This could take up to 10 seconds as many R libraries are imported under the hood. If you begin with an empty R environment the first you import robusta should take 1-2 minutes, as some R dependencies will be installed.
+This could take ~15 seconds as many R libraries are imported under the hood. If you begin with an empty R environment the first you import robusta should take at least a couple of minutes, as R dependencies will be installed.
 
 
 ```python
@@ -27,7 +31,7 @@ import robusta as rst
     Initializing robusta. Please wait.
 
 
-    100%|██████████| 16/16 [00:15<00:00,  1.06it/s]
+    100%|██████████| 16/16 [00:14<00:00,  1.10it/s]
 
 
 
@@ -168,13 +172,12 @@ md_print_df(m.report_table())
 ```python
 # Test different null intervals and prior values:
 m.reset(prior_scale=0.1, null_interval=[0, 0.5])
-m.fit()
 print(f'{m.report_text()}\n\n')
 md_print_df(m.report_table())
 
 ```
 
-    Alt., r=0.1 0<d<0.5 [BF1:0 = 0.46, Error = 0.001%]. Alt., r=0.1 !(0<d<0.5) [BF1:0 = 32.76, Error = 0.001%]
+    Alt., r=0.1 [BF1:0 = 18.64, Error = 0.001%]
     
     
 
@@ -182,10 +185,9 @@ md_print_df(m.report_table())
 
 
 
-|  | model                  |        bf |       error |
-|---:|:-----------------------|----------:|------------:|
-|  0 | Alt., r=0.1 0<d<0.5    |  0.463808 | 1.6519e-06  |
-|  1 | Alt., r=0.1 !(0<d<0.5) | 32.7598   | 1.11604e-06 |
+|  | model       |      bf |       error |
+|---:|:------------|--------:|------------:|
+|  0 | Alt., r=0.1 | 18.6411 | 1.79878e-07 |
 
 
 
@@ -281,24 +283,6 @@ md_print_df(m.report_table())
 
 
 
-Analysis of variance also gives us access to estimated marginal means, as a post-estimation function. 
-
-
-```python
-md_print_df(m.get_margins('time'))
-```
-
-
-
-
-|  | time   |   emmean |       SE |      df |   lower.CL |   upper.CL |
-|---:|:-------|---------:|---------:|--------:|-----------:|-----------:|
-|  0 | t1     |  16.9156 | 0.261236 | 55.0262 |        nan |        nan |
-|  1 | t2     |  16.1356 | 0.261236 | 55.0262 |        nan |        nan |
-|  2 | t3     |  15.1978 | 0.261236 | 55.0262 |        nan |        nan |
-
-
-
 We can also run a similar, bayesian ANOVA using `BayesAnova` comparing the specified terms to the null model:
 
 
@@ -328,14 +312,8 @@ robusta includes several other features that are either under development or pla
 <ins>Planned<ins>
 - Sequential analysis plots (inspired by [JASP](https://jasp-stats.org/))
 
-## Requirements
-TODO
+## How to contribute
 
-## Documentation
-TODO
-
-## Contributing
-
-All help is welcomed, please contact [Eitan Hemed](mailto:Eitan.Hemed@gmail.com)
+All help is welcome, but currently there are no specific guidelines. Please contact [Eitan Hemed](mailto:Eitan.Hemed@gmail.com)
 
 
