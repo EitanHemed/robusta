@@ -41,7 +41,7 @@ jobs:
           python setup.py install
 
       - name: Import robusta
-      - uses: jannekem/run-python-script-action@v1
+        uses: jannekem/run-python-script-action@v1
         with:
           script: |
             import robusta as rst
@@ -54,8 +54,7 @@ jobs:
       #          pytest ./robusta/correlations/test/test_correlations.py
 
       - name: Build docs
-      - uses: actions/checkout@v1
-      - uses: ammaraskar/sphinx-action@master
+        uses: ammaraskar/sphinx-action@master
         with:
           docs-folder: "docs/"
           build-command: "sphinx-build source build"
