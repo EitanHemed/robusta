@@ -12,7 +12,7 @@ and [RPY2](https://github.com/rpy2/rpy2).
 
 ## Installation
 
-Install with pip using `pip install https://github.com/EitanHemed/robusta/archive/master.zip`
+Install with pip using `pip install robusta-stats`
 
 ## Usage
 
