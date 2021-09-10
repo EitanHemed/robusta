@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>T1Sample &#8212; robusta 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinxdoc.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">robusta 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">T1Sample</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="t1sample">
+<h1>T1Sample<a class="headerlink" href="#t1sample" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="robusta.groupwise.T1Sample">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">robusta.groupwise.</span></span><span class="sig-name descname"><span class="pre">T1Sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tail</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'x!=y'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.T1Sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="robusta.groupwise.T2Samples.html#robusta.groupwise.T2Samples" title="robusta.groupwise.models.T2Samples"><code class="xref py py-class docutils literal notranslate"><span class="pre">robusta.groupwise.models.T2Samples</span></code></a></p>
+<p>Run a Student one-sample t-test.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>key in data</em><em> or </em><em>NumPy array of values</em><em>, </em><em>optional</em>) – <cite>x</cite> can be used to specify. If str, <cite>x</cite> have to be key to column in <cite>data</cite>. If array-like, have to contain
+only objects that can be coerced into numeric. If not specified they are inferred based on the following
+arguments <cite>formula</cite>, and <cite>between</cite> or <cite>within</cite> (in this order).</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – Value of the population to compare the sample (<cite>x</cite>) to. Default is None. <cite>y</cite> is an alias.</p></li>
+<li><p><strong>y</strong> (<em>float</em><em>, </em><em>optional</em>) – <cite>y</cite> is an alias of <cite>mu</cite>, superseded by <cite>mu</cite>.</p></li>
+<li><p><strong>tail</strong> (<em>str</em><em>, </em><em>optional</em>) – Direction of the tested alternative hypothesis. Optional values are ‘x!=y’ (Two sided test; aliased
+by ‘two.sided’), ‘x&lt;y’ (lower tail; aliased by ‘less’) ‘x&gt;y’ (upper tail; aliased by ‘greater’).
+Whitespace characters in the input are ignored. Default value is ‘x != y’.</p></li>
+<li><p><strong>ci</strong> (<em>int</em>) – Width of confidence interval around the sample mean difference. Float between 0 and 100.
+Default value is 95.</p></li>
+<li><p><strong>independent</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data. The column could be either
+numeric or object, but can contain up to two unique values. Alias for <cite>within</cite> for paired, <cite>between</cite>
+for unpaired.</p></li>
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the subject, dependent and independent variables as columns.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An R-style formula describing the statistical model. In the form of
+(dependent ~ between + within | subject). If used, the parsed formula will overrides the following
+arguments <cite>dependent</cite>, <cite>between</cite>, <cite>within</cite> and <cite>subject</cite>.</p></li>
+<li><p><strong>dependent</strong> (<em>key in data</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+column data type should be numeric or a string that can be coerced to numeric.
+Overriden by <cite>formula</cite> if specified. Required if <cite>formula</cite> is not specified.</p></li>
+<li><p><strong>between</strong> (<em>key</em><em>(</em><em>s</em><em>) </em><em>in data</em><em> (</em><em>str</em><em> or </em><em>array-like</em><em>)</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+Identifies variables that are manipulated between different <cite>subject</cite> units (i.e., exogenous variable).
+Overriden by <cite>formula</cite> if specified. Not required if <cite>formula</cite> is not specified, given <cite>within</cite> is
+is specified.</p></li>
+<li><p><strong>within</strong> (<em>key</em><em>(</em><em>s</em><em>) </em><em>in data</em><em> (</em><em>str</em><em> or </em><em>array-like</em><em>)</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+Identifies variables that are manipulated within different <cite>subject</cite> units (i.e., endogenous variable).
+Overriden by <cite>formula</cite> if specified. Not required if <cite>formula</cite> is not specified, given <cite>between</cite> is
+is specified.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em> or </em><em>key in data</em><em>, </em><em>optional</em>) – The name of the column identifying the sampling unit in the data (i.e., subject).
+Overriden by <cite>formula</cite> if specified. Required if <cite>formula</cite> is not specified.</p></li>
+<li><p><strong>agg_func</strong> (<em>str</em><em> (</em><em>name of pandas aggregation function</em><em>) or </em><em>callable</em><em>, </em><em>optional</em>) – Specified how to aggregate observations within sampling.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>R function stats::t.test: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/t.test</p>
+<p>If <cite>x</cite> is left <cite>None</cite>, the sample values will be the values under the column in <cite>data</cite> that is specified by
+<cite>independent</cite>.</p>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/robusta.groupwise.T1Sample.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">robusta 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">T1Sample</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Eitan Hemed.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

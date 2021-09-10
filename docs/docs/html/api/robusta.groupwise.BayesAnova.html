@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>BayesAnova &#8212; robusta 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinxdoc.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">robusta 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">BayesAnova</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="bayesanova">
+<h1>BayesAnova<a class="headerlink" href="#bayesanova" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="robusta.groupwise.BayesAnova">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">robusta.groupwise.</span></span><span class="sig-name descname"><span class="pre">BayesAnova</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">which_models='withmain',</span> <span class="pre">iterations=10000,</span> <span class="pre">scale_prior_fixed='medium',</span> <span class="pre">scale_prior_random='nuisance',</span> <span class="pre">r_scale_effects=&lt;rpy2.rinterface_lib.sexp.NULLType</span> <span class="pre">object&gt;</span> <span class="pre">[RTYPES.NILSXP],</span> <span class="pre">multi_core=False,</span> <span class="pre">method='auto',</span> <span class="pre">no_sample=False,</span> <span class="pre">include_subject=False,</span> <span class="pre">**kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.BayesAnova" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="robusta.groupwise.Anova.html#robusta.groupwise.Anova" title="robusta.groupwise.models.Anova"><code class="xref py py-class docutils literal notranslate"><span class="pre">robusta.groupwise.models.Anova</span></code></a></p>
+<p>Run a between, within or mixed Bayesian ANOVA.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the <cite>subject</cite>, <cite>dependent</cite>, <cite>between’ and `within</cite> variables as columns.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An R-style formula describing the statistical model. In the form of (dependent ~ between + within | subject).
+If used, the parsed formula will overrides the following arguments <cite>dependent</cite>, <cite>between</cite>, <cite>within</cite> and
+<cite>subject</cite>.</p></li>
+<li><p><strong>dependent</strong> (<em>key in data</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+column data type should be numeric or a string that can be coerced to numeric.
+Overriden by <cite>formula</cite> if specified. Required if <cite>formula</cite> is not specified.</p></li>
+<li><p><strong>between</strong> (<em>key</em><em>(</em><em>s</em><em>) </em><em>in data</em><em> (</em><em>str</em><em> or </em><em>array-like</em><em>)</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+Identifies variables that are manipulated between different <cite>subject</cite> units (i.e., exogenous variable).
+Overriden by <cite>formula</cite> if specified. Not required if <cite>formula</cite> is not specified, given <cite>within</cite> is
+is specified.</p></li>
+<li><p><strong>within</strong> (<em>key</em><em>(</em><em>s</em><em>) </em><em>in data</em><em> (</em><em>str</em><em> or </em><em>array-like</em><em>)</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable in the data (i.e., predictor variable). The
+Identifies variables that are manipulated within different <cite>subject</cite> units (i.e., endogenous variable).
+Overriden by <cite>formula</cite> if specified. Not required if <cite>formula</cite> is not specified, given <cite>between</cite> is
+is specified.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em> or </em><em>key in data</em><em>, </em><em>optional</em>) – The name of the column identifying the sampling unit in the data (i.e., subject).
+Overriden by <cite>formula</cite> if specified. Required if <cite>formula</cite> is not specified.</p></li>
+<li><p><strong>agg_func</strong> (<em>str</em><em> (</em><em>name of pandas aggregation function</em><em>) or </em><em>callable</em><em>, </em><em>optional</em>) – Specified how to aggregate observations within sampling.</p></li>
+<li><p><strong>which_models</strong> (<em>str</em><em>, </em><em>optional</em>) – Setting which_models to ‘all’ will test all models that can be
+created by including or not including a main effect or interaction.
+‘top’ will test all models that can be created by removing or
+leaving in a main effect or interaction term from the full model.
+‘bottom’ creates models by adding single factors or interactions to
+the null model. ‘withmain’ will test all models, with the constraint
+that if an interaction is included, the corresponding main effects
+are also included. Default value is ‘withmain’.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of iterations used to estimate Bayes factor. Default value is 10000.</p></li>
+<li><p><strong>scale_prior_fixed</strong> (<em>[</em><em>float</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – <p>Controls the scale of the prior distribution for fixed factors.
+Default value is 1.0  which yields a standard Cauchy prior.
+It is also possible to pass ‘medium’, ‘wide’ or ‘ultrawide’ as input</p>
+<blockquote>
+<div><p>arguments instead of a float (matching the values of</p>
+</div></blockquote>
+<p><span class="math notranslate nohighlight">\(\frac{\sqrt{2}}{2}, 1, \sqrt{2}\)</span>, respectively).</p>
+</p></li>
+<li><p><strong>scale_prior_random</strong> (<em>[</em><em>float</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Similar to <cite>scale_prior_fixed</cite> but applies to random factors and can
+except all values specified above and also ‘nuisance’ - variance
+in the data that may stem from variables which are irrelevant to the
+model, such as participants. Default value is ‘nuisance’.
+r_scale_effects=pyr.rinterface.NULL,</p></li>
+<li><p><strong>multi_core</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to use multiple cores for estimation. Not available on Windows. Default value is False.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>The method used to estimate the Bayes factor depends on the method</dt><dd><p>argument. “simple” is most accurate for small to moderate sample
+sizes, and uses the Monte Carlo sampling method described in Rouder
+et al. (2012). “importance” uses an importance sampling algorithm
+with an importance distribution that is multivariate normal on
+log(g). “laplace” does not sample, but uses a Laplace approximation
+to the integral. It is expected to be more accurate for large sample
+sizes, where MC sampling is slow. If method=”auto”, then an initial
+run with both samplers is done, and
+the sampling method that yields the least-variable samples is
+chosen. The number of initial test iterations is determined by
+options(BFpretestIterations).</p>
+</dd>
+<dt>no_sample<span class="classifier">bool, optional</span></dt><dd><p>Will prevent sampling when possible (i.e., rely on calculation of
+BayesFactor). Default value is False. Currently <cite>True</cite> is not
+implemented and may lead to an error.
+TODO test how we would handle <cite>no_sample = True</cite></p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>R function anovaBF: <a class="reference external" href="https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/anovaBF">https://www.rdocumentation.org/packages/BayesFactor/versions/0.9.12-4.2/topics/anovaBF</a>
+from the BayesFactor packages <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Morey, R. D., Rouder, J. N., Jamil, T., &amp; Morey, M. R. D. (2015). Package ‘bayesfactor’.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/robusta.groupwise.BayesAnova.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">robusta 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">BayesAnova</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Eitan Hemed.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

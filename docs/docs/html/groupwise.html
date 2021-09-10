@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Group-based analyses &#8212; robusta 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">robusta 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Group-based analyses</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="group-based-analyses">
+<span id="groupwise"></span><h1>Group-based analyses<a class="headerlink" href="#group-based-analyses" title="Permalink to this headline">¶</a></h1>
+<section id="one-sample">
+<h2>One-Sample<a class="headerlink" href="#one-sample" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/robusta.groupwise.T1Sample.html#robusta.groupwise.T1Sample" title="robusta.groupwise.T1Sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.T1Sample</span></code></a>(tail[, x, mu, y])</p></td>
+<td><p>Run a Student one-sample t-test.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="api/robusta.groupwise.BayesT1Sample.html#robusta.groupwise.BayesT1Sample" title="robusta.groupwise.BayesT1Sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.BayesT1Sample</span></code></a>([null_interval])</p></td>
+<td><p>Run a Bayesian One-sample t-test.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/robusta.groupwise.Wilcoxon1Sample.html#robusta.groupwise.Wilcoxon1Sample" title="robusta.groupwise.Wilcoxon1Sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.Wilcoxon1Sample</span></code></a>(p_exact, …)</p></td>
+<td><p>Run a Wilcoxon signed rank test - non-parametric one-sample t-test alternative.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="two-samples">
+<h2>Two-Samples<a class="headerlink" href="#two-samples" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/robusta.groupwise.T2Samples.html#robusta.groupwise.T2Samples" title="robusta.groupwise.T2Samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.T2Samples</span></code></a>(paired, x, int, …)</p></td>
+<td><p>Run a two-samples t-test, either dependent or independent.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="api/robusta.groupwise.BayesT2Samples.html#robusta.groupwise.BayesT2Samples" title="robusta.groupwise.BayesT2Samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.BayesT2Samples</span></code></a>([null_interval])</p></td>
+<td><p>Run a Bayesian two-samples t-test, either dependent or independent.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/robusta.groupwise.Wilcoxon2Samples.html#robusta.groupwise.Wilcoxon2Samples" title="robusta.groupwise.Wilcoxon2Samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.Wilcoxon2Samples</span></code></a>(p_exact, …)</p></td>
+<td><p>Run a Wilcoxon rank sum test - non-parametric independent-samples t-test alternative.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="two-samples-or-more-anova">
+<h2>Two-Samples or more (ANOVA)<a class="headerlink" href="#two-samples-or-more-anova" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/robusta.groupwise.Anova.html#robusta.groupwise.Anova" title="robusta.groupwise.Anova"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.Anova</span></code></a>(**kwargs)</p></td>
+<td><p>Run a between, within or mixed frequentist ANOVA.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="api/robusta.groupwise.BayesAnova.html#robusta.groupwise.BayesAnova" title="robusta.groupwise.BayesAnova"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.BayesAnova</span></code></a>([which_models, …])</p></td>
+<td><p>Run a between, within or mixed Bayesian ANOVA.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/robusta.groupwise.FriedmanTest.html#robusta.groupwise.FriedmanTest" title="robusta.groupwise.FriedmanTest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.FriedmanTest</span></code></a>(**kwargs)</p></td>
+<td><p>Runs a Friedman test, similar to a non-parametric between subject anova for one variable.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="api/robusta.groupwise.KruskalWallisTest.html#robusta.groupwise.KruskalWallisTest" title="robusta.groupwise.KruskalWallisTest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.KruskalWallisTest</span></code></a>(**kwargs)</p></td>
+<td><p>Runs a Kruskal-Wallis test, similar to a non-parametric between subject anova for one variable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="api/robusta.groupwise.AlignedRanksTest.html#robusta.groupwise.AlignedRanksTest" title="robusta.groupwise.AlignedRanksTest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">robusta.groupwise.AlignedRanksTest</span></code></a>(**kwargs)</p></td>
+<td><p>Run Aligned Ranks Transform - a non-parametric n-way ANOVA for a between, within or mixed design.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Group-based analyses</a><ul>
+<li><a class="reference internal" href="#one-sample">One-Sample</a></li>
+<li><a class="reference internal" href="#two-samples">Two-Samples</a></li>
+<li><a class="reference internal" href="#two-samples-or-more-anova">Two-Samples or more (ANOVA)</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/groupwise.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">robusta 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Group-based analyses</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Eitan Hemed.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

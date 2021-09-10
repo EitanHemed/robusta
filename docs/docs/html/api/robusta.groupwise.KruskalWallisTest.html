@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>KruskalWallisTest &#8212; robusta 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinxdoc.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">robusta 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">KruskalWallisTest</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="kruskalwallistest">
+<h1>KruskalWallisTest<a class="headerlink" href="#kruskalwallistest" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="robusta.groupwise.KruskalWallisTest">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">robusta.groupwise.</span></span><span class="sig-name descname"><span class="pre">KruskalWallisTest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#robusta.groupwise.KruskalWallisTest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="robusta.groupwise.Anova.html#robusta.groupwise.Anova" title="robusta.groupwise.models.Anova"><code class="xref py py-class docutils literal notranslate"><span class="pre">robusta.groupwise.models.Anova</span></code></a></p>
+<p>Runs a Kruskal-Wallis test, similar to a non-parametric between subject anova for one variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>pd.DataFrame</em>) – Containing the <cite>subject</cite>, <cite>dependent</cite> and <a href="#id1"><span class="problematic" id="id2">`</span></a>between’ and variables as columns.</p></li>
+<li><p><strong>formula</strong> (<em>str</em><em>, </em><em>optional</em>) – An R-style formula describing the statistical model. In the form of (dependent ~ between + 1 | subject).
+If used, the parsed formula will overrides the following arguments <cite>dependent</cite>, <cite>between</cite>, and
+<cite>subject</cite>.</p></li>
+<li><p><strong>dependent</strong> (<em>key in data</em><em>, </em><em>optional</em>) – The name of the column identifying the dependent variable (i.e., response variable) in the data. The
+column data type should be numeric or a string that can be coerced to numeric.
+Overriden by <cite>formula</cite> if specified. Required if <cite>formula</cite> is not specified.</p></li>
+<li><p><strong>between</strong> (<em>key</em><em>(</em><em>s</em><em>) </em><em>in data</em><em> (</em><em>str</em><em> or </em><em>array-like</em><em>)</em><em>, </em><em>optional</em>) – The name of the column identifying the independent variable (i.e., predictor variable) in the data.
+Identifies variables that are manipulated between different <cite>subject</cite> units (i.e., exogenous variable).
+Overriden by <cite>formula</cite> if specified. Not required if <cite>formula</cite> is not specified, given <cite>within</cite> is
+is specified.</p></li>
+<li><p><strong>subject</strong> (<em>str</em><em> or </em><em>key in data</em><em>, </em><em>optional</em>) – The name of the column identifying the sampling unit in the data (i.e., subject).
+Overriden by <cite>formula</cite> if specified. Required if <cite>formula</cite> is not specified.</p></li>
+<li><p><strong>agg_func</strong> (<em>str</em><em> (</em><em>name of pandas aggregation function</em><em>) or </em><em>callable</em><em>, </em><em>optional</em>) – Specified how to aggregate observations within sampling.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If a within-subject variable has been specified using <cite>within</cite> argument or formula.</p></li>
+<li><p><strong>ValueError</strong> – If more than one between-subjects variable was specified using <cite>between</cite> argument or formula.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>R function - kruskal.test: <a class="reference external" href="https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/kruskal.test">https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/kruskal.test</a></p>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/robusta.groupwise.KruskalWallisTest.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">robusta 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">KruskalWallisTest</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Eitan Hemed.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>
