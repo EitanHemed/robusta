@@ -8,6 +8,7 @@ pyrio is in charge of the following:
     - Starting an R session.
     - Transferring objects into the R environment and back.
 """
+from os import cpu_count
 import warnings
 from tqdm import tqdm
 from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface
@@ -35,6 +36,7 @@ required_r_libraries = ['base', 'datasets', 'stats', 'utils', 'generics', 'broom
 class PyRIO:
     # TODO - find out if we can use an existing singelton implementation
     instances_count = 0  # This is a static counter
+    n_cpus = cpu_count()
 
     required_packs = required_r_libraries
 
@@ -78,7 +80,7 @@ class PyRIO:
 
     def _install_r_package(self, pack):
         warnings.warn(f'Installing: {pack}...')
-        self.rpackages.utils.install_packages(pack, dependencies=True)
+        self.rpackages.utils.install_packages(pack, dependencies=True, Ncpus=self.n_cpus)
 
     def _get_r_utils(self):
         setattr(self.rpackages, 'utils', self._import_r_package('utils'))

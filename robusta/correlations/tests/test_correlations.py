@@ -4,13 +4,13 @@ import pytest
 from rpy2.robjects import r
 
 import robusta as rst
-# from ..correlations_models import _PairwiseCorrelationModel, _TriplewiseCorrelationModel
+
 from robusta.correlations.models import (_PairwiseCorrelation,
                                          _TriplewiseCorrelation)
 
 BIVARIATE_CORRELEATION_METHODS = ['kendall', 'spearman', 'pearson']
 
-ATTITUDE_DATA, MTCARS_DATA, IRIS_DATA = map(rst.datasets.load_dataset,
+ATTITUDE_DATA, MTCARS_DATA, IRIS_DATA = map(rst.load_dataset,
                                             ['attitude', 'mtcars', 'iris'])
 TRIPLEWISE_CORRS_XYZ = dict(
     x=(500, 550, 450, 400, 600, 650, 700, 550, 650, 550),
@@ -21,16 +21,16 @@ TRIPLEWISE_CORRS_XYZ = dict(
 def test_pairwise_correlation_faulty_input():
     with pytest.raises(KeyError):
         _PairwiseCorrelation(
-            x='x', y='y', data=pd.DataFrame()).fit()
+            x='x', y='y', data=pd.DataFrame())
     with pytest.raises(ValueError):
         _PairwiseCorrelation(
             x='x', y='y', data=None
-        ).fit()
+        )
     with pytest.raises(ValueError):
         _PairwiseCorrelation(
             x=np.random.randint(0, 10, 20),
             y=np.random.randint(0, 10, 19), data=None
-        ).fit()
+        )
 
     # X is string, y is an array
     with pytest.raises(ValueError):
@@ -38,7 +38,7 @@ def test_pairwise_correlation_faulty_input():
             x='rating',
             y=np.random.randint(0, 10, 19),
             data=ATTITUDE_DATA
-        ).fit()
+        )
 
     # Input strings but both are not in the data
     with pytest.raises(ValueError):
@@ -46,56 +46,33 @@ def test_pairwise_correlation_faulty_input():
             X='SCORE',
             y='SALES',
             data=ATTITUDE_DATA
-        ).fit()
+        )
 
 
 def test_chi_square_output():
-    m = rst.api.chisquare(x='am', y='vs', data=MTCARS_DATA,
+    m = rst.correlations.models.ChiSquare(x='am', y='vs', data=MTCARS_DATA,
                           apply_correction=True)
-    res = m.fit()
+
     r_res = r(
         """
         library(broom) 
         data.frame(tidy(chisq.test(table(mtcars[ , c('am', 'vs')]))))
         """
     )
-    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res)
-
-
-# def test_chisquare_get_text():
-#     with pytest.raises(NotImplementedError):
-#         nonsignificant_res = rst.ChiSquare(x='am', y='vs',
-#                                            data=MTCARS_DATA
-#                                            ).get_text()
-#         self.assertEqual(
-#             nonsignificant_res,
-#             'A Chi-Square test of independence shown '
-#             'no significant association between am and '
-#             'vs [χ²(1) = 0.35, p = 0.556].')
-#
-#         significant_res = rst.ChiSquare(x='gear', y='vs',
-#                                         data=MTCARS_DATA
-#                                         ).get_text()
-#         self.assertEqual(
-#             significant_res,
-#             'A Chi-Square test of independence shown '
-#             'a significant association between gear and '
-#             'vs [χ²(2) = 12.22, p = 0.002].')
+    pd.testing.assert_frame_equal(m._results._get_r_output_df(), r_res)
 
 def test_correlation_faulty_input():
     # Faulty method argument
     with pytest.raises(ValueError):
         # Incorrect method specified
-        rst.api.correlation(data=ATTITUDE_DATA, x='rating', y='advance',
-                            method='fisher').fit()
-
+        rst.correlations.models.Correlation(data=ATTITUDE_DATA, x='rating', y='advance',
+                            method='fisher')
 
 @pytest.mark.parametrize('method', BIVARIATE_CORRELEATION_METHODS)
 def test_correleation_output(method):
-    m = rst.api.correlation(data=IRIS_DATA,
+    m = rst.correlations.models.Correlation(data=IRIS_DATA,
                             x='Sepal.Length', y='Sepal.Width',
                             method=method)
-    res = m.fit()
 
     r_res = r(f"""
     library(broom)
@@ -103,26 +80,26 @@ def test_correleation_output(method):
         method='{method}'
     ))) 
     """)
-    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res)
+    pd.testing.assert_frame_equal(m._results._get_r_output_df(), r_res)
 
 
 def test_triplewise_correlation_z_argument():
     with pytest.raises(ValueError):
         _TriplewiseCorrelation(
             x='x', y='y', z='z', data=None, method='pearson'
-        ).fit()
+        )
 
     with pytest.raises(ValueError):
         _TriplewiseCorrelation(
             x=[1, 2, 3], y=[4, 5, 2], z=[0, 2], data=None, method='pearson'
-        ).fit()
+        )
 
     with pytest.raises(KeyError):
         _TriplewiseCorrelation(
             x='x', y='y', z='ZZ', data=pd.DataFrame(
                 data=np.random.rand(10, 3), columns=['x', 'y', 'z']
             )
-        ).fit()
+        )
 
     with pytest.raises(ValueError):
         _TriplewiseCorrelation(
@@ -133,9 +110,8 @@ def test_triplewise_correlation_z_argument():
 
 
 def test_partial_correleation_output():
-    m = rst.api.part_correlation(method='pearson',
+    m = rst.correlations.models.PartCorrelation(method='pearson',
                                  **TRIPLEWISE_CORRS_XYZ)
-    res = m.fit()
 
     r_res = r(
         """
@@ -146,17 +122,13 @@ def test_partial_correleation_output():
         spcor.test(c{x}, c{y}, c{z})
         """.format(**TRIPLEWISE_CORRS_XYZ)
     )
-    # The method column is returned as a categorical type
-    # r_res['Method'] = r_res['Method'].astype(str).values
 
-    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res)
+    pd.testing.assert_frame_equal(m._results._get_r_output_df(), r_res)
 
 
 def test_part_output():
-    m = rst.api.partial_correlation(**TRIPLEWISE_CORRS_XYZ, method='pearson'
+    m = rst.correlations.models.PartialCorrelation(**TRIPLEWISE_CORRS_XYZ, method='pearson'
                                     )
-    res = m.fit()
-
     r_res = r(
         """
         # Now in R...
@@ -172,13 +144,12 @@ def test_part_output():
     # The method column is returned as a categorical type
     # r_res['Method'] = r_res['Method'].astype(str).values
 
-    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res, check_dtype=False)
+    pd.testing.assert_frame_equal(m._results._get_r_output_df(), r_res, check_dtype=False)
 
 
 def test_bayes_correleation():
-    m = rst.api.bayes_correlation(x='Sepal.Width', y='Sepal.Length',
+    m = rst.correlations.models.BayesCorrelation(x='Sepal.Width', y='Sepal.Length',
                                   data=IRIS_DATA)
-    res = m.fit()
     r_res = r(
         """
         library(BayesFactor)
@@ -189,4 +160,4 @@ def test_bayes_correleation():
             x = iris$Sepal.Width))[, c('bf', 'error')], 'model')
         """
     )
-    pd.testing.assert_frame_equal(res._get_r_output_df(), r_res)
+    pd.testing.assert_frame_equal(m._results._get_r_output_df(), r_res)

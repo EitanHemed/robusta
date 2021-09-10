@@ -5,6 +5,6 @@ conda activate rst_tst
 
 # conda doesn't have the most recent setuptools and then we can't find
 # pytest for some reason, so we also need to run:
-pip install --update setuptools
+pip install setuptools
 # then CD to where setup.py is and run
 pip install -e .

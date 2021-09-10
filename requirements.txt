@@ -5,9 +5,5 @@ tzlocal
 pytest~=6.2.3
 pytest-cov
 tqdm~=4.61.1
-
-
 numpy~=1.20.2
-robusta~=0.0.1
-pyparsing~=2.4.7
-setuptools~=52.0.0
+

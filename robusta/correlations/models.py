@@ -18,7 +18,7 @@ __all__ = ['ChiSquare', 'Correlation', 'PartCorrelation',
 CORRELATION_METHODS = ('pearson', 'spearman', 'kendall')
 DEFAULT_CORRELATION_METHOD = 'pearson'
 REDUNDANT_BAYES_RESULT_COLS = ['time', 'code']
-DEFAULT_CORRELATION_NULL_INTERVAL = pyr.rinterface.NULL  # [-1, 1]
+DEFAULT_CORRELATION_NULL_INTERVAL = pyr.rinterface.NULL
 
 
 class _PairwiseCorrelation(base.BaseModel):
@@ -36,6 +36,8 @@ class _PairwiseCorrelation(base.BaseModel):
     data : pd.DataFrame, optional
         Dataframe of data to test, with the columns specieid in `x` and `y`.
         Each of the relevant columns must contain only two unique values.
+    fit : bool, optional
+        Whether to run the statistical test upon object creation. Default is True.
 
 
     Raises
@@ -55,14 +57,20 @@ class _PairwiseCorrelation(base.BaseModel):
                  x: typing.Iterable = None,
                  y: typing.Iterable = None,
                  data: typing.Optional[pd.DataFrame] = None,
+                 fit: bool = True,
                  nan_action: str = 'raise',
                  **kwargs):
         self.data = data
         self.x = x
         self.y = y
         self.nan_action = nan_action
+        self._results = None
         self._fitted = False
+
         super().__init__()
+
+        if fit:
+            self.fit()
 
     def _pre_process(self):
         """
@@ -119,9 +127,24 @@ class _PairwiseCorrelation(base.BaseModel):
                                             inplace=True)
 
     def fit(self):
-        self._pre_process()
+        """
+        Fit the statistical model.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RunTimeError
+            If model was already fitted, raises RunTimeError.
+        """
+        if self._fitted is True:
+            raise RuntimeError("Model was already run. Use `reset()` method"
+                               " prior to calling `fit()` again!")
         self._fitted = True
-        return self._analyze()
+        self._pre_process()
+        self._analyze()
 
     def _analyze(self):
         raise NotImplementedError
@@ -132,9 +155,30 @@ class _PairwiseCorrelation(base.BaseModel):
     def _set_model_controllers(self):
         pass
 
-    def reset(self, **kwargs):
+    def reset(self, refit=True, **kwargs):
+        """
+        Updates the Model object state and removes current test results.
+
+        Parameters
+        ----------
+        refit
+            Whether to fit the statistical test after resetting parameters. Default is True.
+        kwargs
+            Any keyword arguments of parameters to be updated.
+
+        Returns
+        -------
+        None
+        """
+
+        # What else?
         vars(self).update(**kwargs)
+
         self._fitted = False
+        self._results = None
+
+        if refit is True:
+            self.fit()
 
 
 # @custom_inherit.doc_inherit(_PairwiseCorrelationModel, "numpy_with_merge")
@@ -181,7 +225,7 @@ class ChiSquare(_PairwiseCorrelation):
 
     def _analyze(self):
         """Runs a Chi-Square test"""
-        return results.ChiSquareResults(
+        self._results = results.ChiSquareResults(
             pyr.rpackages.stats.chisq_test(
                 self.crosstabulated_data,
                 correct=self.apply_correction))
@@ -206,14 +250,13 @@ class Correlation(_PairwiseCorrelation):
         super().__init__(**kwargs)
 
     def _validate_input_data(self):
-        print(f'here - {self.method}')
         if self.method not in CORRELATION_METHODS:
             raise ValueError('Invalid correlation coefficient method - specify'
                              ' either `pearson`, `spearman` or `kendall`')
         super()._validate_input_data()
 
     def _analyze(self):
-        return results.CorrelationResults(
+        self._results = results.CorrelationResults(
             pyr.rpackages.stats.cor_test(
                 *self._input_data.values.T,
                 method=self.method,
@@ -292,7 +335,7 @@ class PartialCorrelation(_TriplewiseCorrelation):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        return results.PartialCorrelationResults(
+        self._results = results.PartialCorrelationResults(
             pyr.rpackages.ppcor.pcor_test(
                 *self._input_data.values.T,
                 method=self.method))
@@ -313,7 +356,7 @@ class PartCorrelation(_TriplewiseCorrelation):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        return results.PartCorrelationResults(
+        self._results = results.PartCorrelationResults(
             pyr.rpackages.ppcor.spcor_test(
                 *self._input_data.values.T,
                 method=self.method))
@@ -366,7 +409,7 @@ class BayesCorrelation(_PairwiseCorrelation):
         super().__init__(**kwargs)
 
     def _analyze(self):
-        return results.BayesCorrelationResults(
+        self._results = results.BayesCorrelationResults(
             pyr.rpackages.BayesFactor.correlationBF(
                 *self._input_data.values.T,
                 nullInterval=self.null_interval,
