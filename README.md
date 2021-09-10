@@ -7,7 +7,8 @@ many common statistical analyses, performed using through [R](https://www.r-proj
 and [RPY2](https://github.com/rpy2/rpy2).  
 
 
-**PLEASE NOTE** robusta is under active development and is supplied as-is with no guarantees.
+**PLEASE NOTE** robusta is under active development and is supplied as-is with no guarantees. 
+Also, robusta is currently supported on Linux. 
 
 
 ## Installation
@@ -17,7 +18,9 @@ Install with pip using `pip install robusta-stats`
 ## Usage
 
 ### Importing the library and loading data
-Let's import rosbusta. This could take up to 10 seconds as many R libraries are imported under the hood. If you begin with an empty R environment the first you import robusta should take 1-2 minutes, as some R dependencies will be installed.
+This could take 10-15 seconds as many R libraries are imported under the hood.
+If this is the first time you are importing robusta, then the first import could take a while (more on Linux, 
+see Installation for more details).
 
 
 ```python

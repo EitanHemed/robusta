@@ -40,18 +40,18 @@ jobs:
         run: |
           python setup.py install
 
-      -name: Import robusta
+      - name: Import robusta
       - uses: jannekem/run-python-script-action@v1
         with:
           script: |
             import robusta as rst
 
-#      - name: Run tests
-#        run: |
-#          pytest ./robusta/tests
-#          pytest ./robusta/groupwise/tests
-#          pytest ./robusta/regressions/tests/test_regressions.py
-#          pytest ./robusta/correlations/test/test_correlations.py
+      #      - name: Run tests
+      #        run: |
+      #          pytest ./robusta/tests
+      #          pytest ./robusta/groupwise/tests
+      #          pytest ./robusta/regressions/tests/test_regressions.py
+      #          pytest ./robusta/correlations/test/test_correlations.py
 
       - name: Build docs
       - uses: actions/checkout@v1
