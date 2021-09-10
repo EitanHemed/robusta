@@ -34,26 +34,28 @@ jobs:
 
       - uses: actions/setup-python@v2
 
-#      - uses: syphar/restore-virtualenv@v1
-#        id: cache-virtualenv
-#        with:
-#          requirement_files: requirements.txt  # this is optional
-#
-#      - uses: syphar/restore-pip-download-cache@v1
-#        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
-
-      # the package installation will only be executed when the
-      # requirements-files have changed.
       - run: pip install -r requirements.txt
-#        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
 
       - name: Install package
         run: |
           python setup.py install
 
-      - name: Run tests
-        run: |
-          pytest ./robusta/tests
-          pytest ./robusta/groupwise/tests
+      -name: Import robusta
+      - uses: jannekem/run-python-script-action@v1
+        with:
+          script: |
+            import robusta as rst
+
+#      - name: Run tests
+#        run: |
+#          pytest ./robusta/tests
+#          pytest ./robusta/groupwise/tests
 #          pytest ./robusta/regressions/tests/test_regressions.py
 #          pytest ./robusta/correlations/test/test_correlations.py
+
+      - name: Build docs
+      - uses: actions/checkout@v1
+      - uses: ammaraskar/sphinx-action@master
+        with:
+          docs-folder: "docs/"
+          build-command: "sphinx-build source build"

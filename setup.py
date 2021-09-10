@@ -8,7 +8,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name="robusta_stats",
-    version="0.0.6",
+    version="0.0.2",
     author="Eitan Hemed",
     author_email="Eitan.Hemed@gmail.com",
     description="Statistical analysis package in Python",
