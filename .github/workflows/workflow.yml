@@ -41,10 +41,8 @@ jobs:
           python setup.py install
 
       - name: Import robusta
-        uses: jannekem/run-python-script-action@v1
-        with:
-          script: |
-            import robusta as rst
+        run: |
+          python -c "import robusta as rst"
 
       #      - name: Run tests
       #        run: |
