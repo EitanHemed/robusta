@@ -52,9 +52,14 @@ def _load(dataset_name: str, package_name: str = None):
         available = get_available_datasets()
         available = available.loc[available['Item'] == dataset_name,
                                   'Package']
-        if available.shape[0] != 1:
+        if available.shape[0] == 0:
             # TODO Not really a viable case but we should test for this.
-            raise RuntimeError('More than one data set was found.')
+            raise RuntimeError('No matching data set was found.')
+        if available.shape[0] > 1:
+            # TODO Not really a viable case but we should test for this.
+            raise RuntimeError(f'More than one data set was found for the entry {dataset_name}. '
+                               'Use the `package_name` argument to specify the dataset you want to load: '
+                               f"{', '.join(available.values)}")
         else:
             package_name = available.item()
 
