@@ -8,9 +8,16 @@ pyrio is in charge of the following:
     - Starting an R session.
     - Transferring objects into the R environment and back.
 """
-from os import cpu_count
+import os
 import warnings
 from tqdm import tqdm
+from rpy2.situation import get_r_home
+
+# Patch for Windows, see https://github.com/rpy2/rpy2/issues/796#issuecomment-872364985
+if os.name == 'nt':
+    os.environ['R_HOME'] = get_r_home()
+
+# Now we can import robjects
 from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface
 from rpy2.robjects.conversion import localconverter
 
@@ -23,20 +30,20 @@ numpy2ri.activate()
 #  Avoid re-imports (e.g., use a set).
 
 required_r_libraries = ['base', 'datasets', 'stats', 'utils', 'generics', 'broom',
-                       # 'dplyr',  'tibble', 'tidyr', 'Matrix',
+                        # 'dplyr',  'tibble', 'tidyr', 'Matrix',
                         # 'backports',
                         'afex', 'BayesFactor',
-                         'datarium',
-                         'effsize', 'emmeans', 'lme4',
-                          'ppcor', 'psych',
-                          'ARTool', 'rstatix'
-                          ]
+                        'datarium',
+                        'effsize', 'emmeans', 'lme4',
+                        'ppcor', 'psych',
+                        'ARTool', 'rstatix'
+                        ]
 
 
 class PyRIO:
     # TODO - find out if we can use an existing singelton implementation
     instances_count = 0  # This is a static counter
-    n_cpus = cpu_count()
+    n_cpus = os.cpu_count()
 
     required_packs = required_r_libraries
 
