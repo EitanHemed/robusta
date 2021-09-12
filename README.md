@@ -20,6 +20,10 @@ See [here](https://eitanhemed.github.io/robusta/_build/html/index.html).
 
 ## Usage
 
+#### For the most recent, thorough tutorial in the different features of robusta, head on to [Google Colab](https://colab.research.google.com/drive/1jmwYpEGcpFr4CF6ZA5HMiQ2LcHbZqzO_?usp=sharing). 
+
+Some of the features are shown below.
+
 ### Importing the library and loading data
 This could take ~15 seconds as many R libraries are imported under the hood. If you begin with an empty R environment the first you import robusta should take at least a couple of minutes, as R dependencies will be installed.
 
@@ -31,21 +35,20 @@ import robusta as rst
     Initializing robusta. Please wait.
 
 
-    100%|██████████| 16/16 [00:14<00:00,  1.10it/s]
+    100%|██████████| 16/16 [00:14<00:00,  1.07it/s]
 
+
+First, define a helper function used to pretty-print output of dataframes when converting the notebook to .md ([credit](https://gist.github.com/rgerkin/af5b27a0e30531c30f2bf628aa41a553)).
 
 
 ```python
-# Define a helper function, to pretty-print output of DFs when converting the notebook to .md
-# https://gist.github.com/rgerkin/af5b27a0e30531c30f2bf628aa41a553
 from tabulate import tabulate
 import IPython.display as d
 
 def md_print_df(df):
     md = tabulate(df, headers='keys', tablefmt='pipe')
     md = md.replace('|    |','| %s |' % (df.index.name if df.index.name else ''))
-    result = d.Markdown(md)
-    return result
+    return d.Markdown(md)
 ```
 
 First off, we need data. Using robusta we can import R built-in and some imported datasets. You can get a full list of the datasets, similarly to calling to `data()` with no input arguments in R.
@@ -133,7 +136,7 @@ We can reset the models in order to update the model parameters and re-fit it. I
 
 
 ```python
-m.reset(paired=False, assume_equal_variance=True)
+m.reset(paired=False, assume_equal_variance=True, refit=True)
 md_print_df(m.report_table())
 ```
 
@@ -171,7 +174,7 @@ md_print_df(m.report_table())
 
 ```python
 # Test different null intervals and prior values:
-m.reset(prior_scale=0.1, null_interval=[0, 0.5])
+m.reset(prior_scale=0.1, null_interval=[0, 0.5], refit=True)
 print(f'{m.report_text()}\n\n')
 md_print_df(m.report_table())
 
@@ -248,7 +251,7 @@ Similarly, we run the model usign only the between subject term (`group`). As th
 
 
 ```python
-m.reset(within=None)
+m.reset(within=None, refit=True)
 md_print_df(m.report_table())
 ```
 
@@ -269,7 +272,7 @@ R and many other statistical packages (e.g., [statsmodels](https://www.statsmode
 
 
 ```python
-m.reset(formula='score~time|id')
+m.reset(formula='score~time|id', refit=True)
 md_print_df(m.report_table())
 
 ```
