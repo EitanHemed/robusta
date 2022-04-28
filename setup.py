@@ -22,6 +22,6 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.7.10',
+    python_requires='>=3.7.10, <=3.9.12',
     packages=setuptools.find_packages()
 )
