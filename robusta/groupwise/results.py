@@ -42,21 +42,53 @@ class GroupwiseResults(base.BaseResults):
         raise NotImplementedError
 
 
-class TTestResults(GroupwiseResults):
+class TTest2SamplesResults(GroupwiseResults):
     columns_rename = T_TEST_COLUMNS_RENAME
     returned_columns = T_TEST_RETURNED_COLUMNS
+
+    def __init__(self, r_results, data_kws=None):
+
+        if data_kws is not None:
+            self.n_x = data_kws['n_x']
+            self.n_y = data_kws['n_y']
+            self.paired = data_kws['paired']
+
+        super().__init__(r_results)
 
     def _reformat_r_output_df(self):
         df = super()._reformat_r_output_df()
 
         vals = df.to_dict('records')[0]
-        # TODO - how to handle unequal group size
-        cohen_d = pyr.rpackages.psych.t2d(vals['t'], n=vals[self.columns_rename['parameter']])
-        cohen_d_ci = pyr.rpackages.psych.d_ci(cohen_d, n=vals[self.columns_rename['parameter']])
 
-        df[T_TEST_COHEN_COLUMN_NAMES] = cohen_d_ci  # Skip the middle value
+        df[T_TEST_COHEN_COLUMN_NAMES] = self._get_cohen_d(vals)
+        # Skip the middle value
 
         return df[self.returned_columns + T_TEST_COHEN_COLUMN_NAMES]
+
+    def _get_cohen_d(self, vals):
+
+        if self.paired:
+            cohen_d_ci = pyr.rpackages.psych.d_ci(
+                pyr.rpackages.psych.t2d(vals['t'], n1=self.n_x),
+                n1=self.n_x)
+        else:
+            cohen_d_ci = pyr.rpackages.psych.d_ci(
+                pyr.rpackages.psych.t2d(vals['t'], n1=self.n_x, n2=self.n_y),
+                n1=self.n_x, n2=self.n_y)
+
+        return cohen_d_ci
+
+
+class TTest1SampleResults(TTest2SamplesResults):
+
+    def _get_cohen_d(self, vals):
+        # On one sample t test - d is t / sqrt(N).
+        # We need to increase DF ("parameter") by 1 to get N
+        n = vals[self.columns_rename['parameter']] + 1
+
+        cohen_d_ci = pyr.rpackages.psych.d_ci(
+            pyr.rpackages.psych.t2d(vals['t'], n1=n), n1=n)
+        return cohen_d_ci
 
 
 class BayesResults(GroupwiseResults):

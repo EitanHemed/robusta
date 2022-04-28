@@ -523,14 +523,16 @@ class T2Samples(GroupwiseModel):
         self._r_tail = r_tail
 
     def _analyze(self):
-        self._results = results.TTestResults(
+        self._results = results.TTest2SamplesResults(
             pyr.rpackages.stats.t_test(
                 **{'x': self.x, 'y': self.y,
                    'paired': self.paired,
                    'alternative': self._r_tail,
                    'var.equal': self.assume_equal_variance,
                    'conf.level': self._r_ci
-                   })
+                   }),
+            data_kws={'n_x': self.x.size, 'n_y': self.y.size,
+                      'paired': self.paired, }
         )
 
     def reset(self, **kwargs):
@@ -764,8 +766,9 @@ class T1Sample(T2Samples):
             self.mu = self.y
 
     def _analyze(self):
-        self._results = results.TTestResults(pyr.rpackages.stats.t_test(
-            x=self.x, mu=self.mu, alternative=self._r_tail))
+        self._results = results.TTest2SamplesResults(pyr.rpackages.stats.t_test(
+            x=self.x, mu=self.mu, alternative=self._r_tail),
+        )
 
     def _form_dataframe(self):
         dependent = self.x
