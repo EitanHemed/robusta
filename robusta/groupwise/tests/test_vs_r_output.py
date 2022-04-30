@@ -248,7 +248,7 @@ def test_bayes_t2samples_dependent(
     else:
         pd.testing.assert_frame_equal(
             res.reset_index(drop=True),
-            rst.misc.utils.convert_df(r_res, 'model')[BF_COLUMNS].reset_index(drop=True),
+            rst.misc.utils.convert_df(r_res)[BF_COLUMNS].reset_index(drop=True),
             check_exact=True,
             check_less_precise=5.)
 
@@ -325,7 +325,7 @@ def test_bayes_t1sample(
     else:
         pd.testing.assert_frame_equal(
             res.reset_index(drop=True),
-            rst.misc.utils.convert_df(r_res, 'model')[BF_COLUMNS].reset_index(drop=True),
+            rst.misc.utils.convert_df(r_res)[BF_COLUMNS].reset_index(drop=True),
             # test only the columns that we are intrested in
             check_exact=(not sample_from_posterior),
             check_less_precise=5)
