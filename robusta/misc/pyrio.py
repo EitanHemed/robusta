@@ -12,6 +12,7 @@ import os
 import warnings
 from tqdm import tqdm
 from rpy2.situation import get_r_home
+import numpy as np
 
 # Patch for Windows, see https://github.com/rpy2/rpy2/issues/796#issuecomment-872364985
 if os.name == 'nt':
@@ -19,6 +20,7 @@ if os.name == 'nt':
 
 # Now we can import robjects
 from rpy2.robjects import pandas2ri, numpy2ri, packages, rinterface
+from rpy2.rinterface_lib.embedded import RRuntimeError
 from rpy2.robjects.conversion import localconverter
 
 numpy2ri.activate()
@@ -29,15 +31,16 @@ numpy2ri.activate()
 # TODO - limit 'doMC' to non-windows OS
 #  Avoid re-imports (e.g., use a set).
 
-required_r_libraries = ['base', 'datasets', 'stats', 'utils', 'generics', 'broom',
-                        # 'dplyr',  'tibble', 'tidyr', 'Matrix',
-                        # 'backports',
-                        'afex', 'BayesFactor',
-                        'datarium',
-                        'effsize', 'emmeans', 'lme4',
-                        'ppcor', 'psych',
-                        'ARTool', 'rstatix'
-                        ]
+BUILT_IN_R_PACKAGES = ['base', 'utils', 'stats', 'datasets', ]
+THIRD_PARTY_R_PACKAGES = ['generics', 'broom',
+                          'afex', 'BayesFactor',
+                          'datarium',
+                          'effsize', 'emmeans', 'lme4',
+                          'ppcor', 'psych',
+                          'ARTool', 'rstatix'
+                          # 'dplyr',  'tibble', 'tidyr', 'Matrix',
+                          # 'backports',
+                          ]
 
 
 class PyRIO:
@@ -45,15 +48,12 @@ class PyRIO:
     instances_count = 0  # This is a static counter
     n_cpus = os.cpu_count()
 
-    required_packs = required_r_libraries
-
     def __init__(self, cran_mirror_idx=1):
         """
         @rtype: A singleton:
         Python-R I/O. Used throughout robusta to pass objects to R/Python
         from Python/R.
         """
-        print("Initializing robusta. Please wait.")
 
         self.cran_mirror_idx = cran_mirror_idx
 
@@ -67,31 +67,56 @@ class PyRIO:
         self.rpackages = packages
         self.rinterface = rinterface
         self._get_r_utils()
+        self.rpackages.utils.chooseCRANmirror(
+            ind=1)
+
         self.get_required_rpackages()
 
     def get_required_rpackages(self):
-        for pkg in tqdm(self.required_packs):
-            self.import_package(pkg)
+        print("Initializing robusta. Please wait.")
 
-    def import_package(self, pkg):
-        setattr(self.rpackages, pkg, self._import_r_package(pkg))
+        for pkg in tqdm(BUILT_IN_R_PACKAGES,
+                        desc="Importing built-in R packages", ):
+            self.import_package(pkg, built_in=True)
 
-    def _import_r_package(self, pack):
-        """This utility checks whether the package is installed and only then imports the package"""
-        self._verify_if_r_package_installed(pack)
+        for pkg in tqdm(THIRD_PARTY_R_PACKAGES,
+                        desc="Importing third-party R packages", ):
+            self.import_package(pkg, built_in=False)
+
+    def import_package(self, pkg, built_in=False):
+        import_func = (self._import_built_in_r_package if built_in
+                       else self._import_third_party_r_package)
+        setattr(self.rpackages, pkg, import_func(pkg))
+
+    def _import_built_in_r_package(self, pack):
         return self.rpackages.importr(pack)
 
-    def _verify_if_r_package_installed(self, pack):
-        if not self.rpackages.isinstalled(pack):
+    def _import_third_party_r_package(self, pack):
+        """This utility checks whether the package is installed and only then imports the package"""
+        try:
+            return self.rpackages.importr(pack)
+        except packages.PackageNotInstalledError:
             self._install_r_package(pack)
+            return self.rpackages.importr(pack)
+
+    #
+    #         self._verify_if_r_package_installed(pack)
+    #         return self.rpackages.importr(pack)
+    #     return self.rpackages.importr(pack)
+    #
+    # def _verify_if_r_package_installed(self, pack):
+    #     if not self.rpackages.isinstalled(pack):
+    #         self._install_r_package(pack)
 
     def _install_r_package(self, pack):
-        warnings.warn(f'Installing: {pack}...')
-        self.rpackages.utils.install_packages(pack, dependencies=True, Ncpus=self.n_cpus)
+        print(f'Installing: {pack}...')
+        self.rpackages.utils.install_packages(
+            pack, dependencies=np.array(("Depends", "Imports", "Enhances")),
+            Ncpus=self.n_cpus)
 
     def _get_r_utils(self):
-        setattr(self.rpackages, 'utils', self._import_r_package('utils'))
-        self.rpackages.utils.chooseCRANmirror(ind=self.cran_mirror_idx)
+        setattr(self.rpackages, 'utils',
+                self._import_built_in_r_package('utils'))
 
     def get_imported_packages(self):
         raise NotImplementedError
