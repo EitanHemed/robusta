@@ -67,12 +67,14 @@ def test_t2samples_unpaired_output():
 
 
 def test_t1sample_output():
-    m = rst.groupwise.T1Sample(data=MTCARS, formula='wt~am+1|dataset_rownames', tail='x < y', mu=3.5)
-    
+    m = rst.groupwise.T1Sample(data=MTCARS,
+                               formula='wt~am+1|dataset_rownames', tail='x < y',
+                               mu=3.5)
+
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
     m = rst.groupwise.T1Sample(x=MTCARS['wt'].values, tail='x < y', mu=3.5)
-    
+
     assert m.report_text() == "t(31) = -1.63, p = 0.056"
 
 

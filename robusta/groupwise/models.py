@@ -766,7 +766,7 @@ class T1Sample(T2Samples):
             self.mu = self.y
 
     def _analyze(self):
-        self._results = results.TTest2SamplesResults(pyr.rpackages.stats.t_test(
+        self._results = results.TTest1SampleResults(pyr.rpackages.stats.t_test(
             x=self.x, mu=self.mu, alternative=self._r_tail),
         )
 
