@@ -1147,7 +1147,7 @@ class Anova(GroupwiseModel):
             self,
             margins_terms: typing.List[str] = None,
             by_terms: typing.List[str] = None,
-            ci: int = 95,
+            ci: int = 0.95,
             overwrite: bool = False
     ):
         # TODO Look at this - emmeans::as_data_frame_emm_list
@@ -1156,7 +1156,8 @@ class Anova(GroupwiseModel):
         # TODO - allow for `by` option
         # TODO - implement between and within CI calculation
 
-        raise RuntimeError("The get_margins function is currently under development.")
+        # Confidence interval must be between 0 and 1.
+        assert 0 <= ci <= 1
 
         _terms_to_test = np.array(
             utils.to_list([margins_terms,
@@ -1185,7 +1186,7 @@ class Anova(GroupwiseModel):
             by=by_terms
         )
 
-        return _r_margins
+        # return _r_margins
 
         margins = utils.convert_df(
             pyr.rpackages.emmeans.as_data_frame_emmGrid(

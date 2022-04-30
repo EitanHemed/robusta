@@ -4,10 +4,10 @@ import pytest
 from rpy2.robjects import r
 
 import robusta as rst
-
-from robusta.groupwise.results import BF_COLUMNS
 # TODO - add tests against rst.groupwise.models.TEST_TAIL_DICT.keys ('x<y', etc.)
-from robusta.groupwise.models import (R_BAYES_TEST_TAILS_DICT, R_FREQUENTIST_TEST_TAILS_SPECS)
+from robusta.groupwise.models import (R_BAYES_TEST_TAILS_DICT,
+                                      R_FREQUENTIST_TEST_TAILS_SPECS)
+from robusta.groupwise.results import BF_COLUMNS
 
 SLEEP_DATASET = rst.load_dataset('sleep')
 MTCARS_DATASET = rst.load_dataset('mtcars')
@@ -420,17 +420,20 @@ def test_anova_mixed():
         """
     )
 
-    m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time', between='group', dependent='score', subject='id')
-    
+    m = rst.groupwise.Anova(data=ANXIETY_DATASET, within='time',
+                            between='group', dependent='score', subject='id')
+
     res = m._results._get_r_output_df()
 
-    pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r('anova_table')))
+    pd.testing.assert_frame_equal(res,
+                                  rst.misc.utils.convert_df(r('anova_table')))
 
     m.reset(formula='score ~ group + (time|id)')
-    
+
     res = m._results._get_r_output_df()
 
-    pd.testing.assert_frame_equal(res, rst.misc.utils.convert_df(r('anova_table')))
+    pd.testing.assert_frame_equal(res,
+                                  rst.misc.utils.convert_df(r('anova_table')))
 
     pd.testing.assert_frame_equal(
         m.get_margins(['group', 'time']),
