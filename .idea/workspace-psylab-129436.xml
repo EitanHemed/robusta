@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="0886dafb-815d-496f-b5f2-e05a30704807" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/if" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/iterations" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/base.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/groupwise.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/groupwise.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/pyrio.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/pyrio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/tests/test_groupwise.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/tests/test_groupwise.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/robusta/textual_reports.py" beforeDir="false" afterPath="$PROJECT_DIR$/robusta/textual_reports.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Unit Test" />
+        <option value="Python Script" />
+        <option value="R Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="Eitan Hemed &lt;eitan.hemed@gmail.com&gt;" />
+      </list>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1W77QbHJ8QSqHZS9E0t8zAx3gC3" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="last_opened_file_path" value="$USER_HOME$/.conda/envs" />
+    <property name="settings.editor.selected.configurable" value="org.jetbrains.r.configuration.RSettingsProjectConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Eitan Hemed\OneDrive - University of Haifa\PhD\python_projects\robusta\docs\source" />
+      <recent name="C:\Users\Eitan Hemed\OneDrive - University of Haifa\PhD\python_projects\robusta" />
+      <recent name="C:\Users\Eitan Hemed\OneDrive - University of Haifa\PhD\python_projects\robusta\robusta\tests" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.test_groupwise">
+    <configuration name="test_groupwise" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="hrzl" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/robusta/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/robusta/tests/test_groupwise.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unittests for test_correlations.TestCorrelation.test_output" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="hrzl" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/robusta/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_correlations.TestCorrelation.test_output&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unittests for test_correlations.Test_PairwiseCorrelation.test_faulty_input" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="hrzl" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/robusta/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_correlations.Test_PairwiseCorrelation.test_faulty_input&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unittests for test_groupwise.TestT2Samples.test_t1_sample" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="hrzl" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/robusta/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_groupwise.TestT2Samples.test_t1_sample&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unittests for test_groupwise.TestT2Samples.test_t2_sample" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <module name="hrzl" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/robusta/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_groupwise.TestT2Samples.test_t2_sample&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.test_groupwise" />
+        <item itemvalue="Python tests.Unittests for test_groupwise.TestT2Samples.test_t2_sample" />
+        <item itemvalue="Python tests.Unittests for test_groupwise.TestT2Samples.test_t1_sample" />
+        <item itemvalue="Python tests.Unittests for test_correlations.TestCorrelation.test_output" />
+        <item itemvalue="Python tests.Unittests for test_correlations.Test_PairwiseCorrelation.test_faulty_input" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="ServiceViewManager">
+    <option name="viewStates">
+      <list>
+        <serviceView>
+          <treeState>
+            <expand />
+            <select />
+          </treeState>
+        </serviceView>
+      </list>
+    </option>
+    <option name="showServicesTree" value="false" />
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="project-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="0886dafb-815d-496f-b5f2-e05a30704807" name="Default Changelist" comment="" />
+      <created>1578488764043</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1578488764043</updated>
+    </task>
+    <task id="LOCAL-00001" summary="- Built but not operational: BayesANOVA - need to integrate the formula formation into the BaseParamteric class.">
+      <created>1581336156993</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1581336156993</updated>
+    </task>
+    <task id="LOCAL-00002" summary="- Began implementing support for formula specification and parsing of model variables from the formula. currently works with between subject anova (all other functionality was broken). &#10;- Most changes will take place on the tests run during init of the BaseParametric class.">
+      <created>1581435048367</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1581435048367</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="- Currently BayesANOVA is not working, need to integrate the formula formation into the BaseParamteric class." />
+    <MESSAGE value="- Built but not operational: BayesANOVA - need to integrate the formula formation into the BaseParamteric class." />
+    <MESSAGE value="- Began implementing support for formula specification and parsing of model variables from the formula. currently works with between subject anova (all other functionality was broken). &#10;- Most changes will take place on the tests run during init of the BaseParametric class." />
+    <option name="LAST_COMMIT_MESSAGE" value="- Began implementing support for formula specification and parsing of model variables from the formula. currently works with between subject anova (all other functionality was broken). &#10;- Most changes will take place on the tests run during init of the BaseParametric class." />
+    <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/robusta/utils.py</url>
+          <line>126</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

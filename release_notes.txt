@@ -1,0 +1,16 @@
+Patch release 0.0.4 - Fixed a bug where the "Add" button would not work when the user was not logged in.
+
+FIXED:
+1. Calculation of Cohen-d for t-tests was faulty due to specified degrees of
+freedom, resulting in inflated values.
+2. Install was failing with Python >= 3.9 on Windows. Installation currently
+specifies the required Python version as 3.7 <= Python <= 3.9.12.
+3. rst.groupwise.Anova.get_margins() was often failing as the confidence 
+interval argument (`ci`) was specified as 95, rather then in the interval
+ 0 <= CI <= 1. 
+ 
+IMPROVEMENTS:
+1. Faster initialization time. Built-in R packages are imported right away.
+Third-party packages are imported (with attempt to install them if they are not
+available). The installation of third-party packages does not include 'linked-to'
+dependencies.

@@ -1,0 +1,26 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: robusta
+  version: {{ data.get('version') }}
+
+source:
+  path_url: ../dist
+
+channels:
+- conda-forge
+requirements:
+  build:
+    - python
+  run:
+  - python>=3.7
+  - numpy=1.15.4
+  - pandas=0.23.4
+  - rpy2=2.9.4
+  - pandas-flavor=0.2.0
+
+about:
+  home: https://github.com/EitanHemed/robusta
+  license: GPL-3
+  lincese_file: LICENSE.txt
+  summary: Statistical analysis package in Python
