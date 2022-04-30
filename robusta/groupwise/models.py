@@ -1150,10 +1150,9 @@ class Anova(GroupwiseModel):
             ci: int = 0.95,
             overwrite: bool = False
     ):
-        # TODO Look at this - emmeans::as_data_frame_emm_list
+
         # TODO - Documentation
         # TODO - Issue the 'balanced-design' warning etc.
-        # TODO - allow for `by` option
         # TODO - implement between and within CI calculation
 
         # Confidence interval must be between 0 and 1.

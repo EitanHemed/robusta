@@ -32,12 +32,6 @@ This could take ~15 seconds as many R libraries are imported under the hood. If 
 import robusta as rst
 ```
 
-    Initializing robusta. Please wait.
-
-
-    100%|██████████| 16/16 [00:14<00:00,  1.07it/s]
-
-
 First, define a helper function used to pretty-print output of dataframes when converting the notebook to .md ([credit](https://gist.github.com/rgerkin/af5b27a0e30531c30f2bf628aa41a553)).
 
 
@@ -63,11 +57,11 @@ md_print_df(rst.get_available_datasets().tail())
 
 |     | Package   | Item                  | Description                                                                                  |
 |----:|:----------|:----------------------|:---------------------------------------------------------------------------------------------|
-| 285 | ARTool    | Higgins1990Table5     | Split-plot Experiment Examining Effect of Moisture and Fertilizer on Dry Matter in Peat Pots |
-| 286 | ARTool    | Higgins1990Table1.art | Aligned Rank Transformed Version of Higgins1990Table1                                        |
-| 287 | ARTool    | Higgins1990Table1     | Synthetic 3x3 Factorial Randomized Experiment                                                |
-| 288 | ARTool    | ElkinABC              | Synthetic 2x2x2 Within-Subjects Experiment                                                   |
-| 289 | ARTool    | ElkinAB               | Synthetic 2x2 Within-Subjects Experiment                                                     |
+| 284 | ARTool    | Higgins1990Table5     | Split-plot Experiment Examining Effect of Moisture and Fertilizer on Dry Matter in Peat Pots |
+| 285 | ARTool    | Higgins1990Table1.art | Aligned Rank Transformed Version of Higgins1990Table1                                        |
+| 286 | ARTool    | Higgins1990Table1     | Synthetic 3x3 Factorial Randomized Experiment                                                |
+| 287 | ARTool    | ElkinABC              | Synthetic 2x2x2 Within-Subjects Experiment                                                   |
+| 288 | ARTool    | ElkinAB               | Synthetic 2x2 Within-Subjects Experiment                                                     |
 
 
 
@@ -115,7 +109,7 @@ md_print_df(m.report_table())
 
 |  |        t |   df |    p-value |   Cohen-d Low |   Cohen-d |   Cohen-d High |
 |---:|---------:|-----:|-----------:|--------------:|----------:|---------------:|
-|  0 | -4.06213 |    9 | 0.00141645 |      -4.57304 |  -2.70809 |      -0.758771 |
+|  1 | -4.06213 |    9 | 0.00141645 |      -2.11801 |  -1.28456 |      -0.414622 |
 
 
 
@@ -145,7 +139,7 @@ md_print_df(m.report_table())
 
 |  |        t |   df |   p-value |   Cohen-d Low |   Cohen-d |   Cohen-d High |
 |---:|---------:|-----:|----------:|--------------:|----------:|---------------:|
-|  0 | -1.86081 |   18 | 0.0395934 |      -1.83678 | -0.877196 |       0.106988 |
+|  1 | -1.86081 |   18 | 0.0395934 |      -1.73882 | -0.832181 |      0.0954595 |
 
 
 
@@ -167,7 +161,7 @@ md_print_df(m.report_table())
 
 |  | model       |      bf |       error |
 |---:|:------------|--------:|------------:|
-|  0 | Alt., r=0.5 | 71.3861 | 3.96597e-09 |
+|  0 | Alt., r=0.5 | 71.3861 | 7.97835e-07 |
 
 
 
@@ -181,16 +175,10 @@ md_print_df(m.report_table())
 ```
 
     Alt., r=0.1 [BF1:0 = 18.64, Error = 0.001%]
-    
-    
-
-
-
-
 
 |  | model       |      bf |       error |
 |---:|:------------|--------:|------------:|
-|  0 | Alt., r=0.1 | 18.6411 | 1.79878e-07 |
+|  0 | Alt., r=0.1 | 18.6411 | 2.33663e-05 |
 
 
 
@@ -233,17 +221,12 @@ md_print_df(m.report_table())
 ```
 
     R[write to console]: Contrasts set to contr.sum for the following variables: group
-    
-
-
-
-
 
 |  | Term       |   p-value |   Partial Eta-Squared |      F |   df1 |   df2 |
 |---:|:-----------|----------:|----------------------:|-------:|------:|------:|
-|  0 | group      |     0.019 |                 0.172 |   4.35 |  2    | 42    |
-|  1 | time       |     0.001 |                 0.904 | 394.91 |  1.79 | 75.24 |
-|  2 | group:time |     0.001 |                 0.84  | 110.19 |  3.58 | 75.24 |
+|  1 | group      |     0.019 |                 0.172 |   4.35 |  2    | 42    |
+|  2 | time       |     0.001 |                 0.904 | 394.91 |  1.79 | 75.24 |
+|  3 | group:time |     0.001 |                 0.84  | 110.19 |  3.58 | 75.24 |
 
 
 
@@ -256,42 +239,30 @@ md_print_df(m.report_table())
 ```
 
     R[write to console]: Contrasts set to contr.sum for the following variables: group
-    
-
-
-
-
 
 |  | Term   |   p-value |   Partial Eta-Squared |    F |   df1 |   df2 |
 |---:|:-------|----------:|----------------------:|-----:|------:|------:|
-|  0 | group  |     0.019 |                 0.172 | 4.35 |     2 |    42 |
+|  1 | group  |     0.019 |                 0.172 | 4.35 |     2 |    42 |
 
 
 
-R and many other statistical packages (e.g., [statsmodels](https://www.statsmodels.org/stable/index.html) support a formula interface to fit statistical models. Here it is shown that a model can also be specified by the formula kwargs rather than specifying `dependent`, `between` etc. The formula indicates that the score column is regressed by the time variable, with observations nested within the id column. 
-
+R and many other statistical packages (e.g., [statsmodels](https://www.statsmodels.org/stable/index.html) support a formula interface to fit statistical models. Here it is shown that a model can also be specified by the formula kwargs rather than specifying `dependent`, `between` etc. The formula indicates that the score column is regressed by the time variable, with observations nested within the id column.
 
 ```python
 m.reset(formula='score~time|id', refit=True)
 md_print_df(m.report_table())
-
 ```
-
-
-
 
 |  | Term   |   p-value |   Partial Eta-Squared |     F |   df1 |   df2 |
 |---:|:-------|----------:|----------------------:|------:|------:|------:|
-|  0 | time   |     0.001 |                 0.601 | 66.23 |  1.15 | 50.55 |
+|  1 | time   |     0.001 |                 0.601 | 66.23 |  1.15 | 50.55 |
 
-
-
-We can also run a similar, bayesian ANOVA using `BayesAnova` comparing the specified terms to the null model:
-
+We can also run a similar, bayesian ANOVA using `BayesAnova` comparing the
+specified terms to the null model:
 
 ```python
 m = rst.groupwise.BayesAnova(data=anxiety, within='time',
-                        dependent='score', subject='id')
+                             dependent='score', subject='id')
 md_print_df(m.report_table())
 ```
 
